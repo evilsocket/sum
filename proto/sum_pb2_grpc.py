@@ -14,25 +14,25 @@ class SumServiceStub(object):
     Args:
       channel: A grpc.Channel.
     """
-    self.Create = channel.unary_unary(
-        '/sum.SumService/Create',
+    self.CreateRecord = channel.unary_unary(
+        '/sum.SumService/CreateRecord',
         request_serializer=proto_dot_sum__pb2.Record.SerializeToString,
-        response_deserializer=proto_dot_sum__pb2.Response.FromString,
+        response_deserializer=proto_dot_sum__pb2.RecordResponse.FromString,
         )
-    self.Update = channel.unary_unary(
-        '/sum.SumService/Update',
+    self.UpdateRecord = channel.unary_unary(
+        '/sum.SumService/UpdateRecord',
         request_serializer=proto_dot_sum__pb2.Record.SerializeToString,
-        response_deserializer=proto_dot_sum__pb2.Response.FromString,
+        response_deserializer=proto_dot_sum__pb2.RecordResponse.FromString,
         )
-    self.Read = channel.unary_unary(
-        '/sum.SumService/Read',
+    self.ReadRecord = channel.unary_unary(
+        '/sum.SumService/ReadRecord',
         request_serializer=proto_dot_sum__pb2.ById.SerializeToString,
-        response_deserializer=proto_dot_sum__pb2.Response.FromString,
+        response_deserializer=proto_dot_sum__pb2.RecordResponse.FromString,
         )
-    self.Delete = channel.unary_unary(
-        '/sum.SumService/Delete',
+    self.DeleteRecord = channel.unary_unary(
+        '/sum.SumService/DeleteRecord',
         request_serializer=proto_dot_sum__pb2.ById.SerializeToString,
-        response_deserializer=proto_dot_sum__pb2.Response.FromString,
+        response_deserializer=proto_dot_sum__pb2.RecordResponse.FromString,
         )
     self.Info = channel.unary_unary(
         '/sum.SumService/Info',
@@ -45,28 +45,28 @@ class SumServiceServicer(object):
   # missing associated documentation comment in .proto file
   pass
 
-  def Create(self, request, context):
+  def CreateRecord(self, request, context):
     """vectors CRUD
     """
     context.set_code(grpc.StatusCode.UNIMPLEMENTED)
     context.set_details('Method not implemented!')
     raise NotImplementedError('Method not implemented!')
 
-  def Update(self, request, context):
+  def UpdateRecord(self, request, context):
     # missing associated documentation comment in .proto file
     pass
     context.set_code(grpc.StatusCode.UNIMPLEMENTED)
     context.set_details('Method not implemented!')
     raise NotImplementedError('Method not implemented!')
 
-  def Read(self, request, context):
+  def ReadRecord(self, request, context):
     # missing associated documentation comment in .proto file
     pass
     context.set_code(grpc.StatusCode.UNIMPLEMENTED)
     context.set_details('Method not implemented!')
     raise NotImplementedError('Method not implemented!')
 
-  def Delete(self, request, context):
+  def DeleteRecord(self, request, context):
     # missing associated documentation comment in .proto file
     pass
     context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -74,7 +74,8 @@ class SumServiceServicer(object):
     raise NotImplementedError('Method not implemented!')
 
   def Info(self, request, context):
-    """TODO: oracles CRUD
+    """oracles CRUD
+    rpc CreateOrace(Oracle) returns
 
     core methods
     TODO: rpc Eval(EvalRequest) (???) {}
@@ -86,25 +87,25 @@ class SumServiceServicer(object):
 
 def add_SumServiceServicer_to_server(servicer, server):
   rpc_method_handlers = {
-      'Create': grpc.unary_unary_rpc_method_handler(
-          servicer.Create,
+      'CreateRecord': grpc.unary_unary_rpc_method_handler(
+          servicer.CreateRecord,
           request_deserializer=proto_dot_sum__pb2.Record.FromString,
-          response_serializer=proto_dot_sum__pb2.Response.SerializeToString,
+          response_serializer=proto_dot_sum__pb2.RecordResponse.SerializeToString,
       ),
-      'Update': grpc.unary_unary_rpc_method_handler(
-          servicer.Update,
+      'UpdateRecord': grpc.unary_unary_rpc_method_handler(
+          servicer.UpdateRecord,
           request_deserializer=proto_dot_sum__pb2.Record.FromString,
-          response_serializer=proto_dot_sum__pb2.Response.SerializeToString,
+          response_serializer=proto_dot_sum__pb2.RecordResponse.SerializeToString,
       ),
-      'Read': grpc.unary_unary_rpc_method_handler(
-          servicer.Read,
+      'ReadRecord': grpc.unary_unary_rpc_method_handler(
+          servicer.ReadRecord,
           request_deserializer=proto_dot_sum__pb2.ById.FromString,
-          response_serializer=proto_dot_sum__pb2.Response.SerializeToString,
+          response_serializer=proto_dot_sum__pb2.RecordResponse.SerializeToString,
       ),
-      'Delete': grpc.unary_unary_rpc_method_handler(
-          servicer.Delete,
+      'DeleteRecord': grpc.unary_unary_rpc_method_handler(
+          servicer.DeleteRecord,
           request_deserializer=proto_dot_sum__pb2.ById.FromString,
-          response_serializer=proto_dot_sum__pb2.Response.SerializeToString,
+          response_serializer=proto_dot_sum__pb2.RecordResponse.SerializeToString,
       ),
       'Info': grpc.unary_unary_rpc_method_handler(
           servicer.Info,

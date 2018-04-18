@@ -4,12 +4,13 @@ package sum;
 
 service SumService {
   // vectors CRUD
-  rpc Create(Record) returns (Response) {}
-  rpc Update(Record) returns (Response) {}
-  rpc Read(ById) returns (Response) {}
-  rpc Delete(ById) returns (Response) {}
+  rpc CreateRecord(Record) returns (RecordResponse) {}
+  rpc UpdateRecord(Record) returns (RecordResponse) {}
+  rpc ReadRecord(ById) returns (RecordResponse) {}
+  rpc DeleteRecord(ById) returns (RecordResponse) {}
   
-  // TODO: oracles CRUD
+  // oracles CRUD
+  // rpc CreateOrace(Oracle) returns
 
   // core methods
   // TODO: rpc Eval(EvalRequest) (???) {}
@@ -27,10 +28,22 @@ message Record {
     repeated NamedValue meta = 3;
 }
 
+message RecordResponse {
+    bool success = 1;
+    string msg = 2;
+    Record record = 3;
+}
+
 message Oracle {
     string id = 1;
     string name = 2;
     string code = 3;
+}
+
+message OracleResponse {
+    bool success = 1;
+    string msg = 2;
+    Oracle oracle = 3;
 }
 
 message EvalRequest {
@@ -40,12 +53,6 @@ message EvalRequest {
 
 message ById {
     string id = 1;
-}
-
-message Response {
-    bool success = 1;
-    string msg = 2;
-    Record record = 3;
 }
 
 message ServerInfo {

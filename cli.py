@@ -48,7 +48,7 @@ if __name__ == '__main__':
     timer_start()
     for row in range (0, num_rows):
         record = gen_record(num_columns)
-        resp = sumcli.Create(record)
+        resp = sumcli.CreateRecord(record)
 
         if resp.success is not True:
             print "ERROR: %s" % resp.msg
@@ -61,8 +61,7 @@ if __name__ == '__main__':
     print "READ x%d : " % len(index),
     timer_start()
     for ident, record in index.iteritems():
-        query = sum_pb2.ById(id=ident)
-        resp = sumcli.Read(query)
+        resp = sumcli.ReadRecord(sum_pb2.ById(id=ident))
 
         if resp.success is not True:
             print "Error while querying %s: %s" % (ident, resp.msg)
@@ -72,8 +71,7 @@ if __name__ == '__main__':
     print "DEL x%d : " % len(index),
     timer_start()
     for ident, record in index.iteritems():
-        query = sum_pb2.ById(id=ident)
-        resp = sumcli.Delete(query)
+        resp = sumcli.DeleteRecord(sum_pb2.ById(id=ident))
 
         if resp.success is not True:
             print "Error while deleting %s: %s" % (ident, resp.msg)

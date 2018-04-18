@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='proto/sum.proto',
   package='sum',
   syntax='proto3',
-  serialized_pb=_b('\n\x0fproto/sum.proto\x12\x03sum\")\n\nNamedValue\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t\"A\n\x06Record\x12\n\n\x02id\x18\x01 \x01(\t\x12\x0c\n\x04\x64\x61ta\x18\x02 \x03(\x02\x12\x1d\n\x04meta\x18\x03 \x03(\x0b\x32\x0f.sum.NamedValue\"0\n\x06Oracle\x12\n\n\x02id\x18\x01 \x01(\t\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\x0c\n\x04\x63ode\x18\x03 \x01(\t\"?\n\x0b\x45valRequest\x12\x11\n\toracle_id\x18\x01 \x01(\t\x12\x1d\n\x04\x61rgs\x18\x02 \x03(\x0b\x32\x0f.sum.NamedValue\"\x12\n\x04\x42yId\x12\n\n\x02id\x18\x01 \x01(\t\"E\n\x08Response\x12\x0f\n\x07success\x18\x01 \x01(\x08\x12\x0b\n\x03msg\x18\x02 \x01(\t\x12\x1b\n\x06record\x18\x03 \x01(\x0b\x32\x0b.sum.Record\"f\n\nServerInfo\x12\x0f\n\x07version\x18\x01 \x01(\t\x12\x0e\n\x06uptime\x18\x02 \x01(\x04\x12\x0b\n\x03pid\x18\x03 \x01(\x04\x12\x0b\n\x03uid\x18\x04 \x01(\x04\x12\x0c\n\x04\x61rgv\x18\x05 \x03(\t\x12\x0f\n\x07records\x18\x06 \x01(\x04\"\x07\n\x05\x45mpty2\xcd\x01\n\nSumService\x12&\n\x06\x43reate\x12\x0b.sum.Record\x1a\r.sum.Response\"\x00\x12&\n\x06Update\x12\x0b.sum.Record\x1a\r.sum.Response\"\x00\x12\"\n\x04Read\x12\t.sum.ById\x1a\r.sum.Response\"\x00\x12$\n\x06\x44\x65lete\x12\t.sum.ById\x1a\r.sum.Response\"\x00\x12%\n\x04Info\x12\n.sum.Empty\x1a\x0f.sum.ServerInfo\"\x00\x62\x06proto3')
+  serialized_pb=_b('\n\x0fproto/sum.proto\x12\x03sum\")\n\nNamedValue\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t\"A\n\x06Record\x12\n\n\x02id\x18\x01 \x01(\t\x12\x0c\n\x04\x64\x61ta\x18\x02 \x03(\x02\x12\x1d\n\x04meta\x18\x03 \x03(\x0b\x32\x0f.sum.NamedValue\"K\n\x0eRecordResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\x12\x0b\n\x03msg\x18\x02 \x01(\t\x12\x1b\n\x06record\x18\x03 \x01(\x0b\x32\x0b.sum.Record\"0\n\x06Oracle\x12\n\n\x02id\x18\x01 \x01(\t\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\x0c\n\x04\x63ode\x18\x03 \x01(\t\"K\n\x0eOracleResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\x12\x0b\n\x03msg\x18\x02 \x01(\t\x12\x1b\n\x06oracle\x18\x03 \x01(\x0b\x32\x0b.sum.Oracle\"?\n\x0b\x45valRequest\x12\x11\n\toracle_id\x18\x01 \x01(\t\x12\x1d\n\x04\x61rgs\x18\x02 \x03(\x0b\x32\x0f.sum.NamedValue\"\x12\n\x04\x42yId\x12\n\n\x02id\x18\x01 \x01(\t\"f\n\nServerInfo\x12\x0f\n\x07version\x18\x01 \x01(\t\x12\x0e\n\x06uptime\x18\x02 \x01(\x04\x12\x0b\n\x03pid\x18\x03 \x01(\x04\x12\x0b\n\x03uid\x18\x04 \x01(\x04\x12\x0c\n\x04\x61rgv\x18\x05 \x03(\t\x12\x0f\n\x07records\x18\x06 \x01(\x04\"\x07\n\x05\x45mpty2\xfd\x01\n\nSumService\x12\x32\n\x0c\x43reateRecord\x12\x0b.sum.Record\x1a\x13.sum.RecordResponse\"\x00\x12\x32\n\x0cUpdateRecord\x12\x0b.sum.Record\x1a\x13.sum.RecordResponse\"\x00\x12.\n\nReadRecord\x12\t.sum.ById\x1a\x13.sum.RecordResponse\"\x00\x12\x30\n\x0c\x44\x65leteRecord\x12\t.sum.ById\x1a\x13.sum.RecordResponse\"\x00\x12%\n\x04Info\x12\n.sum.Empty\x1a\x0f.sum.ServerInfo\"\x00\x62\x06proto3')
 )
 
 
@@ -108,6 +108,51 @@ _RECORD = _descriptor.Descriptor(
 )
 
 
+_RECORDRESPONSE = _descriptor.Descriptor(
+  name='RecordResponse',
+  full_name='sum.RecordResponse',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='success', full_name='sum.RecordResponse.success', index=0,
+      number=1, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='msg', full_name='sum.RecordResponse.msg', index=1,
+      number=2, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='record', full_name='sum.RecordResponse.record', index=2,
+      number=3, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=134,
+  serialized_end=209,
+)
+
+
 _ORACLE = _descriptor.Descriptor(
   name='Oracle',
   full_name='sum.Oracle',
@@ -148,8 +193,53 @@ _ORACLE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=134,
-  serialized_end=182,
+  serialized_start=211,
+  serialized_end=259,
+)
+
+
+_ORACLERESPONSE = _descriptor.Descriptor(
+  name='OracleResponse',
+  full_name='sum.OracleResponse',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='success', full_name='sum.OracleResponse.success', index=0,
+      number=1, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='msg', full_name='sum.OracleResponse.msg', index=1,
+      number=2, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='oracle', full_name='sum.OracleResponse.oracle', index=2,
+      number=3, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=261,
+  serialized_end=336,
 )
 
 
@@ -186,8 +276,8 @@ _EVALREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=184,
-  serialized_end=247,
+  serialized_start=338,
+  serialized_end=401,
 )
 
 
@@ -217,53 +307,8 @@ _BYID = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=249,
-  serialized_end=267,
-)
-
-
-_RESPONSE = _descriptor.Descriptor(
-  name='Response',
-  full_name='sum.Response',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='success', full_name='sum.Response.success', index=0,
-      number=1, type=8, cpp_type=7, label=1,
-      has_default_value=False, default_value=False,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='msg', full_name='sum.Response.msg', index=1,
-      number=2, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='record', full_name='sum.Response.record', index=2,
-      number=3, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None, file=DESCRIPTOR),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  options=None,
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=269,
-  serialized_end=338,
+  serialized_start=403,
+  serialized_end=421,
 )
 
 
@@ -328,8 +373,8 @@ _SERVERINFO = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=340,
-  serialized_end=442,
+  serialized_start=423,
+  serialized_end=525,
 )
 
 
@@ -352,19 +397,21 @@ _EMPTY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=444,
-  serialized_end=451,
+  serialized_start=527,
+  serialized_end=534,
 )
 
 _RECORD.fields_by_name['meta'].message_type = _NAMEDVALUE
+_RECORDRESPONSE.fields_by_name['record'].message_type = _RECORD
+_ORACLERESPONSE.fields_by_name['oracle'].message_type = _ORACLE
 _EVALREQUEST.fields_by_name['args'].message_type = _NAMEDVALUE
-_RESPONSE.fields_by_name['record'].message_type = _RECORD
 DESCRIPTOR.message_types_by_name['NamedValue'] = _NAMEDVALUE
 DESCRIPTOR.message_types_by_name['Record'] = _RECORD
+DESCRIPTOR.message_types_by_name['RecordResponse'] = _RECORDRESPONSE
 DESCRIPTOR.message_types_by_name['Oracle'] = _ORACLE
+DESCRIPTOR.message_types_by_name['OracleResponse'] = _ORACLERESPONSE
 DESCRIPTOR.message_types_by_name['EvalRequest'] = _EVALREQUEST
 DESCRIPTOR.message_types_by_name['ById'] = _BYID
-DESCRIPTOR.message_types_by_name['Response'] = _RESPONSE
 DESCRIPTOR.message_types_by_name['ServerInfo'] = _SERVERINFO
 DESCRIPTOR.message_types_by_name['Empty'] = _EMPTY
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
@@ -383,12 +430,26 @@ Record = _reflection.GeneratedProtocolMessageType('Record', (_message.Message,),
   ))
 _sym_db.RegisterMessage(Record)
 
+RecordResponse = _reflection.GeneratedProtocolMessageType('RecordResponse', (_message.Message,), dict(
+  DESCRIPTOR = _RECORDRESPONSE,
+  __module__ = 'proto.sum_pb2'
+  # @@protoc_insertion_point(class_scope:sum.RecordResponse)
+  ))
+_sym_db.RegisterMessage(RecordResponse)
+
 Oracle = _reflection.GeneratedProtocolMessageType('Oracle', (_message.Message,), dict(
   DESCRIPTOR = _ORACLE,
   __module__ = 'proto.sum_pb2'
   # @@protoc_insertion_point(class_scope:sum.Oracle)
   ))
 _sym_db.RegisterMessage(Oracle)
+
+OracleResponse = _reflection.GeneratedProtocolMessageType('OracleResponse', (_message.Message,), dict(
+  DESCRIPTOR = _ORACLERESPONSE,
+  __module__ = 'proto.sum_pb2'
+  # @@protoc_insertion_point(class_scope:sum.OracleResponse)
+  ))
+_sym_db.RegisterMessage(OracleResponse)
 
 EvalRequest = _reflection.GeneratedProtocolMessageType('EvalRequest', (_message.Message,), dict(
   DESCRIPTOR = _EVALREQUEST,
@@ -403,13 +464,6 @@ ById = _reflection.GeneratedProtocolMessageType('ById', (_message.Message,), dic
   # @@protoc_insertion_point(class_scope:sum.ById)
   ))
 _sym_db.RegisterMessage(ById)
-
-Response = _reflection.GeneratedProtocolMessageType('Response', (_message.Message,), dict(
-  DESCRIPTOR = _RESPONSE,
-  __module__ = 'proto.sum_pb2'
-  # @@protoc_insertion_point(class_scope:sum.Response)
-  ))
-_sym_db.RegisterMessage(Response)
 
 ServerInfo = _reflection.GeneratedProtocolMessageType('ServerInfo', (_message.Message,), dict(
   DESCRIPTOR = _SERVERINFO,
@@ -433,43 +487,43 @@ _SUMSERVICE = _descriptor.ServiceDescriptor(
   file=DESCRIPTOR,
   index=0,
   options=None,
-  serialized_start=454,
-  serialized_end=659,
+  serialized_start=537,
+  serialized_end=790,
   methods=[
   _descriptor.MethodDescriptor(
-    name='Create',
-    full_name='sum.SumService.Create',
+    name='CreateRecord',
+    full_name='sum.SumService.CreateRecord',
     index=0,
     containing_service=None,
     input_type=_RECORD,
-    output_type=_RESPONSE,
+    output_type=_RECORDRESPONSE,
     options=None,
   ),
   _descriptor.MethodDescriptor(
-    name='Update',
-    full_name='sum.SumService.Update',
+    name='UpdateRecord',
+    full_name='sum.SumService.UpdateRecord',
     index=1,
     containing_service=None,
     input_type=_RECORD,
-    output_type=_RESPONSE,
+    output_type=_RECORDRESPONSE,
     options=None,
   ),
   _descriptor.MethodDescriptor(
-    name='Read',
-    full_name='sum.SumService.Read',
+    name='ReadRecord',
+    full_name='sum.SumService.ReadRecord',
     index=2,
     containing_service=None,
     input_type=_BYID,
-    output_type=_RESPONSE,
+    output_type=_RECORDRESPONSE,
     options=None,
   ),
   _descriptor.MethodDescriptor(
-    name='Delete',
-    full_name='sum.SumService.Delete',
+    name='DeleteRecord',
+    full_name='sum.SumService.DeleteRecord',
     index=3,
     containing_service=None,
     input_type=_BYID,
-    output_type=_RESPONSE,
+    output_type=_RECORDRESPONSE,
     options=None,
   ),
   _descriptor.MethodDescriptor(
