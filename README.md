@@ -24,11 +24,9 @@ You have to load it (in memory, either ram or gpu memory), you have to perform s
 Yes, you can use MySQL or even Redis to store it more or less efficiently, still the server is not very linear algebra oriented
 and you have to offload most of the computation to your own machine (and still load it, edit it, save it, etc etc).
 
-## What If ...
+What If there's a server exposing a clean and fast API to define, query and manipulate vectors in memory with data persistance on disk?
 
-... there's a server exposing a clean and fast API to define, query and manipulate vectors in memory with data persistance on disk?
-
-**This is what SUM is**.
+That is **Sum**.
 
 ## The Name
 
