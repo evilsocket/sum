@@ -14,7 +14,7 @@ import sum_pb2_grpc
 start = 0
 end = 0
 num_columns = 475
-num_rows = 300000
+num_rows = 3000
 index = {}
 client = None
 oracle_name = 'dotAll'
