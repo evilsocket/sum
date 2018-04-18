@@ -57,16 +57,22 @@ def define_oracle(filename, name):
         print "Defining oracle %s ..." % name
         with open( filename, 'r') as fp:
             oracle = sum_pb2.Oracle(name=name, code=fp.read())
-            check( client.CreateOracle(oracle) )
+            resp = client.CreateOracle(oracle)
+            check(resp)
+            print "  -> id:%s" % resp.msg
+            return resp.msg
 
     else:
         o = resp.oracles[0]
-        print "Oracle %s already defined as %s" % ( o.name, o.id )
+        print "Oracle %s -> id:%s" % ( o.name, o.id )
+        return o.id
+
+    return None
 
 if __name__ == '__main__':
     client = sum_pb2_grpc.SumServiceStub(grpc.insecure_channel('127.0.0.1:50051'))
 
-    oracle_id = define_oracle('oracle.js', oracle_name)
+    oracle_id = define_oracle('example_oracle.js', oracle_name)
     print
 
     print "CREATE (%dx%d) : " % ( num_rows, num_columns ),
