@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+package sum;
+
+service VectorService {
+  rpc Info(Empty) returns (ServerInfo) {}
+
+  rpc Create(Record) returns (Response) {}
+  rpc Update(Record) returns (Response) {}
+  rpc Read(Query) returns (Response) {}
+  rpc Delete(Query) returns (Response) {}
+}
+
+message Empty {}
+
+message Meta {
+    string name = 1;
+    string value =  2;
+}
+
+message Record {
+    string id  = 1;
+    repeated float data = 2;
+    repeated Meta meta = 3;
+}
+
+// TODO: extend this to support other types of query
+message Query {
+    // vector id to query for
+    string id = 1;
+}
+
+message Response {
+    bool success = 1;
+    string msg = 2;
+    Record record = 3;
+}
+
+message ServerInfo {
+    string version = 1;
+    uint64 uptime  = 2;
+    uint64 pid = 3;
+    uint64 uid = 4;
+    repeated string argv = 5;
+    uint64 records = 6;
+}
