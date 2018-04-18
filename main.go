@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"log"
 	"net"
 	"runtime"
@@ -14,11 +15,10 @@ import (
 	"google.golang.org/grpc/reflection"
 )
 
-const (
-	listenString = ":50051"
-)
-
 var (
+	listenString = flag.String("listen", ":50051", "String to create the TCP listener.")
+	dataPath     = flag.String("datapath", "/var/lib/sumd/data", "Path to use for data persistance.")
+
 	svc = (*service.Service)(nil)
 )
 
@@ -40,21 +40,25 @@ func statsReport() {
 }
 
 func main() {
-	listener, err := net.Listen("tcp", listenString)
+	flag.Parse()
+
+	listener, err := net.Listen("tcp", *listenString)
 	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
+		log.Fatalf("failed to create listener: %v", err)
+	}
+
+	svc, err = service.New(*dataPath)
+	if err != nil {
+		log.Fatalf("%v", err)
 	}
 
 	server := grpc.NewServer()
-	svc = service.New()
-
 	pb.RegisterSumServiceServer(server, svc)
-
 	reflection.Register(server)
 
 	go statsReport()
 
-	log.Printf("sumd v%s is listening on %s ...", service.Version, listenString)
+	log.Printf("sumd v%s is listening on %s ...", service.Version, *listenString)
 	if err := server.Serve(listener); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}

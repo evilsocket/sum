@@ -22,8 +22,8 @@ def gen_record(columns):
 
 start = 0
 end = 0
-num_columns = 500
-num_rows = 1000
+num_columns = 475
+num_rows = 300000
 index = {}
 sumcli = None
 
@@ -69,6 +69,7 @@ if __name__ == '__main__':
             quit()
     timer_stop()
 
+    """
     print "DEL x%d : " % len(index),
     timer_start()
     for ident, record in index.iteritems():
@@ -79,3 +80,4 @@ if __name__ == '__main__':
             print "Error while deleting %s: %s" % (ident, resp.msg)
             quit()
     timer_stop()
+    """

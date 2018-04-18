@@ -23,14 +23,18 @@ func errorResponse(format string, args ...interface{}) *pb.Response {
 	return &pb.Response{Success: false, Msg: fmt.Sprintf(format, args...)}
 }
 
-func New() *Service {
+func New(dataPath string) (*Service, error) {
+	storage, err := storage.New(dataPath)
+	if err != nil {
+		return nil, err
+	}
 	return &Service{
 		started: time.Now(),
 		pid:     uint64(os.Getpid()),
 		uid:     uint64(os.Getuid()),
 		argv:    os.Args,
-		storage: storage.New(),
-	}
+		storage: storage,
+	}, nil
 }
 
 func (s *Service) StorageSize() uint64 {
