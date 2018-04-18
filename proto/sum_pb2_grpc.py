@@ -26,12 +26,12 @@ class SumServiceStub(object):
         )
     self.Read = channel.unary_unary(
         '/sum.SumService/Read',
-        request_serializer=proto_dot_sum__pb2.Query.SerializeToString,
+        request_serializer=proto_dot_sum__pb2.ById.SerializeToString,
         response_deserializer=proto_dot_sum__pb2.Response.FromString,
         )
     self.Delete = channel.unary_unary(
         '/sum.SumService/Delete',
-        request_serializer=proto_dot_sum__pb2.Query.SerializeToString,
+        request_serializer=proto_dot_sum__pb2.ById.SerializeToString,
         response_deserializer=proto_dot_sum__pb2.Response.FromString,
         )
     self.Info = channel.unary_unary(
@@ -98,12 +98,12 @@ def add_SumServiceServicer_to_server(servicer, server):
       ),
       'Read': grpc.unary_unary_rpc_method_handler(
           servicer.Read,
-          request_deserializer=proto_dot_sum__pb2.Query.FromString,
+          request_deserializer=proto_dot_sum__pb2.ById.FromString,
           response_serializer=proto_dot_sum__pb2.Response.SerializeToString,
       ),
       'Delete': grpc.unary_unary_rpc_method_handler(
           servicer.Delete,
-          request_deserializer=proto_dot_sum__pb2.Query.FromString,
+          request_deserializer=proto_dot_sum__pb2.ById.FromString,
           response_serializer=proto_dot_sum__pb2.Response.SerializeToString,
       ),
       'Info': grpc.unary_unary_rpc_method_handler(

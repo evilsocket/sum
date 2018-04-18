@@ -67,7 +67,7 @@ func (s *Service) Update(ctx context.Context, record *pb.Record) (*pb.Response, 
 	return &pb.Response{Success: true}, nil
 }
 
-func (s *Service) Read(ctx context.Context, query *pb.Query) (*pb.Response, error) {
+func (s *Service) Read(ctx context.Context, query *pb.ById) (*pb.Response, error) {
 	record := s.records.Find(query.Id)
 	if record == nil {
 		return errorResponse("Record %s not found.", query.Id), nil
@@ -75,7 +75,7 @@ func (s *Service) Read(ctx context.Context, query *pb.Query) (*pb.Response, erro
 	return &pb.Response{Success: true, Record: record}, nil
 }
 
-func (s *Service) Delete(ctx context.Context, query *pb.Query) (*pb.Response, error) {
+func (s *Service) Delete(ctx context.Context, query *pb.ById) (*pb.Response, error) {
 	record := s.records.Delete(query.Id)
 	if record == nil {
 		return errorResponse("Record %s not found.", query.Id), nil

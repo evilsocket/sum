@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='proto/sum.proto',
   package='sum',
   syntax='proto3',
-  serialized_pb=_b('\n\x0fproto/sum.proto\x12\x03sum\")\n\nNamedValue\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t\"A\n\x06Record\x12\n\n\x02id\x18\x01 \x01(\t\x12\x0c\n\x04\x64\x61ta\x18\x02 \x03(\x02\x12\x1d\n\x04meta\x18\x03 \x03(\x0b\x32\x0f.sum.NamedValue\"0\n\x06Oracle\x12\n\n\x02id\x18\x01 \x01(\t\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\x0c\n\x04\x63ode\x18\x03 \x01(\t\"?\n\x0b\x45valRequest\x12\x11\n\toracle_id\x18\x01 \x01(\t\x12\x1d\n\x04\x61rgs\x18\x02 \x03(\x0b\x32\x0f.sum.NamedValue\"\x13\n\x05Query\x12\n\n\x02id\x18\x01 \x01(\t\"E\n\x08Response\x12\x0f\n\x07success\x18\x01 \x01(\x08\x12\x0b\n\x03msg\x18\x02 \x01(\t\x12\x1b\n\x06record\x18\x03 \x01(\x0b\x32\x0b.sum.Record\"f\n\nServerInfo\x12\x0f\n\x07version\x18\x01 \x01(\t\x12\x0e\n\x06uptime\x18\x02 \x01(\x04\x12\x0b\n\x03pid\x18\x03 \x01(\x04\x12\x0b\n\x03uid\x18\x04 \x01(\x04\x12\x0c\n\x04\x61rgv\x18\x05 \x03(\t\x12\x0f\n\x07records\x18\x06 \x01(\x04\"\x07\n\x05\x45mpty2\xcf\x01\n\nSumService\x12&\n\x06\x43reate\x12\x0b.sum.Record\x1a\r.sum.Response\"\x00\x12&\n\x06Update\x12\x0b.sum.Record\x1a\r.sum.Response\"\x00\x12#\n\x04Read\x12\n.sum.Query\x1a\r.sum.Response\"\x00\x12%\n\x06\x44\x65lete\x12\n.sum.Query\x1a\r.sum.Response\"\x00\x12%\n\x04Info\x12\n.sum.Empty\x1a\x0f.sum.ServerInfo\"\x00\x62\x06proto3')
+  serialized_pb=_b('\n\x0fproto/sum.proto\x12\x03sum\")\n\nNamedValue\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t\"A\n\x06Record\x12\n\n\x02id\x18\x01 \x01(\t\x12\x0c\n\x04\x64\x61ta\x18\x02 \x03(\x02\x12\x1d\n\x04meta\x18\x03 \x03(\x0b\x32\x0f.sum.NamedValue\"0\n\x06Oracle\x12\n\n\x02id\x18\x01 \x01(\t\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\x0c\n\x04\x63ode\x18\x03 \x01(\t\"?\n\x0b\x45valRequest\x12\x11\n\toracle_id\x18\x01 \x01(\t\x12\x1d\n\x04\x61rgs\x18\x02 \x03(\x0b\x32\x0f.sum.NamedValue\"\x12\n\x04\x42yId\x12\n\n\x02id\x18\x01 \x01(\t\"E\n\x08Response\x12\x0f\n\x07success\x18\x01 \x01(\x08\x12\x0b\n\x03msg\x18\x02 \x01(\t\x12\x1b\n\x06record\x18\x03 \x01(\x0b\x32\x0b.sum.Record\"f\n\nServerInfo\x12\x0f\n\x07version\x18\x01 \x01(\t\x12\x0e\n\x06uptime\x18\x02 \x01(\x04\x12\x0b\n\x03pid\x18\x03 \x01(\x04\x12\x0b\n\x03uid\x18\x04 \x01(\x04\x12\x0c\n\x04\x61rgv\x18\x05 \x03(\t\x12\x0f\n\x07records\x18\x06 \x01(\x04\"\x07\n\x05\x45mpty2\xcd\x01\n\nSumService\x12&\n\x06\x43reate\x12\x0b.sum.Record\x1a\r.sum.Response\"\x00\x12&\n\x06Update\x12\x0b.sum.Record\x1a\r.sum.Response\"\x00\x12\"\n\x04Read\x12\t.sum.ById\x1a\r.sum.Response\"\x00\x12$\n\x06\x44\x65lete\x12\t.sum.ById\x1a\r.sum.Response\"\x00\x12%\n\x04Info\x12\n.sum.Empty\x1a\x0f.sum.ServerInfo\"\x00\x62\x06proto3')
 )
 
 
@@ -191,15 +191,15 @@ _EVALREQUEST = _descriptor.Descriptor(
 )
 
 
-_QUERY = _descriptor.Descriptor(
-  name='Query',
-  full_name='sum.Query',
+_BYID = _descriptor.Descriptor(
+  name='ById',
+  full_name='sum.ById',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='id', full_name='sum.Query.id', index=0,
+      name='id', full_name='sum.ById.id', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -218,7 +218,7 @@ _QUERY = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=249,
-  serialized_end=268,
+  serialized_end=267,
 )
 
 
@@ -262,8 +262,8 @@ _RESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=270,
-  serialized_end=339,
+  serialized_start=269,
+  serialized_end=338,
 )
 
 
@@ -328,8 +328,8 @@ _SERVERINFO = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=341,
-  serialized_end=443,
+  serialized_start=340,
+  serialized_end=442,
 )
 
 
@@ -352,8 +352,8 @@ _EMPTY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=445,
-  serialized_end=452,
+  serialized_start=444,
+  serialized_end=451,
 )
 
 _RECORD.fields_by_name['meta'].message_type = _NAMEDVALUE
@@ -363,7 +363,7 @@ DESCRIPTOR.message_types_by_name['NamedValue'] = _NAMEDVALUE
 DESCRIPTOR.message_types_by_name['Record'] = _RECORD
 DESCRIPTOR.message_types_by_name['Oracle'] = _ORACLE
 DESCRIPTOR.message_types_by_name['EvalRequest'] = _EVALREQUEST
-DESCRIPTOR.message_types_by_name['Query'] = _QUERY
+DESCRIPTOR.message_types_by_name['ById'] = _BYID
 DESCRIPTOR.message_types_by_name['Response'] = _RESPONSE
 DESCRIPTOR.message_types_by_name['ServerInfo'] = _SERVERINFO
 DESCRIPTOR.message_types_by_name['Empty'] = _EMPTY
@@ -397,12 +397,12 @@ EvalRequest = _reflection.GeneratedProtocolMessageType('EvalRequest', (_message.
   ))
 _sym_db.RegisterMessage(EvalRequest)
 
-Query = _reflection.GeneratedProtocolMessageType('Query', (_message.Message,), dict(
-  DESCRIPTOR = _QUERY,
+ById = _reflection.GeneratedProtocolMessageType('ById', (_message.Message,), dict(
+  DESCRIPTOR = _BYID,
   __module__ = 'proto.sum_pb2'
-  # @@protoc_insertion_point(class_scope:sum.Query)
+  # @@protoc_insertion_point(class_scope:sum.ById)
   ))
-_sym_db.RegisterMessage(Query)
+_sym_db.RegisterMessage(ById)
 
 Response = _reflection.GeneratedProtocolMessageType('Response', (_message.Message,), dict(
   DESCRIPTOR = _RESPONSE,
@@ -433,8 +433,8 @@ _SUMSERVICE = _descriptor.ServiceDescriptor(
   file=DESCRIPTOR,
   index=0,
   options=None,
-  serialized_start=455,
-  serialized_end=662,
+  serialized_start=454,
+  serialized_end=659,
   methods=[
   _descriptor.MethodDescriptor(
     name='Create',
@@ -459,7 +459,7 @@ _SUMSERVICE = _descriptor.ServiceDescriptor(
     full_name='sum.SumService.Read',
     index=2,
     containing_service=None,
-    input_type=_QUERY,
+    input_type=_BYID,
     output_type=_RESPONSE,
     options=None,
   ),
@@ -468,7 +468,7 @@ _SUMSERVICE = _descriptor.ServiceDescriptor(
     full_name='sum.SumService.Delete',
     index=3,
     containing_service=None,
-    input_type=_QUERY,
+    input_type=_BYID,
     output_type=_RESPONSE,
     options=None,
   ),

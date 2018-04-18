@@ -61,7 +61,7 @@ if __name__ == '__main__':
     print "READ x%d : " % len(index),
     timer_start()
     for ident, record in index.iteritems():
-        query = sum_pb2.Query(id=ident)
+        query = sum_pb2.ById(id=ident)
         resp = sumcli.Read(query)
 
         if resp.success is not True:
@@ -72,7 +72,7 @@ if __name__ == '__main__':
     print "DEL x%d : " % len(index),
     timer_start()
     for ident, record in index.iteritems():
-        query = sum_pb2.Query(id=ident)
+        query = sum_pb2.ById(id=ident)
         resp = sumcli.Delete(query)
 
         if resp.success is not True:

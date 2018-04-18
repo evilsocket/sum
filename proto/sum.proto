@@ -6,8 +6,8 @@ service SumService {
   // vectors CRUD
   rpc Create(Record) returns (Response) {}
   rpc Update(Record) returns (Response) {}
-  rpc Read(Query) returns (Response) {}
-  rpc Delete(Query) returns (Response) {}
+  rpc Read(ById) returns (Response) {}
+  rpc Delete(ById) returns (Response) {}
   
   // TODO: oracles CRUD
 
@@ -38,7 +38,7 @@ message EvalRequest {
     repeated NamedValue args = 2;
 }
 
-message Query {
+message ById {
     string id = 1;
 }
 
