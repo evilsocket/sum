@@ -56,7 +56,7 @@ func (o *Oracles) Size() uint64 {
 }
 
 func (o *Oracles) pathFor(oracle *pb.Oracle) string {
-	return filepath.Join(r.dataPath, oracle.Id) + DatFileExt
+	return filepath.Join(o.dataPath, oracle.Id) + DatFileExt
 }
 
 func (o *Oracles) Create(oracle *pb.Oracle) error {
@@ -70,7 +70,7 @@ func (o *Oracles) Create(oracle *pb.Oracle) error {
 		return fmt.Errorf("Oracle identifier %s violates the unicity constraint.", oracle.Id)
 	}
 
-	r.index[oracle.Id] = oracle
+	o.index[oracle.Id] = oracle
 
 	return Flush(oracle, o.pathFor(oracle))
 }
@@ -79,13 +79,13 @@ func (o *Oracles) Update(oracle *pb.Oracle) error {
 	o.Lock()
 	defer o.Unlock()
 
-	stored, found := r.index[oracle.Id]
+	stored, found := o.index[oracle.Id]
 	if found == false {
 		return fmt.Errorf("Oracle %s not found.", oracle.Id)
 	}
 
 	stored.Name = oracle.Name
-	store.Code = oracle.Code
+	stored.Code = oracle.Code
 
 	// TODO: compile
 
@@ -116,5 +116,5 @@ func (o *Oracles) Delete(id string) *pb.Oracle {
 
 	os.Remove(o.pathFor(oracle))
 
-	return record
+	return oracle
 }

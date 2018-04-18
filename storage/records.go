@@ -49,7 +49,7 @@ func LoadRecords(dataPath string) (*Records, error) {
 func (r *Records) Size() uint64 {
 	r.RLock()
 	defer r.RUnlock()
-	return uint64(len(r.inndex))
+	return uint64(len(r.index))
 }
 
 func (r *Records) pathFor(record *pb.Record) string {
