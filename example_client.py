@@ -14,10 +14,10 @@ import sum_pb2_grpc
 start = 0
 end = 0
 num_columns = 475
-num_rows = 3000
+num_rows = 300000
 index = {}
 client = None
-oracle_name = 'findSimilarVectors'
+oracle_name = 'dotAll'
 oracle_id = None
 
 def gen_record(columns):
@@ -39,13 +39,15 @@ def timer_start():
     sys.stdout.flush()
     start = datetime.datetime.now()
 
-def timer_stop():
+def timer_stop(with_avg=True):
     global start, end, index, client
     end = datetime.datetime.now()
     diff = end - start
     elapsed_ms = (diff.days * 86400000) + (diff.seconds * 1000) + (diff.microseconds / 1000)
-    print "%d ms / %.2fms avg" % ( elapsed_ms, float(elapsed_ms) / float(len(index)) )
-    # print client.Info(sum_pb2.Empty())
+    if with_avg:
+        print "%d ms / %.2fms avg" % ( elapsed_ms, float(elapsed_ms) / float(len(index)) )
+    else:
+        print "%d ms" % elapsed_ms
 
 def define_oracle(filename, name):
     global client
@@ -85,11 +87,14 @@ if __name__ == '__main__':
         index[resp.msg] = record
     timer_stop()
 
-    print "READ x%d : " % len(index),
+    print "CALL %s x%d : " % (oracle_name, len(index)),
     timer_start()
     for ident, record in index.iteritems():
-        check( client.ReadRecord(sum_pb2.ById(id=ident)) )
-    timer_stop()
+        resp = client.Run(sum_pb2.Call(oracle_id=oracle_id, args=("\"%s\"" % ident, "0.1",)))
+        check(resp)
+        break
+        # print resp.json
+    timer_stop(False)
 
     print "DEL x%d : " % len(index),
     timer_start()

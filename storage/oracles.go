@@ -52,6 +52,10 @@ func LoadOracles(dataPath string) (*Oracles, error) {
 	}, nil
 }
 
+func (o *Oracles) VM() *otto.Otto {
+	return o.vm
+}
+
 func (o *Oracles) ForEach(cb func(oracle *pb.Oracle)) {
 	o.RLock()
 	defer o.RUnlock()
@@ -108,12 +112,12 @@ func (o *Oracles) Update(oracle *pb.Oracle) (err error) {
 	return Flush(oracle, o.pathFor(oracle))
 }
 
-func (o *Oracles) Find(id string) *pb.Oracle {
+func (o *Oracles) Find(id string) *CompiledOracle {
 	o.RLock()
 	defer o.RUnlock()
 
 	if compiled, found := o.index[id]; found == true {
-		return compiled.oracle
+		return compiled
 	}
 	return nil
 }

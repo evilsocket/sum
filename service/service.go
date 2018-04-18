@@ -1,12 +1,15 @@
 package service
 
 import (
+	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"time"
 
 	pb "github.com/evilsocket/sum/proto"
 	"github.com/evilsocket/sum/storage"
+	"github.com/evilsocket/sum/wrapper"
 
 	"golang.org/x/net/context"
 )
@@ -31,6 +34,10 @@ func New(dataPath string) (*Service, error) {
 		return nil, err
 	}
 
+	vm := oracles.VM()
+
+	vm.Set("records", wrapper.ForRecords(records))
+
 	return &Service{
 		started: time.Now(),
 		pid:     uint64(os.Getpid()),
@@ -50,5 +57,36 @@ func (s *Service) Info(ctx context.Context, dummy *pb.Empty) (*pb.ServerInfo, er
 		Argv:    s.argv,
 		Records: s.records.Size(),
 		Oracles: s.oracles.Size(),
+	}, nil
+}
+
+func errCallResponse(format string, args ...interface{}) *pb.CallResponse {
+	return &pb.CallResponse{Success: false, Msg: fmt.Sprintf(format, args...)}
+}
+
+func (s *Service) Run(ctx context.Context, call *pb.Call) (*pb.CallResponse, error) {
+	compiled := s.oracles.Find(call.OracleId)
+	if compiled == nil {
+		return errCallResponse("Oracle %s not found.", call.OracleId), nil
+	}
+
+	ret, err := compiled.Run(call.Args)
+	if err != nil {
+		return errCallResponse("Error while running oracle %s: %s", call.OracleId, err), nil
+	}
+
+	obj, err := ret.Export()
+	if err != nil {
+		return errCallResponse("Error while serializing return value of oracle %s: %s", call.OracleId, err), nil
+	}
+
+	data, err := json.Marshal(obj)
+	if err != nil {
+		return errCallResponse("Error while marshaling return value of oracle %s: %s", call.OracleId, err), nil
+	}
+
+	return &pb.CallResponse{
+		Success: true,
+		Json:    string(data),
 	}, nil
 }

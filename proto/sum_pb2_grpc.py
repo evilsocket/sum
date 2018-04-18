@@ -59,6 +59,11 @@ class SumServiceStub(object):
         request_serializer=proto_dot_sum__pb2.ById.SerializeToString,
         response_deserializer=proto_dot_sum__pb2.OracleResponse.FromString,
         )
+    self.Run = channel.unary_unary(
+        '/sum.SumService/Run',
+        request_serializer=proto_dot_sum__pb2.Call.SerializeToString,
+        response_deserializer=proto_dot_sum__pb2.CallResponse.FromString,
+        )
     self.Info = channel.unary_unary(
         '/sum.SumService/Info',
         request_serializer=proto_dot_sum__pb2.Empty.SerializeToString,
@@ -133,9 +138,15 @@ class SumServiceServicer(object):
     context.set_details('Method not implemented!')
     raise NotImplementedError('Method not implemented!')
 
+  def Run(self, request, context):
+    """execute a call to a oracle given its id
+    """
+    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+    context.set_details('Method not implemented!')
+    raise NotImplementedError('Method not implemented!')
+
   def Info(self, request, context):
-    """core methods
-    TODO: rpc Eval(EvalRequest) (???) {}
+    """get info about the service
     """
     context.set_code(grpc.StatusCode.UNIMPLEMENTED)
     context.set_details('Method not implemented!')
@@ -188,6 +199,11 @@ def add_SumServiceServicer_to_server(servicer, server):
           servicer.DeleteOracle,
           request_deserializer=proto_dot_sum__pb2.ById.FromString,
           response_serializer=proto_dot_sum__pb2.OracleResponse.SerializeToString,
+      ),
+      'Run': grpc.unary_unary_rpc_method_handler(
+          servicer.Run,
+          request_deserializer=proto_dot_sum__pb2.Call.FromString,
+          response_serializer=proto_dot_sum__pb2.CallResponse.SerializeToString,
       ),
       'Info': grpc.unary_unary_rpc_method_handler(
           servicer.Info,

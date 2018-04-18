@@ -30,11 +30,11 @@ func (s *Service) UpdateOracle(ctx context.Context, oracle *pb.Oracle) (*pb.Orac
 }
 
 func (s *Service) ReadOracle(ctx context.Context, query *pb.ById) (*pb.OracleResponse, error) {
-	oracle := s.oracles.Find(query.Id)
-	if oracle == nil {
+	compiled := s.oracles.Find(query.Id)
+	if compiled == nil {
 		return errOracleResponse("Oracle %s not found.", query.Id), nil
 	}
-	return &pb.OracleResponse{Success: true, Oracles: []*pb.Oracle{oracle}}, nil
+	return &pb.OracleResponse{Success: true, Oracles: []*pb.Oracle{compiled.Oracle()}}, nil
 }
 
 func (s *Service) FindOracle(ctx context.Context, query *pb.ByName) (*pb.OracleResponse, error) {

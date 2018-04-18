@@ -1,22 +1,22 @@
-function findSimilarVectors(id, threshold) {
-    var results = [];
-    var v = storage.Find(id);
+// compute the dot product of the vector 'id' with
+// every other vectors in the storage
+function dotAll(id) {
+    var accu = 0.0;
+    var v = records.Find(id);
     
-    if( v == null ) {
-        return status.NotFound();
-    }
-        
-    for( var cmp in storage.All() ) {
-        if( v.Is(cmp) ){
-            continue;
+    if( v.IsNull() == false ) {
+        var all = records.All();
+        var count = all.length;
+        for( var i = 0; i < count; i++ ) {
+            var cmp = all[i];
+            if( v.Is(cmp) ){
+                continue;
+            }
+            accu += v.Dot(cmp)
         }
-        
-        var dist_a = v.Jaccard( cmp, 0, 300);
-        var dist_b = v.Cosine( cmp, 301, 500);
-        if( ((dist_a + dist_b) / 2.0) <= threshold ) {
-            results.append(cmp);
-        }
+    } else {
+        console.log("Vector " + id + " not found.");
     }
 
-    return results;
+    return accu;
 }

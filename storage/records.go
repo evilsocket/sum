@@ -46,6 +46,14 @@ func LoadRecords(dataPath string) (*Records, error) {
 	}, nil
 }
 
+func (r *Records) ForEach(cb func(record *pb.Record)) {
+	r.RLock()
+	defer r.RUnlock()
+	for _, record := range r.index {
+		cb(record)
+	}
+}
+
 func (r *Records) Size() uint64 {
 	r.RLock()
 	defer r.RUnlock()
