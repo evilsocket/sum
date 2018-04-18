@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='proto/sum.proto',
   package='sum',
   syntax='proto3',
-  serialized_pb=_b('\n\x0fproto/sum.proto\x12\x03sum\"\x07\n\x05\x45mpty\"#\n\x04Meta\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t\";\n\x06Record\x12\n\n\x02id\x18\x01 \x01(\t\x12\x0c\n\x04\x64\x61ta\x18\x02 \x03(\x02\x12\x17\n\x04meta\x18\x03 \x03(\x0b\x32\t.sum.Meta\"\x13\n\x05Query\x12\n\n\x02id\x18\x01 \x01(\t\"E\n\x08Response\x12\x0f\n\x07success\x18\x01 \x01(\x08\x12\x0b\n\x03msg\x18\x02 \x01(\t\x12\x1b\n\x06record\x18\x03 \x01(\x0b\x32\x0b.sum.Record\"f\n\nServerInfo\x12\x0f\n\x07version\x18\x01 \x01(\t\x12\x0e\n\x06uptime\x18\x02 \x01(\x04\x12\x0b\n\x03pid\x18\x03 \x01(\x04\x12\x0b\n\x03uid\x18\x04 \x01(\x04\x12\x0c\n\x04\x61rgv\x18\x05 \x03(\t\x12\x0f\n\x07records\x18\x06 \x01(\x04\x32\xd2\x01\n\rVectorService\x12%\n\x04Info\x12\n.sum.Empty\x1a\x0f.sum.ServerInfo\"\x00\x12&\n\x06\x43reate\x12\x0b.sum.Record\x1a\r.sum.Response\"\x00\x12&\n\x06Update\x12\x0b.sum.Record\x1a\r.sum.Response\"\x00\x12#\n\x04Read\x12\n.sum.Query\x1a\r.sum.Response\"\x00\x12%\n\x06\x44\x65lete\x12\n.sum.Query\x1a\r.sum.Response\"\x00\x62\x06proto3')
+  serialized_pb=_b('\n\x0fproto/sum.proto\x12\x03sum\"\x07\n\x05\x45mpty\"#\n\x04Meta\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t\";\n\x06Record\x12\n\n\x02id\x18\x01 \x01(\t\x12\x0c\n\x04\x64\x61ta\x18\x02 \x03(\x02\x12\x17\n\x04meta\x18\x03 \x03(\x0b\x32\t.sum.Meta\"\x13\n\x05Query\x12\n\n\x02id\x18\x01 \x01(\t\"E\n\x08Response\x12\x0f\n\x07success\x18\x01 \x01(\x08\x12\x0b\n\x03msg\x18\x02 \x01(\t\x12\x1b\n\x06record\x18\x03 \x01(\x0b\x32\x0b.sum.Record\"f\n\nServerInfo\x12\x0f\n\x07version\x18\x01 \x01(\t\x12\x0e\n\x06uptime\x18\x02 \x01(\x04\x12\x0b\n\x03pid\x18\x03 \x01(\x04\x12\x0b\n\x03uid\x18\x04 \x01(\x04\x12\x0c\n\x04\x61rgv\x18\x05 \x03(\t\x12\x0f\n\x07records\x18\x06 \x01(\x04\x32\xcf\x01\n\nSumService\x12%\n\x04Info\x12\n.sum.Empty\x1a\x0f.sum.ServerInfo\"\x00\x12&\n\x06\x43reate\x12\x0b.sum.Record\x1a\r.sum.Response\"\x00\x12&\n\x06Update\x12\x0b.sum.Record\x1a\r.sum.Response\"\x00\x12#\n\x04Read\x12\n.sum.Query\x1a\r.sum.Response\"\x00\x12%\n\x06\x44\x65lete\x12\n.sum.Query\x1a\r.sum.Response\"\x00\x62\x06proto3')
 )
 
 
@@ -327,18 +327,18 @@ _sym_db.RegisterMessage(ServerInfo)
 
 
 
-_VECTORSERVICE = _descriptor.ServiceDescriptor(
-  name='VectorService',
-  full_name='sum.VectorService',
+_SUMSERVICE = _descriptor.ServiceDescriptor(
+  name='SumService',
+  full_name='sum.SumService',
   file=DESCRIPTOR,
   index=0,
   options=None,
   serialized_start=328,
-  serialized_end=538,
+  serialized_end=535,
   methods=[
   _descriptor.MethodDescriptor(
     name='Info',
-    full_name='sum.VectorService.Info',
+    full_name='sum.SumService.Info',
     index=0,
     containing_service=None,
     input_type=_EMPTY,
@@ -347,7 +347,7 @@ _VECTORSERVICE = _descriptor.ServiceDescriptor(
   ),
   _descriptor.MethodDescriptor(
     name='Create',
-    full_name='sum.VectorService.Create',
+    full_name='sum.SumService.Create',
     index=1,
     containing_service=None,
     input_type=_RECORD,
@@ -356,7 +356,7 @@ _VECTORSERVICE = _descriptor.ServiceDescriptor(
   ),
   _descriptor.MethodDescriptor(
     name='Update',
-    full_name='sum.VectorService.Update',
+    full_name='sum.SumService.Update',
     index=2,
     containing_service=None,
     input_type=_RECORD,
@@ -365,7 +365,7 @@ _VECTORSERVICE = _descriptor.ServiceDescriptor(
   ),
   _descriptor.MethodDescriptor(
     name='Read',
-    full_name='sum.VectorService.Read',
+    full_name='sum.SumService.Read',
     index=3,
     containing_service=None,
     input_type=_QUERY,
@@ -374,7 +374,7 @@ _VECTORSERVICE = _descriptor.ServiceDescriptor(
   ),
   _descriptor.MethodDescriptor(
     name='Delete',
-    full_name='sum.VectorService.Delete',
+    full_name='sum.SumService.Delete',
     index=4,
     containing_service=None,
     input_type=_QUERY,
@@ -382,8 +382,8 @@ _VECTORSERVICE = _descriptor.ServiceDescriptor(
     options=None,
   ),
 ])
-_sym_db.RegisterServiceDescriptor(_VECTORSERVICE)
+_sym_db.RegisterServiceDescriptor(_SUMSERVICE)
 
-DESCRIPTOR.services_by_name['VectorService'] = _VECTORSERVICE
+DESCRIPTOR.services_by_name['SumService'] = _SUMSERVICE
 
 # @@protoc_insertion_point(module_scope)

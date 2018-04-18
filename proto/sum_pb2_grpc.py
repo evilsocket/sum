@@ -4,7 +4,7 @@ import grpc
 from proto import sum_pb2 as proto_dot_sum__pb2
 
 
-class VectorServiceStub(object):
+class SumServiceStub(object):
   # missing associated documentation comment in .proto file
   pass
 
@@ -15,33 +15,33 @@ class VectorServiceStub(object):
       channel: A grpc.Channel.
     """
     self.Info = channel.unary_unary(
-        '/sum.VectorService/Info',
+        '/sum.SumService/Info',
         request_serializer=proto_dot_sum__pb2.Empty.SerializeToString,
         response_deserializer=proto_dot_sum__pb2.ServerInfo.FromString,
         )
     self.Create = channel.unary_unary(
-        '/sum.VectorService/Create',
+        '/sum.SumService/Create',
         request_serializer=proto_dot_sum__pb2.Record.SerializeToString,
         response_deserializer=proto_dot_sum__pb2.Response.FromString,
         )
     self.Update = channel.unary_unary(
-        '/sum.VectorService/Update',
+        '/sum.SumService/Update',
         request_serializer=proto_dot_sum__pb2.Record.SerializeToString,
         response_deserializer=proto_dot_sum__pb2.Response.FromString,
         )
     self.Read = channel.unary_unary(
-        '/sum.VectorService/Read',
+        '/sum.SumService/Read',
         request_serializer=proto_dot_sum__pb2.Query.SerializeToString,
         response_deserializer=proto_dot_sum__pb2.Response.FromString,
         )
     self.Delete = channel.unary_unary(
-        '/sum.VectorService/Delete',
+        '/sum.SumService/Delete',
         request_serializer=proto_dot_sum__pb2.Query.SerializeToString,
         response_deserializer=proto_dot_sum__pb2.Response.FromString,
         )
 
 
-class VectorServiceServicer(object):
+class SumServiceServicer(object):
   # missing associated documentation comment in .proto file
   pass
 
@@ -81,7 +81,7 @@ class VectorServiceServicer(object):
     raise NotImplementedError('Method not implemented!')
 
 
-def add_VectorServiceServicer_to_server(servicer, server):
+def add_SumServiceServicer_to_server(servicer, server):
   rpc_method_handlers = {
       'Info': grpc.unary_unary_rpc_method_handler(
           servicer.Info,
@@ -110,5 +110,5 @@ def add_VectorServiceServicer_to_server(servicer, server):
       ),
   }
   generic_handler = grpc.method_handlers_generic_handler(
-      'sum.VectorService', rpc_method_handlers)
+      'sum.SumService', rpc_method_handlers)
   server.add_generic_rpc_handlers((generic_handler,))

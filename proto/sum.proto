@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package sum;
 
-service VectorService {
+service SumService {
   rpc Info(Empty) returns (ServerInfo) {}
 
   rpc Create(Record) returns (Response) {}

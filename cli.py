@@ -42,7 +42,7 @@ def timer_stop():
 
 if __name__ == '__main__':
     channel = grpc.insecure_channel('127.0.0.1:50051')
-    sumcli = sum_pb2_grpc.VectorServiceStub(channel)
+    sumcli = sum_pb2_grpc.SumServiceStub(channel)
 
     print "CREATE (%dx%d) : " % ( num_rows, num_columns ),
     timer_start()
