@@ -34,6 +34,31 @@ class SumServiceStub(object):
         request_serializer=proto_dot_sum__pb2.ById.SerializeToString,
         response_deserializer=proto_dot_sum__pb2.RecordResponse.FromString,
         )
+    self.CreateOracle = channel.unary_unary(
+        '/sum.SumService/CreateOracle',
+        request_serializer=proto_dot_sum__pb2.Oracle.SerializeToString,
+        response_deserializer=proto_dot_sum__pb2.OracleResponse.FromString,
+        )
+    self.UpdateOracle = channel.unary_unary(
+        '/sum.SumService/UpdateOracle',
+        request_serializer=proto_dot_sum__pb2.Oracle.SerializeToString,
+        response_deserializer=proto_dot_sum__pb2.OracleResponse.FromString,
+        )
+    self.ReadOracle = channel.unary_unary(
+        '/sum.SumService/ReadOracle',
+        request_serializer=proto_dot_sum__pb2.ById.SerializeToString,
+        response_deserializer=proto_dot_sum__pb2.OracleResponse.FromString,
+        )
+    self.FindOracle = channel.unary_unary(
+        '/sum.SumService/FindOracle',
+        request_serializer=proto_dot_sum__pb2.ByName.SerializeToString,
+        response_deserializer=proto_dot_sum__pb2.OracleResponse.FromString,
+        )
+    self.DeleteOracle = channel.unary_unary(
+        '/sum.SumService/DeleteOracle',
+        request_serializer=proto_dot_sum__pb2.ById.SerializeToString,
+        response_deserializer=proto_dot_sum__pb2.OracleResponse.FromString,
+        )
     self.Info = channel.unary_unary(
         '/sum.SumService/Info',
         request_serializer=proto_dot_sum__pb2.Empty.SerializeToString,
@@ -73,11 +98,43 @@ class SumServiceServicer(object):
     context.set_details('Method not implemented!')
     raise NotImplementedError('Method not implemented!')
 
-  def Info(self, request, context):
+  def CreateOracle(self, request, context):
     """oracles CRUD
-    rpc CreateOrace(Oracle) returns
+    """
+    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+    context.set_details('Method not implemented!')
+    raise NotImplementedError('Method not implemented!')
 
-    core methods
+  def UpdateOracle(self, request, context):
+    # missing associated documentation comment in .proto file
+    pass
+    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+    context.set_details('Method not implemented!')
+    raise NotImplementedError('Method not implemented!')
+
+  def ReadOracle(self, request, context):
+    # missing associated documentation comment in .proto file
+    pass
+    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+    context.set_details('Method not implemented!')
+    raise NotImplementedError('Method not implemented!')
+
+  def FindOracle(self, request, context):
+    # missing associated documentation comment in .proto file
+    pass
+    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+    context.set_details('Method not implemented!')
+    raise NotImplementedError('Method not implemented!')
+
+  def DeleteOracle(self, request, context):
+    # missing associated documentation comment in .proto file
+    pass
+    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+    context.set_details('Method not implemented!')
+    raise NotImplementedError('Method not implemented!')
+
+  def Info(self, request, context):
+    """core methods
     TODO: rpc Eval(EvalRequest) (???) {}
     """
     context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -106,6 +163,31 @@ def add_SumServiceServicer_to_server(servicer, server):
           servicer.DeleteRecord,
           request_deserializer=proto_dot_sum__pb2.ById.FromString,
           response_serializer=proto_dot_sum__pb2.RecordResponse.SerializeToString,
+      ),
+      'CreateOracle': grpc.unary_unary_rpc_method_handler(
+          servicer.CreateOracle,
+          request_deserializer=proto_dot_sum__pb2.Oracle.FromString,
+          response_serializer=proto_dot_sum__pb2.OracleResponse.SerializeToString,
+      ),
+      'UpdateOracle': grpc.unary_unary_rpc_method_handler(
+          servicer.UpdateOracle,
+          request_deserializer=proto_dot_sum__pb2.Oracle.FromString,
+          response_serializer=proto_dot_sum__pb2.OracleResponse.SerializeToString,
+      ),
+      'ReadOracle': grpc.unary_unary_rpc_method_handler(
+          servicer.ReadOracle,
+          request_deserializer=proto_dot_sum__pb2.ById.FromString,
+          response_serializer=proto_dot_sum__pb2.OracleResponse.SerializeToString,
+      ),
+      'FindOracle': grpc.unary_unary_rpc_method_handler(
+          servicer.FindOracle,
+          request_deserializer=proto_dot_sum__pb2.ByName.FromString,
+          response_serializer=proto_dot_sum__pb2.OracleResponse.SerializeToString,
+      ),
+      'DeleteOracle': grpc.unary_unary_rpc_method_handler(
+          servicer.DeleteOracle,
+          request_deserializer=proto_dot_sum__pb2.ById.FromString,
+          response_serializer=proto_dot_sum__pb2.OracleResponse.SerializeToString,
       ),
       'Info': grpc.unary_unary_rpc_method_handler(
           servicer.Info,

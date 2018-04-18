@@ -10,7 +10,11 @@ service SumService {
   rpc DeleteRecord(ById) returns (RecordResponse) {}
   
   // oracles CRUD
-  // rpc CreateOrace(Oracle) returns
+  rpc CreateOracle(Oracle) returns (OracleResponse) {}
+  rpc UpdateOracle(Oracle) returns (OracleResponse) {}
+  rpc ReadOracle(ById) returns (OracleResponse) {}
+  rpc FindOracle(ByName) returns (OracleResponse) {}
+  rpc DeleteOracle(ById) returns (OracleResponse) {}
 
   // core methods
   // TODO: rpc Eval(EvalRequest) (???) {}
@@ -43,7 +47,7 @@ message Oracle {
 message OracleResponse {
     bool success = 1;
     string msg = 2;
-    Oracle oracle = 3;
+    repeated Oracle oracles = 3;
 }
 
 message EvalRequest {
@@ -53,6 +57,10 @@ message EvalRequest {
 
 message ById {
     string id = 1;
+}
+
+message ByName {
+    string name = 1;
 }
 
 message ServerInfo {

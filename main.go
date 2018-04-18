@@ -30,8 +30,9 @@ func statsReport() {
 		runtime.GC()
 		runtime.ReadMemStats(&m)
 
-		log.Printf("records:%d mem:%s numgc:%d",
+		log.Printf("records:%d oracles:%d mem:%s numgc:%d",
 			svc.NumRecords(),
+			svc.NumOracles(),
 			humanize.Bytes(m.Sys),
 			m.NumGC)
 	}

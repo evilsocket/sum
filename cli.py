@@ -26,6 +26,7 @@ num_columns = 475
 num_rows = 3000
 index = {}
 sumcli = None
+oracle_name = 'findSimilarVectors'
 
 def timer_start():
     global start
@@ -40,9 +41,34 @@ def timer_stop():
     print "%d ms / %.2fms avg" % ( elapsed_ms, float(elapsed_ms) / float(len(index)) )
     # print sumcli.Info(sum_pb2.Empty())
 
+def define_oracle(filename, name):
+    global sumcli
+
+    resp = sumcli.FindOracle(sum_pb2.ByName(name=name))
+    if resp.success == False:
+        print resp.msg
+        quit()
+
+    if len(resp.oracles) == 0:
+        print "Defining oracle %s ..." % name
+
+        with open( filename, 'r') as fp:
+            oracle = sum_pb2.Oracle(name=name, code=fp.read())
+            resp = sumcli.CreateOracle(oracle)
+            if resp.success == False:
+                print resp.msg
+                quit()
+
+    else:
+        o = resp.oracles[0]
+        print "Oracle %s already defined as %s" % ( o.name, o.id )
+
 if __name__ == '__main__':
     channel = grpc.insecure_channel('127.0.0.1:50051')
     sumcli = sum_pb2_grpc.SumServiceStub(channel)
+
+    define_oracle('oracle.js', oracle_name)
+    print
 
     print "CREATE (%dx%d) : " % ( num_rows, num_columns ),
     timer_start()
