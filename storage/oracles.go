@@ -29,8 +29,6 @@ func LoadOracles(dataPath string) (*Oracles, error) {
 	nfiles := len(files)
 	vm := otto.New()
 
-	// TODO: vm.Set("builtin", ... implementation ... )
-
 	if nfiles > 0 {
 		log.Printf("Loading %d data files from %s ...", len(files), dataPath)
 		for fileUUID, fileName := range files {
