@@ -13,7 +13,7 @@ import (
 type Records struct {
 	sync.RWMutex
 	dataPath string
-	records  map[string]*pb.Record
+	index    map[string]*pb.Record
 }
 
 func LoadRecords(dataPath string) (*Records, error) {
@@ -42,14 +42,14 @@ func LoadRecords(dataPath string) (*Records, error) {
 
 	return &Records{
 		dataPath: dataPath,
-		records:  records,
+		index:    records,
 	}, nil
 }
 
 func (r *Records) Size() uint64 {
 	r.RLock()
 	defer r.RUnlock()
-	return uint64(len(r.records))
+	return uint64(len(r.inndex))
 }
 
 func (r *Records) pathFor(record *pb.Record) string {
@@ -63,11 +63,11 @@ func (r *Records) Create(record *pb.Record) error {
 	defer r.Unlock()
 
 	// make sure the id is unique
-	if _, found := r.records[record.Id]; found == true {
+	if _, found := r.index[record.Id]; found == true {
 		return fmt.Errorf("Record identifier %s violates the unicity constraint.", record.Id)
 	}
 
-	r.records[record.Id] = record
+	r.index[record.Id] = record
 
 	return Flush(record, r.pathFor(record))
 }
@@ -76,7 +76,7 @@ func (r *Records) Update(record *pb.Record) error {
 	r.Lock()
 	defer r.Unlock()
 
-	stored, found := r.records[record.Id]
+	stored, found := r.index[record.Id]
 	if found == false {
 		return fmt.Errorf("Record %s not found.", record.Id)
 	}
@@ -96,7 +96,7 @@ func (r *Records) Find(id string) *pb.Record {
 	r.RLock()
 	defer r.RUnlock()
 
-	record, found := r.records[id]
+	record, found := r.index[id]
 	if found == true {
 		return record
 	}
@@ -107,12 +107,12 @@ func (r *Records) Delete(id string) *pb.Record {
 	r.Lock()
 	defer r.Unlock()
 
-	record, found := r.records[id]
+	record, found := r.index[id]
 	if found == false {
 		return nil
 	}
 
-	delete(r.records, id)
+	delete(r.index, id)
 
 	os.Remove(r.pathFor(record))
 
