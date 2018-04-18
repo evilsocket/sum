@@ -17,7 +17,7 @@ import (
 
 var (
 	listenString = flag.String("listen", ":50051", "String to create the TCP listener.")
-	dataPath     = flag.String("datapath", "/var/lib/sumd/data", "Path to use for data persistance.")
+	dataPath     = flag.String("datapath", "/var/lib/sumd", "Sum data folder.")
 
 	svc = (*service.Service)(nil)
 )
@@ -30,10 +30,8 @@ func statsReport() {
 		runtime.GC()
 		runtime.ReadMemStats(&m)
 
-		log.Printf("records:%d alloc:%s talloc:%s sys:%s numgc:%d",
-			svc.StorageSize(),
-			humanize.Bytes(m.Alloc),
-			humanize.Bytes(m.TotalAlloc),
+		log.Printf("records:%d mem:%s numgc:%d",
+			svc.NumRecords(),
 			humanize.Bytes(m.Sys),
 			m.NumGC)
 	}

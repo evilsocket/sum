@@ -3,6 +3,7 @@ package service
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 
 	pb "github.com/evilsocket/sum/proto"
@@ -16,7 +17,7 @@ type Service struct {
 	pid     uint64
 	uid     uint64
 	argv    []string
-	storage *storage.Storage
+	records *storage.Records
 }
 
 func errorResponse(format string, args ...interface{}) *pb.Response {
@@ -24,7 +25,7 @@ func errorResponse(format string, args ...interface{}) *pb.Response {
 }
 
 func New(dataPath string) (*Service, error) {
-	storage, err := storage.New(dataPath)
+	records, err := storage.LoadRecords(filepath.Join(dataPath, "data"))
 	if err != nil {
 		return nil, err
 	}
@@ -33,12 +34,12 @@ func New(dataPath string) (*Service, error) {
 		pid:     uint64(os.Getpid()),
 		uid:     uint64(os.Getuid()),
 		argv:    os.Args,
-		storage: storage,
+		records: records,
 	}, nil
 }
 
-func (s *Service) StorageSize() uint64 {
-	return s.storage.Size()
+func (s *Service) NumRecords() uint64 {
+	return s.records.Size()
 }
 
 func (s *Service) Info(ctx context.Context, dummy *pb.Empty) (*pb.ServerInfo, error) {
@@ -48,26 +49,26 @@ func (s *Service) Info(ctx context.Context, dummy *pb.Empty) (*pb.ServerInfo, er
 		Pid:     s.pid,
 		Uid:     s.uid,
 		Argv:    s.argv,
-		Records: s.storage.Size(),
+		Records: s.records.Size(),
 	}, nil
 }
 
 func (s *Service) Create(ctx context.Context, record *pb.Record) (*pb.Response, error) {
-	if err := s.storage.Create(record); err != nil {
+	if err := s.records.Create(record); err != nil {
 		return errorResponse("%s", err), nil
 	}
 	return &pb.Response{Success: true, Msg: record.Id}, nil
 }
 
 func (s *Service) Update(ctx context.Context, record *pb.Record) (*pb.Response, error) {
-	if err := s.storage.Update(record); err != nil {
+	if err := s.records.Update(record); err != nil {
 		return errorResponse("%s", err), nil
 	}
 	return &pb.Response{Success: true}, nil
 }
 
 func (s *Service) Read(ctx context.Context, query *pb.Query) (*pb.Response, error) {
-	record := s.storage.Find(query.Id)
+	record := s.records.Find(query.Id)
 	if record == nil {
 		return errorResponse("Record %s not found.", query.Id), nil
 	}
@@ -75,7 +76,7 @@ func (s *Service) Read(ctx context.Context, query *pb.Query) (*pb.Response, erro
 }
 
 func (s *Service) Delete(ctx context.Context, query *pb.Query) (*pb.Response, error) {
-	record := s.storage.Delete(query.Id)
+	record := s.records.Delete(query.Id)
 	if record == nil {
 		return errorResponse("Record %s not found.", query.Id), nil
 	}

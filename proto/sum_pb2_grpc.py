@@ -14,11 +14,6 @@ class SumServiceStub(object):
     Args:
       channel: A grpc.Channel.
     """
-    self.Info = channel.unary_unary(
-        '/sum.SumService/Info',
-        request_serializer=proto_dot_sum__pb2.Empty.SerializeToString,
-        response_deserializer=proto_dot_sum__pb2.ServerInfo.FromString,
-        )
     self.Create = channel.unary_unary(
         '/sum.SumService/Create',
         request_serializer=proto_dot_sum__pb2.Record.SerializeToString,
@@ -39,22 +34,20 @@ class SumServiceStub(object):
         request_serializer=proto_dot_sum__pb2.Query.SerializeToString,
         response_deserializer=proto_dot_sum__pb2.Response.FromString,
         )
+    self.Info = channel.unary_unary(
+        '/sum.SumService/Info',
+        request_serializer=proto_dot_sum__pb2.Empty.SerializeToString,
+        response_deserializer=proto_dot_sum__pb2.ServerInfo.FromString,
+        )
 
 
 class SumServiceServicer(object):
   # missing associated documentation comment in .proto file
   pass
 
-  def Info(self, request, context):
-    # missing associated documentation comment in .proto file
-    pass
-    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-    context.set_details('Method not implemented!')
-    raise NotImplementedError('Method not implemented!')
-
   def Create(self, request, context):
-    # missing associated documentation comment in .proto file
-    pass
+    """vectors CRUD
+    """
     context.set_code(grpc.StatusCode.UNIMPLEMENTED)
     context.set_details('Method not implemented!')
     raise NotImplementedError('Method not implemented!')
@@ -80,14 +73,19 @@ class SumServiceServicer(object):
     context.set_details('Method not implemented!')
     raise NotImplementedError('Method not implemented!')
 
+  def Info(self, request, context):
+    """TODO: oracles CRUD
+
+    core methods
+    TODO: rpc Eval(EvalRequest) (???) {}
+    """
+    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+    context.set_details('Method not implemented!')
+    raise NotImplementedError('Method not implemented!')
+
 
 def add_SumServiceServicer_to_server(servicer, server):
   rpc_method_handlers = {
-      'Info': grpc.unary_unary_rpc_method_handler(
-          servicer.Info,
-          request_deserializer=proto_dot_sum__pb2.Empty.FromString,
-          response_serializer=proto_dot_sum__pb2.ServerInfo.SerializeToString,
-      ),
       'Create': grpc.unary_unary_rpc_method_handler(
           servicer.Create,
           request_deserializer=proto_dot_sum__pb2.Record.FromString,
@@ -107,6 +105,11 @@ def add_SumServiceServicer_to_server(servicer, server):
           servicer.Delete,
           request_deserializer=proto_dot_sum__pb2.Query.FromString,
           response_serializer=proto_dot_sum__pb2.Response.SerializeToString,
+      ),
+      'Info': grpc.unary_unary_rpc_method_handler(
+          servicer.Info,
+          request_deserializer=proto_dot_sum__pb2.Empty.FromString,
+          response_serializer=proto_dot_sum__pb2.ServerInfo.SerializeToString,
       ),
   }
   generic_handler = grpc.method_handlers_generic_handler(

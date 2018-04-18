@@ -14,7 +14,7 @@ import sum_pb2_grpc
 def gen_record(columns):
     return sum_pb2.Record( \
         data=[random.uniform(0,100) for i in range(0, columns)],
-        meta=[sum_pb2.Meta( \
+        meta=[sum_pb2.NamedValue( \
             name="example_metadata",
             value="Random number is %f" % random.random()
         )]
@@ -23,7 +23,7 @@ def gen_record(columns):
 start = 0
 end = 0
 num_columns = 475
-num_rows = 300000
+num_rows = 3000
 index = {}
 sumcli = None
 
@@ -69,7 +69,6 @@ if __name__ == '__main__':
             quit()
     timer_stop()
 
-    """
     print "DEL x%d : " % len(index),
     timer_start()
     for ident, record in index.iteritems():
@@ -80,4 +79,3 @@ if __name__ == '__main__':
             print "Error while deleting %s: %s" % (ident, resp.msg)
             quit()
     timer_stop()
-    """

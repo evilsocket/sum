@@ -3,30 +3,42 @@ syntax = "proto3";
 package sum;
 
 service SumService {
-  rpc Info(Empty) returns (ServerInfo) {}
-
+  // vectors CRUD
   rpc Create(Record) returns (Response) {}
   rpc Update(Record) returns (Response) {}
   rpc Read(Query) returns (Response) {}
   rpc Delete(Query) returns (Response) {}
+  
+  // TODO: oracles CRUD
+
+  // core methods
+  // TODO: rpc Eval(EvalRequest) (???) {}
+  rpc Info(Empty) returns (ServerInfo) {}
 }
 
-message Empty {}
-
-message Meta {
+message NamedValue {
     string name = 1;
     string value =  2;
 }
 
 message Record {
-    string id  = 1;
+    string id = 1;
     repeated float data = 2;
-    repeated Meta meta = 3;
+    repeated NamedValue meta = 3;
 }
 
-// TODO: extend this to support other types of query
+message Oracle {
+    string id = 1;
+    string name = 2;
+    string code = 3;
+}
+
+message EvalRequest {
+    string oracle_id = 1;
+    repeated NamedValue args = 2;
+}
+
 message Query {
-    // vector id to query for
     string id = 1;
 }
 
@@ -44,3 +56,5 @@ message ServerInfo {
     repeated string argv = 5;
     uint64 records = 6;
 }
+
+message Empty {}
