@@ -17,6 +17,7 @@ type Service struct {
 	uid     uint64
 	argv    []string
 	records *storage.Records
+	oracles *storage.Oracles
 }
 
 func New(dataPath string) (*Service, error) {
@@ -24,12 +25,19 @@ func New(dataPath string) (*Service, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	oracles, err := storage.LoadOracles(filepath.Join(dataPath, "oracles"))
+	if err != nil {
+		return nil, err
+	}
+
 	return &Service{
 		started: time.Now(),
 		pid:     uint64(os.Getpid()),
 		uid:     uint64(os.Getuid()),
 		argv:    os.Args,
 		records: records,
+		oracles: oracles,
 	}, nil
 }
 
@@ -41,5 +49,6 @@ func (s *Service) Info(ctx context.Context, dummy *pb.Empty) (*pb.ServerInfo, er
 		Uid:     s.uid,
 		Argv:    s.argv,
 		Records: s.records.Size(),
+		Oracles: s.oracles.Size(),
 	}, nil
 }

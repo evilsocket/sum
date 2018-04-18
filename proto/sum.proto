@@ -62,6 +62,7 @@ message ServerInfo {
     uint64 uid = 4;
     repeated string argv = 5;
     uint64 records = 6;
+    uint64 oracles = 7;
 }
 
 message Empty {}
