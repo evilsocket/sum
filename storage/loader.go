@@ -16,10 +16,6 @@ const (
 	DatFileExt = ".dat"
 )
 
-func NewID() string {
-	return uuid.Must(uuid.NewV4()).String()
-}
-
 func ListPath(dataPath string) (string, map[string]string, error) {
 	if dataPath, err := filepath.Abs(dataPath); err != nil {
 		return "", nil, err
@@ -60,16 +56,6 @@ func Load(fileName string, m proto.Message) error {
 	err = proto.Unmarshal(data, m)
 	if err != nil {
 		return fmt.Errorf("Error while deserializing %s: %s", fileName, err)
-	}
-	return nil
-}
-
-func Flush(m proto.Message, fileName string) error {
-	data, err := proto.Marshal(m)
-	if err != nil {
-		return fmt.Errorf("Error while serializing message to %s: %s", fileName, err)
-	} else if err = ioutil.WriteFile(fileName, data, 0755); err != nil {
-		return fmt.Errorf("Error while saving message to %s: %s", fileName, err)
 	}
 	return nil
 }
