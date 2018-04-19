@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
 	pb "github.com/evilsocket/sum/proto"
@@ -15,6 +16,7 @@ import (
 	"github.com/evilsocket/sum/wrapper"
 
 	// "github.com/dustin/go-humanize"
+	"github.com/robertkrimen/otto"
 	"golang.org/x/net/context"
 )
 
@@ -30,6 +32,8 @@ type Service struct {
 	argv    []string
 	records *storage.Records
 	oracles *storage.Oracles
+	vm      *otto.Otto
+	vmLock  *sync.Mutex
 	ctx     *wrapper.Context
 }
 
@@ -39,16 +43,16 @@ func New(dataPath string) (*Service, error) {
 		return nil, err
 	}
 
-	oracles, err := storage.LoadOracles(filepath.Join(dataPath, "oracles"))
-	if err != nil {
-		return nil, err
-	}
-
-	vm := oracles.VM()
+	vm := otto.New()
 	ctx := wrapper.NewContext()
 
 	vm.Set("records", wrapper.ForRecords(records))
 	vm.Set("ctx", ctx)
+
+	oracles, err := storage.LoadOracles(vm, filepath.Join(dataPath, "oracles"))
+	if err != nil {
+		return nil, err
+	}
 
 	return &Service{
 		started: time.Now(),
@@ -58,6 +62,8 @@ func New(dataPath string) (*Service, error) {
 		records: records,
 		oracles: oracles,
 		ctx:     ctx,
+		vm:      vm,
+		vmLock:  &sync.Mutex{},
 	}, nil
 }
 
@@ -83,7 +89,9 @@ func (s *Service) Run(ctx context.Context, call *pb.Call) (*pb.CallResponse, err
 		return errCallResponse("Oracle %s not found.", call.OracleId), nil
 	}
 
-	// TODO: this should lock the vm and context .. ?
+	s.vmLock.Lock()
+	defer s.vmLock.Unlock()
+
 	s.ctx.Reset()
 
 	var j []byte

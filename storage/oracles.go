@@ -19,7 +19,7 @@ type Oracles struct {
 	index    map[string]*CompiledOracle
 }
 
-func LoadOracles(dataPath string) (*Oracles, error) {
+func LoadOracles(vm *otto.Otto, dataPath string) (*Oracles, error) {
 	dataPath, files, err := ListPath(dataPath)
 	if err != nil {
 		return nil, err
@@ -27,7 +27,6 @@ func LoadOracles(dataPath string) (*Oracles, error) {
 
 	oracles := make(map[string]*CompiledOracle)
 	nfiles := len(files)
-	vm := otto.New()
 
 	if nfiles > 0 {
 		log.Printf("Loading %d data files from %s ...", len(files), dataPath)
@@ -50,10 +49,6 @@ func LoadOracles(dataPath string) (*Oracles, error) {
 		index:    oracles,
 		vm:       vm,
 	}, nil
-}
-
-func (o *Oracles) VM() *otto.Otto {
-	return o.vm
 }
 
 func (o *Oracles) ForEach(cb func(oracle *pb.Oracle)) {
