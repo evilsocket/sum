@@ -1,10 +1,4 @@
-<p align="center">
-  <p align="center">
-    <a href="https://github.com/evilsocket/sum/releases/latest"><img alt="Release" src="https://img.shields.io/github/release/evilsocket/sum.svg?style=flat-square"></a>
-    <a href="https://github.com/evilsocket/sum/blob/master/LICENSE.md"><img alt="Software License" src="https://img.shields.io/badge/license-GPL3-brightgreen.svg?style=flat-square"></a>
-    <a href="https://goreportcard.com/report/github.com/evilsocket/sum"><img alt="Go Report Card" src="https://goreportcard.com/badge/github.com/evilsocket/sum?style=flat-square"></a>
-  </p>
-</p>
+# SUM
 
 If you work with machine learning you probably find yourself having around a bunch of huge CSV files that maybe you 
 keep using to train your models, or you run PCA on them, or you perform any sort of analysis. If this is the case, you 
@@ -15,11 +9,7 @@ know the struggle of:
 * running your algorithm
 * ... waiting ...
 
-This is an attempt to make these tedious tasks (and many others) simpler if not completely automated. 
-
-## What is SUM
-
-Sum is a database and gRPC high performance service offering three main things:
+This project is an attempt to make these tedious tasks (and many others) simpler if not completely automated. Sum is a database and gRPC high performance service offering three main things:
 
 1. Persistace for your vectors.
 2. A simple CRUD system to create, read, update and delete them.
