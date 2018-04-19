@@ -15,7 +15,7 @@ know the struggle of:
 * running your algorithm
 * ... waiting ...
 
-This is an attempt to make these tedious tasks simpler if not completely automated. 
+This is an attempt to make these tedious tasks (and many others) simpler if not completely automated. 
 
 ## What is SUM
 
