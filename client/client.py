@@ -38,6 +38,11 @@ class Client:
         self._check_resp(resp)
         record.id = resp.msg
         return record 
+    
+    def read_record(self, identifier):
+        resp = self._rpc.ReadRecord(proto.ById(id=identifier))
+        self._check_resp(resp)
+        return resp.record
 
     def delete_record(self, identifier):
         resp = self._rpc.DeleteRecord(proto.ById(id=identifier))
