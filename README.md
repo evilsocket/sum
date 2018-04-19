@@ -55,7 +55,7 @@ function findSimilar(id, threshold) {
 ```
 
 Once defined on the Sum server, any client will be able to execute calls like `findSimilar("some-vector-id-here", 0.9)`, such
-calls will be executed against data **in memory** in order to be as fast as possible, while the same data will be persisted on disk 
+calls will be evaluated on data **in memory** in order to be as fast as possible, while the same data will be persisted on disk 
 as binary protobuf encoded files.
 
 To have a better idea of how this works, take a look at [the example python code](https://github.com/evilsocket/sum/blob/master/example_client.py#L95) that will
