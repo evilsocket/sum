@@ -1,5 +1,4 @@
 <p align="center">
-  <h1>SUM</h1>
   <p align="center">
     <a href="https://github.com/evilsocket/sum/releases/latest"><img alt="Release" src="https://img.shields.io/github/release/evilsocket/sum.svg?style=flat-square"></a>
     <a href="https://github.com/evilsocket/sum/blob/master/LICENSE.md"><img alt="Software License" src="https://img.shields.io/badge/license-GPL3-brightgreen.svg?style=flat-square"></a>
@@ -16,11 +15,15 @@ know the struggle of:
 * running your algorithm
 * ... waiting ...
 
-Sum is an attempt to make this tedious tasks simpler. It is a database and gRPC high performance service offering three main things:
+This is an attempt to make these tedious tasks simpler if not completely automated. 
+
+## What is SUM
+
+Sum is a database and gRPC high performance service offering three main things:
 
 1. Persistace for your vectors.
 2. A simple CRUD system to create, read, update and delete them.
-3. **Oracles**
+3. **Oracles**.
 
 An **oracle** is a piece of javascript logic you want to run on your data, this code is sent to the Sum server by a 
 client, compiled and stored. It'll then be available for every client to use in order to "query" the data.
