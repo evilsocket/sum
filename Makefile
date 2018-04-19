@@ -1,12 +1,15 @@
 all: server client
 
-server: proto/sum.pb.go sumd
+server: deps proto/sum.pb.go sumd
 
 client: proto/sum_pb2.py 
 
 sumd:
 	@echo "Building sumd binary ..."
 	@go build -o sumd .
+
+deps:
+	@dep ensure
 
 proto/sum.pb.go:
 	@echo "Generating Go protocol files ..."
