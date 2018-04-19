@@ -25,7 +25,7 @@ Sum is a database and gRPC high performance service offering three main things:
 2. A simple CRUD system to create, read, update and delete them.
 3. **Oracles**.
 
-An **oracle** is a piece of javascript logic you want to run on your data (evaluation is **in memory**, persistance **on disk**), this code is sent to the Sum server by a 
+An **oracle** is a piece of javascript logic you want to run on your data, this code is sent to the Sum server by a 
 client, compiled and stored. It'll then be available for every client to use in order to "query" the data.
 
 For instance, this is the `findSimilar` oracle definition:
@@ -54,7 +54,9 @@ function findSimilar(id, threshold) {
 }
 ```
 
-Once defined on the Sum server, any client will be able to execute calls like `findSimilar("some-vector-id-here", 0.9)`.
+Once defined on the Sum server, any client will be able to execute calls like `findSimilar("some-vector-id-here", 0.9)`, such
+calls will be executed against data **in memory** in order to be as fast as possible, while the same data will be persisted on disk 
+as binary protobuf encoded files.
 
 To have a better idea of how this works, take a look at [the example python code](https://github.com/evilsocket/sum/blob/master/example_client.py#L95) that will
 create a few vectors on the server, define an oracle, call it for every vector and print the similarities the server returned.
