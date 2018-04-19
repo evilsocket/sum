@@ -36,7 +36,7 @@ func LoadOracles(dataPath string) (*Oracles, error) {
 			if err := Load(fileName, oracle); err != nil {
 				return nil, err
 			} else if oracle.Id != fileUUID {
-				return nil, fmt.Errorf("File UUID is %s but oracle id is %r.", fileUUID, oracle.Id)
+				return nil, fmt.Errorf("File UUID is %s but oracle id is %s.", fileUUID, oracle.Id)
 			} else if compiled, err := Compile(vm, oracle); err != nil {
 				return nil, fmt.Errorf("Error compiling oracle %s: %s", fileUUID, err)
 			} else {
