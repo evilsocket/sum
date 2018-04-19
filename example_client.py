@@ -4,13 +4,7 @@ import os
 import random
 import datetime
 
-path = os.path.abspath(os.path.dirname(__file__))
-sys.path.append(path)
-
 from client.client import Client
-
-start = 0
-end = 0
 
 def timer_start():
     global start
@@ -18,7 +12,7 @@ def timer_start():
     start = datetime.datetime.now()
 
 def timer_stop(with_avg=True):
-    global start, end, index, client
+    global start, end, index
     end = datetime.datetime.now()
     diff = end - start
     elapsed_ms = (diff.days * 86400000) + (diff.seconds * 1000) + (diff.microseconds / 1000)
@@ -28,6 +22,8 @@ def timer_stop(with_avg=True):
         print "%d ms" % elapsed_ms
 
 if __name__ == '__main__':
+    start = 0
+    end = 0
     num_rows = 300
     num_columns = 100
     index = {}

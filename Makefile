@@ -2,7 +2,7 @@ all: server client
 
 server: deps proto/sum.pb.go sumd
 
-client: proto/sum_pb2.py 
+client: client/proto/sum_pb2.py 
 
 sumd:
 	@echo "Building sumd binary ..."
@@ -15,14 +15,13 @@ proto/sum.pb.go:
 	@echo "Generating Go protocol files ..."
 	@protoc -I. --go_out=plugins=grpc:. proto/sum.proto
 
-proto/sum_pb2.py:
+client/proto/sum_pb2.py:
 	@echo "Generating Python protocol files ..."
-	@python -m grpc_tools.protoc -I. --python_out=. --grpc_python_out=. proto/sum.proto
-	@touch proto/__init__.py
+	@python -m grpc_tools.protoc -Iproto --python_out=client/proto --grpc_python_out=client/proto proto/sum.proto
 
 clean:
 	@rm -rf proto/*.go
-	@rm -rf proto/*.py
+	@rm -rf client/proto/sum_*.py
 	@rm -rf sumd
 
 run:
