@@ -26,7 +26,7 @@ func statsReport() {
 	var m runtime.MemStats
 
 	ticker := time.NewTicker(5 * time.Second)
-	for _ = range ticker.C {
+	for range ticker.C {
 		runtime.GC()
 		runtime.ReadMemStats(&m)
 
