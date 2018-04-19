@@ -21,7 +21,7 @@ index = {}
 client = None
 oracle_file = 'oracles/findsimilar.js'
 oracle_name = 'findSimilar'
-oracle_threshold = '0.81'
+oracle_threshold = 0.81
 oracle_id = None
 
 def gen_record(columns):
@@ -65,25 +65,24 @@ def define_oracle(filename, name):
     check(resp)
 
     if len(resp.oracles) == 0:
-        print "Defining oracle %s ..." % name
+        print "Creating oracle %s:" % name,
         with open( filename, 'r') as fp:
             oracle = sum_pb2.Oracle(name=name, code=fp.read())
             resp = client.CreateOracle(oracle)
             check(resp)
-            print "  -> id:%s\n" % resp.msg
+            print "id=%s\n" % resp.msg
             return resp.msg
 
     else:
         o = resp.oracles[0]
-        print "Oracle %s -> id:%s\n" % ( o.name, o.id )
+        print "Found oracle %s: id=%s\n" % ( o.name, o.id )
         return o.id
 
     return None
 
-
 def call_oracle(ident, threshold):
     global client, oracle_id
-    return client.Run(sum_pb2.Call(oracle_id=oracle_id, args=("\"%s\"" % ident, threshold)))
+    return client.Run(sum_pb2.Call(oracle_id=oracle_id, args=("\"%s\"" % ident, "%f" % threshold)))
 
 def get_payload(data):
     raw = data.payload
@@ -100,7 +99,7 @@ if __name__ == '__main__':
 
     # STEP 2: generate `num_rows` vectors of `num_columns` columns
     # each and ask the server to store them
-    print "CREATE (%dx%d) : " % ( num_rows, num_columns ),
+    print "%d CREATE ops :" % num_rows,
     timer_start()
     for row in range (0, num_rows):
         record = gen_record(num_columns)
@@ -112,7 +111,7 @@ if __name__ == '__main__':
     
     # STEP 3: for every vector, query the oracle to get a list
     # of vectors that have a big cosine similarity
-    print "CALL %s x%d : " % (oracle_name, len(index)),
+    print "%d CALL ops   :" % num_rows,
     timer_start()
     for ident, record in index.iteritems():
         resp = call_oracle(ident, oracle_threshold)
@@ -125,15 +124,19 @@ if __name__ == '__main__':
     timer_stop()
 
     # STEP 4: remove all, fin.
-    print "DEL x%d : " % len(index),
+    print "%d DEL ops    :" % num_rows,
     timer_start()
     for ident, record in index.iteritems():
         check( client.DeleteRecord(sum_pb2.ById(id=ident)) )
     timer_stop()
+
+    """
+    Uncomment to print some results ^_^
 
     print 
 
     for ident, obj in index.iteritems():
         n = len(obj['neighbours'])
         if n > 0:
-            print "Vector %s has %d neighbours with a cosine similarity >= than %s" % ( ident, n, oracle_threshold )
+            print "Vector %s has %d neighbours with a cosine similarity >= than %f" % ( ident, n, oracle_threshold )
+    """
