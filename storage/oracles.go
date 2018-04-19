@@ -8,18 +8,15 @@ import (
 	"sync"
 
 	pb "github.com/evilsocket/sum/proto"
-
-	"github.com/robertkrimen/otto"
 )
 
 type Oracles struct {
 	sync.RWMutex
 	dataPath string
-	vm       *otto.Otto
 	index    map[string]*CompiledOracle
 }
 
-func LoadOracles(vm *otto.Otto, dataPath string) (*Oracles, error) {
+func LoadOracles(dataPath string) (*Oracles, error) {
 	dataPath, files, err := ListPath(dataPath)
 	if err != nil {
 		return nil, err
@@ -36,7 +33,7 @@ func LoadOracles(vm *otto.Otto, dataPath string) (*Oracles, error) {
 				return nil, err
 			} else if oracle.Id != fileUUID {
 				return nil, fmt.Errorf("File UUID is %s but oracle id is %s.", fileUUID, oracle.Id)
-			} else if compiled, err := Compile(vm, oracle); err != nil {
+			} else if compiled, err := Compile(oracle); err != nil {
 				return nil, fmt.Errorf("Error compiling oracle %s: %s", fileUUID, err)
 			} else {
 				oracles[fileUUID] = compiled
@@ -47,7 +44,6 @@ func LoadOracles(vm *otto.Otto, dataPath string) (*Oracles, error) {
 	return &Oracles{
 		dataPath: dataPath,
 		index:    oracles,
-		vm:       vm,
 	}, nil
 }
 
@@ -80,7 +76,7 @@ func (o *Oracles) Create(oracle *pb.Oracle) error {
 		return fmt.Errorf("Oracle identifier %s violates the unicity constraint.", oracle.Id)
 	}
 
-	compiled, err := Compile(o.vm, oracle)
+	compiled, err := Compile(oracle)
 	if err != nil {
 		return fmt.Errorf("Error compiling oracle %s: %s", oracle.Id, err)
 	}
@@ -98,7 +94,7 @@ func (o *Oracles) Update(oracle *pb.Oracle) (err error) {
 		return fmt.Errorf("Oracle %s not found.", oracle.Id)
 	}
 
-	if compiled, err = Compile(o.vm, oracle); err != nil {
+	if compiled, err = Compile(oracle); err != nil {
 		return fmt.Errorf("Error compiling oracle %s: %s", oracle.Id, err)
 	}
 

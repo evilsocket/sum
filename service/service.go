@@ -8,7 +8,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"sync"
 	"time"
 
 	pb "github.com/evilsocket/sum/proto"
@@ -16,54 +15,45 @@ import (
 	"github.com/evilsocket/sum/wrapper"
 
 	// "github.com/dustin/go-humanize"
-	"github.com/robertkrimen/otto"
 	"golang.org/x/net/context"
 )
 
 const (
 	// responses bigger than 2K will be gzipped
-	gzipResponseSize = 2048
+	gzipResponseSize  = 2048
+	dataFolderName    = "data"
+	oraclesFolderName = "oracles"
 )
 
 type Service struct {
-	started time.Time
-	pid     uint64
-	uid     uint64
-	argv    []string
-	records *storage.Records
-	oracles *storage.Oracles
-	vm      *otto.Otto
-	vmLock  *sync.Mutex
-	ctx     *wrapper.Context
+	started  time.Time
+	pid      uint64
+	uid      uint64
+	argv     []string
+	records  *storage.Records
+	wrecords wrapper.Records
+	oracles  *storage.Oracles
 }
 
 func New(dataPath string) (*Service, error) {
-	records, err := storage.LoadRecords(filepath.Join(dataPath, "data"))
+	records, err := storage.LoadRecords(filepath.Join(dataPath, dataFolderName))
 	if err != nil {
 		return nil, err
 	}
 
-	vm := otto.New()
-	ctx := wrapper.NewContext()
-
-	vm.Set("records", wrapper.ForRecords(records))
-	vm.Set("ctx", ctx)
-
-	oracles, err := storage.LoadOracles(vm, filepath.Join(dataPath, "oracles"))
+	oracles, err := storage.LoadOracles(filepath.Join(dataPath, oraclesFolderName))
 	if err != nil {
 		return nil, err
 	}
 
 	return &Service{
-		started: time.Now(),
-		pid:     uint64(os.Getpid()),
-		uid:     uint64(os.Getuid()),
-		argv:    os.Args,
-		records: records,
-		oracles: oracles,
-		ctx:     ctx,
-		vm:      vm,
-		vmLock:  &sync.Mutex{},
+		started:  time.Now(),
+		pid:      uint64(os.Getpid()),
+		uid:      uint64(os.Getuid()),
+		argv:     os.Args,
+		records:  records,
+		wrecords: wrapper.ForRecords(records),
+		oracles:  oracles,
 	}, nil
 }
 
@@ -89,17 +79,18 @@ func (s *Service) Run(ctx context.Context, call *pb.Call) (*pb.CallResponse, err
 		return errCallResponse("Oracle %s not found.", call.OracleId), nil
 	}
 
-	s.vmLock.Lock()
-	defer s.vmLock.Unlock()
+	vm := compiled.VM()
+	callCtx := wrapper.NewContext()
 
-	s.ctx.Reset()
+	vm.Set("records", s.wrecords)
+	vm.Set("ctx", callCtx)
 
 	var j []byte
 
 	if ret, err := compiled.Run(call.Args); err != nil {
 		return errCallResponse("Error while running oracle %s: %s", call.OracleId, err), nil
-	} else if s.ctx.IsError() {
-		return errCallResponse("Error while running oracle %s: %s", call.OracleId, s.ctx.Message()), nil
+	} else if callCtx.IsError() {
+		return errCallResponse("Error while running oracle %s: %s", call.OracleId, callCtx.Message()), nil
 	} else if obj, err := ret.Export(); err != nil {
 		return errCallResponse("Error while serializing return value of oracle %s: %s", call.OracleId, err), nil
 	} else if j, err = json.Marshal(obj); err != nil {
