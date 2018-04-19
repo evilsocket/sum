@@ -3,6 +3,8 @@ import sys
 import os
 import random
 import datetime
+import zlib
+import json
 import grpc
 
 path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "proto")
@@ -13,11 +15,13 @@ import sum_pb2_grpc
 
 start = 0
 end = 0
-num_columns = 475
-num_rows = 3000
+num_columns = 100
+num_rows = 300
 index = {}
 client = None
-oracle_name = 'dotAll'
+oracle_file = 'oracles/findsimilar.js'
+oracle_name = 'findSimilar'
+oracle_threshold = '0.81'
 oracle_id = None
 
 def gen_record(columns):
@@ -49,6 +53,11 @@ def timer_stop(with_avg=True):
     else:
         print "%d ms" % elapsed_ms
 
+def create_client(connection):
+    max_len = 10 * 1024 * 1024
+    opts=[('grpc.max_send_message_length', max_len), ('grpc.max_receive_message_length', max_len)]
+    return sum_pb2_grpc.SumServiceStub(grpc.insecure_channel(connection,options=opts))
+
 def define_oracle(filename, name):
     global client
 
@@ -61,22 +70,31 @@ def define_oracle(filename, name):
             oracle = sum_pb2.Oracle(name=name, code=fp.read())
             resp = client.CreateOracle(oracle)
             check(resp)
-            print "  -> id:%s" % resp.msg
+            print "  -> id:%s\n" % resp.msg
             return resp.msg
 
     else:
         o = resp.oracles[0]
-        print "Oracle %s -> id:%s" % ( o.name, o.id )
+        print "Oracle %s -> id:%s\n" % ( o.name, o.id )
         return o.id
 
     return None
 
+def get_payload(data):
+    raw = data.payload
+    if data.compressed:
+        raw = zlib.decompress(raw, 16+zlib.MAX_WBITS)
+    return json.loads(str(raw))
+
+
 if __name__ == '__main__':
-    client = sum_pb2_grpc.SumServiceStub(grpc.insecure_channel('127.0.0.1:50051'))
+    client = create_client('127.0.0.1:50051')
 
-    oracle_id = define_oracle('example_oracle.js', oracle_name)
-    print
+    # STEP 1: send the oracle code to the server and get its id
+    oracle_id = define_oracle(oracle_file, oracle_name)
 
+    # STEP 2: generate `num_rows` vectors of `num_columns` columns
+    # each and ask the server to store them
     print "CREATE (%dx%d) : " % ( num_rows, num_columns ),
     timer_start()
     for row in range (0, num_rows):
@@ -86,18 +104,31 @@ if __name__ == '__main__':
         # msg contains the identifier
         index[resp.msg] = record
     timer_stop()
-
+    
+    # STEP 3: for every vector, query the oracle to get a list
+    # of vectors that have a big cosine similarity
     print "CALL %s x%d : " % (oracle_name, len(index)),
     timer_start()
     for ident, record in index.iteritems():
-        resp = client.Run(sum_pb2.Call(oracle_id=oracle_id, args=("\"%s\"" % ident, "0.1",)))
+        resp = client.Run(sum_pb2.Call(oracle_id=oracle_id, args=("\"%s\"" % ident, oracle_threshold)))
         check(resp)
-        break
-        # print resp.json
-    timer_stop(False)
+        neighbours = get_payload(resp.data)
+        index[ident] = {
+            'record': record,
+            'neighbours': neighbours,
+        }
+    timer_stop()
 
+    # STEP 4: remove all, fin.
     print "DEL x%d : " % len(index),
     timer_start()
     for ident, record in index.iteritems():
         check( client.DeleteRecord(sum_pb2.ById(id=ident)) )
     timer_stop()
+
+    print 
+
+    for ident, obj in index.iteritems():
+        n = len(obj['neighbours'])
+        if n > 0:
+            print "Vector %s has %d neighbours with a cosine similarity >= than %s" % ( ident, n, oracle_threshold )

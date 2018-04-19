@@ -54,10 +54,15 @@ message Call {
     repeated string args = 2;
 }
 
+message Data {
+   bool compressed = 1;
+   bytes payload = 2;
+}
+
 message CallResponse {
     bool success = 1;
     string msg = 2;
-    string json = 3;
+    Data data = 3;
 }
 
 message ById {

@@ -51,6 +51,7 @@ func main() {
 		log.Fatalf("%v", err)
 	}
 
+	grpc.MaxMsgSize(10 * 1024 * 1024)
 	server := grpc.NewServer()
 	pb.RegisterSumServiceServer(server, svc)
 	reflection.Register(server)

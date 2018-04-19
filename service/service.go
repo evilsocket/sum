@@ -1,8 +1,11 @@
 package service
 
 import (
+	"bytes"
+	"compress/gzip"
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"time"
@@ -11,7 +14,13 @@ import (
 	"github.com/evilsocket/sum/storage"
 	"github.com/evilsocket/sum/wrapper"
 
+	// "github.com/dustin/go-humanize"
 	"golang.org/x/net/context"
+)
+
+const (
+	// responses bigger than 2K will be gzipped
+	gzipResponseSize = 2048
 )
 
 type Service struct {
@@ -77,7 +86,7 @@ func (s *Service) Run(ctx context.Context, call *pb.Call) (*pb.CallResponse, err
 	// TODO: this should lock the vm and context .. ?
 	s.ctx.Reset()
 
-	var data []byte
+	var j []byte
 
 	if ret, err := compiled.Run(call.Args); err != nil {
 		return errCallResponse("Error while running oracle %s: %s", call.OracleId, err), nil
@@ -85,12 +94,36 @@ func (s *Service) Run(ctx context.Context, call *pb.Call) (*pb.CallResponse, err
 		return errCallResponse("Error while running oracle %s: %s", call.OracleId, s.ctx.Message()), nil
 	} else if obj, err := ret.Export(); err != nil {
 		return errCallResponse("Error while serializing return value of oracle %s: %s", call.OracleId, err), nil
-	} else if data, err = json.Marshal(obj); err != nil {
+	} else if j, err = json.Marshal(obj); err != nil {
 		return errCallResponse("Error while marshaling return value of oracle %s: %s", call.OracleId, err), nil
+	}
+
+	data := &pb.Data{
+		Compressed: false,
+		Payload:    j,
+	}
+
+	jsonSize := len(j)
+	if jsonSize > gzipResponseSize {
+		var buf bytes.Buffer
+
+		// log.Printf("compressing payload of %s ...", humanize.Bytes(uint64(jsonSize)))
+		// started := time.Now()
+		if w, err := gzip.NewWriterLevel(&buf, gzip.BestCompression); err == nil {
+			w.Write(j)
+			w.Close()
+
+			// log.Printf("compressed to %s in %fs", humanize.Bytes(uint64(buf.Len())), time.Since(started).Seconds())
+
+			data.Compressed = true
+			data.Payload = buf.Bytes()
+		} else {
+			log.Printf("compression failed: %s", err)
+		}
 	}
 
 	return &pb.CallResponse{
 		Success: true,
-		Json:    string(data),
+		Data:    data,
 	}, nil
 }
