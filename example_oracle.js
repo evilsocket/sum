@@ -5,28 +5,22 @@ function dotAll(id) {
     var v = records.Find(id);
     
     if( v.IsNull() == true ) {
-        console.log("Vector " + id + " not found.");
-        return null;
+        return ctx.Error("Vector " + id + " not found.");
     }
 
-    var all = records.All();
+    var all = records.AllBut(v);
     var count = all.length;
     for( var i = 0; i < count; i++ ) {
-        var cmp = all[i];
-        if( v.Is(cmp) ){
-            continue;
-        }
-        accu += v.Dot(cmp)
+        accu += v.Dot(all[i]);
     }
 
     /* TODO: implement map/reduce logic:
     
-        var accu = algo.Map( all, function(cmp){
+        var accu = ctx.Map( all, function(cmp){
             return v.Is(cmp) ? 0.0 : v.Dot(cmp);
         }).Reduce(function(a, b){
             return a + b;
         })
-
     */
 
     return accu;

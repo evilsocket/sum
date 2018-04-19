@@ -21,6 +21,7 @@ type Service struct {
 	argv    []string
 	records *storage.Records
 	oracles *storage.Oracles
+	ctx     *wrapper.Context
 }
 
 func New(dataPath string) (*Service, error) {
@@ -35,8 +36,10 @@ func New(dataPath string) (*Service, error) {
 	}
 
 	vm := oracles.VM()
+	ctx := wrapper.NewContext()
 
 	vm.Set("records", wrapper.ForRecords(records))
+	vm.Set("ctx", ctx)
 
 	return &Service{
 		started: time.Now(),
@@ -45,6 +48,7 @@ func New(dataPath string) (*Service, error) {
 		argv:    os.Args,
 		records: records,
 		oracles: oracles,
+		ctx:     ctx,
 	}, nil
 }
 
@@ -70,18 +74,18 @@ func (s *Service) Run(ctx context.Context, call *pb.Call) (*pb.CallResponse, err
 		return errCallResponse("Oracle %s not found.", call.OracleId), nil
 	}
 
-	ret, err := compiled.Run(call.Args)
-	if err != nil {
+	// TODO: this should lock the vm and context .. ?
+	s.ctx.Reset()
+
+	var data []byte
+
+	if ret, err := compiled.Run(call.Args); err != nil {
 		return errCallResponse("Error while running oracle %s: %s", call.OracleId, err), nil
-	}
-
-	obj, err := ret.Export()
-	if err != nil {
+	} else if s.ctx.IsError() {
+		return errCallResponse("Error while running oracle %s: %s", call.OracleId, s.ctx.Message()), nil
+	} else if obj, err := ret.Export(); err != nil {
 		return errCallResponse("Error while serializing return value of oracle %s: %s", call.OracleId, err), nil
-	}
-
-	data, err := json.Marshal(obj)
-	if err != nil {
+	} else if data, err = json.Marshal(obj); err != nil {
 		return errCallResponse("Error while marshaling return value of oracle %s: %s", call.OracleId, err), nil
 	}
 

@@ -26,3 +26,13 @@ func (w Records) All() []Record {
 	})
 	return wrapped
 }
+
+func (w Records) AllBut(exclude Record) []Record {
+	wrapped := make([]Record, 0)
+	w.records.ForEach(func(record *pb.Record) {
+		if record.Id != exclude.record.Id {
+			wrapped = append(wrapped, ForRecord(record))
+		}
+	})
+	return wrapped
+}

@@ -21,3 +21,13 @@ clean:
 	@rm -rf proto/*.go
 	@rm -rf proto/*.py
 	@rm -rf sumd
+
+run:
+	@clear 
+	@make clean
+	@make 
+	@clear 
+	@sudo rm -rf /var/lib/sumd
+	@sudo mkdir -p /var/lib/sumd/data
+	@sudo mkdir -p /var/lib/sumd/oracles
+	@sudo ./sumd
