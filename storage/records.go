@@ -34,7 +34,7 @@ func LoadRecords(dataPath string) (*Records, error) {
 			}
 
 			if record.Id != fileUUID {
-				return nil, fmt.Errorf("File UUID is %s but record id is %r.", fileUUID, record.Id)
+				return nil, fmt.Errorf("File UUID is %s but record id is %s.", fileUUID, record.Id)
 			}
 			records[fileUUID] = record
 		}
