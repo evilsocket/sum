@@ -80,6 +80,11 @@ def define_oracle(filename, name):
 
     return None
 
+
+def call_oracle(ident, threshold):
+    global client, oracle_id
+    return client.Run(sum_pb2.Call(oracle_id=oracle_id, args=("\"%s\"" % ident, threshold)))
+
 def get_payload(data):
     raw = data.payload
     if data.compressed:
@@ -110,7 +115,7 @@ if __name__ == '__main__':
     print "CALL %s x%d : " % (oracle_name, len(index)),
     timer_start()
     for ident, record in index.iteritems():
-        resp = client.Run(sum_pb2.Call(oracle_id=oracle_id, args=("\"%s\"" % ident, oracle_threshold)))
+        resp = call_oracle(ident, oracle_threshold)
         check(resp)
         neighbours = get_payload(resp.data)
         index[ident] = {
