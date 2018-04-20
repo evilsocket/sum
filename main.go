@@ -4,7 +4,11 @@ import (
 	"flag"
 	"log"
 	"net"
+	"os"
+	"os/signal"
 	"runtime"
+	"runtime/pprof"
+	"syscall"
 	"time"
 
 	pb "github.com/evilsocket/sum/proto"
@@ -18,9 +22,57 @@ import (
 var (
 	listenString = flag.String("listen", ":50051", "String to create the TCP listener.")
 	dataPath     = flag.String("datapath", "/var/lib/sumd", "Sum data folder.")
+	cpuProfile   = flag.String("cpu-profile", "", "Write CPU profile to this file.")
+	memProfile   = flag.String("mem-profile", "", "Write memory profile to this file.")
 
-	svc = (*service.Service)(nil)
+	svc     = (*service.Service)(nil)
+	sigChan = (chan os.Signal)(nil)
 )
+
+func doCleanup() {
+	log.Printf("shutting down ...")
+
+	if *cpuProfile != "" {
+		log.Printf("saving cpu profile to %s ...", *cpuProfile)
+		pprof.StopCPUProfile()
+	}
+
+	if *memProfile != "" {
+		log.Printf("saving memory profile to %s ...", *memProfile)
+		f, err := os.Create(*memProfile)
+		if err != nil {
+			log.Printf("could not create memory profile: %s", err)
+			return
+		}
+		defer f.Close()
+		runtime.GC() // get up-to-date statistics
+		if err := pprof.WriteHeapProfile(f); err != nil {
+			log.Printf("could not write memory profile: %s", err)
+		}
+	}
+}
+func setupSignals() {
+	if *cpuProfile != "" {
+		if f, err := os.Create(*cpuProfile); err != nil {
+			log.Fatal("%s", err)
+		} else if err := pprof.StartCPUProfile(f); err != nil {
+			log.Fatal("%s", err)
+		}
+	}
+
+	sigChan = make(chan os.Signal, 1)
+	signal.Notify(sigChan,
+		syscall.SIGHUP,
+		syscall.SIGINT,
+		syscall.SIGTERM,
+		syscall.SIGQUIT)
+	go func() {
+		sig := <-sigChan
+		log.Printf("got signal %v", sig)
+		doCleanup()
+		os.Exit(0)
+	}()
+}
 
 func statsReport() {
 	var m runtime.MemStats
@@ -40,6 +92,8 @@ func statsReport() {
 
 func main() {
 	flag.Parse()
+
+	setupSignals()
 
 	listener, err := net.Listen("tcp", *listenString)
 	if err != nil {

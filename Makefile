@@ -47,4 +47,4 @@ run:
 	@sudo rm -rf /var/lib/sumd
 	@sudo mkdir -p /var/lib/sumd/data
 	@sudo mkdir -p /var/lib/sumd/oracles
-	@sudo ./sumd
+	@sudo ./sumd -cpu-profile cpu.profile -mem-profile mem.profile
