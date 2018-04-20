@@ -8,8 +8,6 @@ import (
 	"strings"
 
 	"github.com/golang/protobuf/proto"
-
-	"github.com/satori/go.uuid"
 )
 
 const (
@@ -38,10 +36,8 @@ func ListPath(dataPath string) (string, map[string]string, error) {
 			continue
 		}
 
-		fileUUID := strings.Replace(fileName, DatFileExt, "", -1)
-		if _, err := uuid.FromString(fileUUID); err == nil {
-			loadable[fileUUID] = filepath.Join(dataPath, fileName)
-		}
+		fileID := strings.Replace(fileName, DatFileExt, "", -1)
+		loadable[fileID] = filepath.Join(dataPath, fileName)
 	}
 
 	return dataPath, loadable, nil
