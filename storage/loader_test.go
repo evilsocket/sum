@@ -36,7 +36,7 @@ func unlink(dir string) error {
 	return nil
 }
 
-func setupRecords(t *testing.T) {
+func setupRawRecords(t testing.TB) {
 	// start clean
 	teardownRecords(t)
 
@@ -56,7 +56,7 @@ func setupRecords(t *testing.T) {
 	}
 }
 
-func teardownRecords(t *testing.T) {
+func teardownRecords(t testing.TB) {
 	if err := unlink(testFolder); err != nil {
 		if os.IsNotExist(err) == false {
 			t.Fatalf("Error deleting %s: %s", testFolder, err)
@@ -65,7 +65,7 @@ func teardownRecords(t *testing.T) {
 }
 
 func TestListPath(t *testing.T) {
-	setupRecords(t)
+	setupRawRecords(t)
 	defer teardownRecords(t)
 
 	path, loadable, err := ListPath(testFolder)
@@ -99,7 +99,7 @@ func TestListPathWithError(t *testing.T) {
 }
 
 func TestLoad(t *testing.T) {
-	setupRecords(t)
+	setupRawRecords(t)
 	defer teardownRecords(t)
 
 	_, loadable, err := ListPath(testFolder)
@@ -118,7 +118,7 @@ func TestLoad(t *testing.T) {
 }
 
 func TestLoadWithError(t *testing.T) {
-	setupRecords(t)
+	setupRawRecords(t)
 	defer teardownRecords(t)
 
 	var rec pb.Record

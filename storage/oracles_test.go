@@ -99,9 +99,7 @@ func TestLoadOracles(t *testing.T) {
 
 	oracles.ForEach(func(o *pb.Oracle) {
 		// id was updated while saving the oracle
-		if reflect.DeepEqual(o, testOracle) == true {
-			t.Fatalf("oracles should have different ids")
-		} else if o.Id = testOracle.Id; reflect.DeepEqual(*o, testOracle) == false {
+		if o.Id = testOracle.Id; reflect.DeepEqual(*o, testOracle) == false {
 			t.Fatalf("oracles should be the same here")
 		}
 	})
