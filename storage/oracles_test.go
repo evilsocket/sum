@@ -193,6 +193,55 @@ func TestOraclesCreateNotUniqueId(t *testing.T) {
 	}
 }
 
+func TestOraclesFind(t *testing.T) {
+	setupOracles(t, true, false, false)
+	defer teardownOracles(t)
+
+	oracles, err := LoadOracles(testFolder)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for i := 0; i < testOracles; i++ {
+		if compiled := oracles.Find(uint64(i + 1)); compiled == nil {
+			t.Fatalf("oracle with id %d not found", i)
+		}
+	}
+}
+
+func BenchmarkOraclesFind(b *testing.B) {
+	setupOracles(b, true, false, false)
+	defer teardownOracles(b)
+
+	oracles, err := LoadOracles(testFolder)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	for i := 0; i < b.N; i++ {
+		id := uint64(i%testOracles) + 1
+		if compiled := oracles.Find(id); compiled == nil {
+			b.Fatalf("oracle with id %d not found", i)
+		}
+	}
+}
+
+func TestOraclesFindWithInvalidId(t *testing.T) {
+	setupOracles(t, false, false, false)
+	defer teardownOracles(t)
+
+	oracles, err := LoadOracles(testFolder)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for i := 0; i < testOracles; i++ {
+		if compiled := oracles.Find(uint64(i + 1)); compiled != nil {
+			t.Fatalf("oracle with id %d was not expected to be found", i)
+		}
+	}
+}
+
 func TestOraclesUpdate(t *testing.T) {
 	setupOracles(t, true, false, false)
 	defer teardownOracles(t)
@@ -228,5 +277,36 @@ func BenchmarkOraclesUpdate(b *testing.B) {
 		if err := oracles.Update(&updatedOracle); err != nil {
 			b.Fatal(err)
 		}
+	}
+}
+
+func TestOraclesUpdateInvalidId(t *testing.T) {
+	setupOracles(t, true, false, false)
+	defer teardownOracles(t)
+
+	oracles, err := LoadOracles(testFolder)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	updatedOracle.Id = ^uint64(0)
+	if err := oracles.Update(&updatedOracle); err == nil {
+		t.Fatal("expected error due to invalid id")
+	}
+}
+
+func TestOraclesUpdateInvalidCode(t *testing.T) {
+	setupOracles(t, true, false, false)
+	defer teardownOracles(t)
+
+	oracles, err := LoadOracles(testFolder)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	updatedOracle.Id = 1
+	updatedOracle.Code = "lulzlulz"
+	if err := oracles.Update(&updatedOracle); err == nil {
+		t.Fatal("expected error due to invalid code")
 	}
 }
