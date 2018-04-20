@@ -25,9 +25,8 @@ test: deps proto/sum.pb.go
 	@go test ./... -coverprofile coverage.profile 
 	
 coverage: test
-	@echo "Generating code coverage report ..."
-	@go tool cover -html=coverage.profile -o coverage.profile.html && \
-		xdg-open coverage.profile.html > /dev/null 2>&1
+	@echo "Generating code coverage report to coverage.profile.html ..."
+	@go tool cover -html=coverage.profile -o coverage.profile.html
 
 clients/python/proto/sum_pb2.py:
 	@echo "Generating Python protocol files ..."

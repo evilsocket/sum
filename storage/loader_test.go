@@ -13,7 +13,7 @@ import (
 
 const (
 	testFolder  = "/tmp/testsum"
-	testBroken  = "/tmp/testsum/bro.ken"
+	testBroken  = testFolder + "/bro.ken"
 	testRecords = 5
 )
 
@@ -36,9 +36,9 @@ func unlink(dir string) error {
 	return nil
 }
 
-func setup(t *testing.T) {
+func setupRecords(t *testing.T) {
 	// start clean
-	teardown(t)
+	teardownRecords(t)
 
 	if err := os.MkdirAll(testFolder, 0755); err != nil {
 		t.Fatalf("Error creating %s: %s", testFolder, err)
@@ -56,7 +56,7 @@ func setup(t *testing.T) {
 	}
 }
 
-func teardown(t *testing.T) {
+func teardownRecords(t *testing.T) {
 	if err := unlink(testFolder); err != nil {
 		if os.IsNotExist(err) == false {
 			t.Fatalf("Error deleting %s: %s", testFolder, err)
@@ -65,8 +65,8 @@ func teardown(t *testing.T) {
 }
 
 func TestListPath(t *testing.T) {
-	setup(t)
-	defer teardown(t)
+	setupRecords(t)
+	defer teardownRecords(t)
 
 	path, loadable, err := ListPath(testFolder)
 	if err != nil {
@@ -99,8 +99,8 @@ func TestListPathWithError(t *testing.T) {
 }
 
 func TestLoad(t *testing.T) {
-	setup(t)
-	defer teardown(t)
+	setupRecords(t)
+	defer teardownRecords(t)
 
 	_, loadable, err := ListPath(testFolder)
 	if err != nil {
@@ -118,8 +118,8 @@ func TestLoad(t *testing.T) {
 }
 
 func TestLoadWithError(t *testing.T) {
-	setup(t)
-	defer teardown(t)
+	setupRecords(t)
+	defer teardownRecords(t)
 
 	var rec pb.Record
 
