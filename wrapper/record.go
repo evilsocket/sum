@@ -41,14 +41,21 @@ func (w Record) Get(index int) float32 {
 	return w.record.Data[index]
 }
 
+func (w Record) flush() bool {
+	if w.store != nil {
+		if err := w.store.Update(w.record); err != nil {
+			fmt.Printf("error while fushing record %d after an update: %s\n", w.record.Id, err)
+			return false
+		}
+	}
+	return true
+}
+
 func (w Record) Set(index int, value float32) {
 	old := w.record.Data[index]
 	w.record.Data[index] = value
-	if w.store != nil {
-		if err := w.store.Update(w.record); err != nil {
-			w.record.Data[index] = old
-			fmt.Printf("error while updating record %d data at index %d: %s\n", w.record.Id, index, err)
-		}
+	if w.flush() == false {
+		w.record.Data[index] = old
 	}
 }
 
@@ -57,6 +64,16 @@ func (w Record) Meta(name string) string {
 		return v
 	} else {
 		return ""
+	}
+}
+
+func (w Record) SetMeta(name, value string) {
+	old, found := w.record.Meta[name]
+	w.record.Meta[name] = value
+	if w.flush() == false {
+		if found {
+			w.record.Meta[name] = old
+		}
 	}
 }
 

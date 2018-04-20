@@ -190,6 +190,43 @@ func TestMetaWithInvalidKey(t *testing.T) {
 	}
 }
 
+func TestSetMeta(t *testing.T) {
+	r := ForRecord(nil, &testRecord)
+	k := "new"
+	v := "meta value"
+	r.SetMeta(k, v)
+	if got := r.Meta(k); got != v {
+		t.Fatalf("expecting '%s' for meta '%s', got '%s'", v, k, got)
+	}
+}
+
+func BenchmarkSetMeta(b *testing.B) {
+	r := ForRecord(nil, &testRecord)
+	k := "new"
+	v := "meta value"
+	for i := 0; i < b.N; i++ {
+		r.SetMeta(k, v)
+	}
+}
+
+func TestSetMetaWithInvalidId(t *testing.T) {
+	setupRecords(t, false)
+	defer teardownRecords(t)
+
+	records, err := storage.LoadRecords(testFolder)
+	if err != nil {
+		t.Fatal(err)
+	}
+	r := ForRecord(records, &testRecord)
+	for k, v := range testRecord.Meta {
+		newValue := v + " changed"
+		r.SetMeta(k, newValue)
+		if got := r.Meta(k); got == newValue {
+			t.Fatal("expecting old meta value to be unchanged")
+		}
+	}
+}
+
 func TestDot(t *testing.T) {
 	testRecord.Data = []float32{3, 6, 9}
 	shouldBe := 126.0
