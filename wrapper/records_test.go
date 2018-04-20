@@ -20,8 +20,17 @@ const (
 var (
 	testRecord = pb.Record{
 		Id:   666,
-		Data: []float32{0.6, 0.6, 0.6},
-		Meta: map[string]string{"666": "666"},
+		Data: []float32{3, 6, 9},
+		Meta: map[string]string{
+			"foo":    "bar",
+			"some":   "thing",
+			"i hate": "tests",
+		},
+	}
+	testShorterRecord = pb.Record{
+		Id:   777,
+		Data: []float32{1},
+		Meta: map[string]string{},
 	}
 )
 
