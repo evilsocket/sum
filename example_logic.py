@@ -4,7 +4,10 @@ import os
 import random
 import datetime
 
-from client.client import Client
+path = os.path.join(os.path.abspath(os.path.dirname(__file__)),"clients/python")
+sys.path.append(path)
+
+from client import Client
 
 def timer_start():
     global start

@@ -48,7 +48,7 @@ Once defined on the Sum server, any client will be able to execute calls like `f
 calls will be evaluated on data **in memory** in order to be as fast as possible, while the same data will be persisted on disk 
 as binary protobuf encoded files.
 
-To have a better idea of how this works, take a look at [the example python code](https://github.com/evilsocket/sum/blob/master/example_client.py#L95) that will
+To have a better idea of how this works, take a look at [the example python code](https://github.com/evilsocket/sum/blob/master/example_logic.py) that will
 create a few vectors on the server, define an oracle, call it for every vector and print the similarities the server returned.
 
 **This is work in progress, do not use until v1.0.0 will be released.**
@@ -56,3 +56,12 @@ create a few vectors on the server, define an oracle, call it for every vector a
 ## License
 
 `sum` is made with ♥  by [Simone 'evilsocket' Margaritelli](https://github.com/evilsocket) and it's released under the GPL 3 license.
+
+## Useful links
+
+* https://github.com/grpc/grpc-go
+* https://github.com/grpc/grpc/blob/master/examples
+* https://grpc.io/docs/quickstart/go.html
+* https://grpc.io/docs/quickstart/python.html
+* https://grpc.io/docs/quickstart/php.html
+* https://github.com/lvht/protoc-gen-grpc-php
