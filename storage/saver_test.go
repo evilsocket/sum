@@ -26,8 +26,10 @@ func TestFlush(t *testing.T) {
 }
 
 func TestFlushWithError(t *testing.T) {
-	if err := Flush(&testRecord, "/"); err == nil {
-		t.Fatal("wasn't supposed to happen")
+	if err := Flush(nil, "/"); err == nil {
+		t.Fatal("error expected for flush with nil message")
+	} else if err := Flush(&testRecord, "/"); err == nil {
+		t.Fatal("error expected for flush on /")
 	}
 }
 

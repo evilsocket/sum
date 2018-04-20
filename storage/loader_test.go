@@ -89,8 +89,12 @@ func TestListPath(t *testing.T) {
 }
 
 func TestListPathWithError(t *testing.T) {
-	if _, _, err := ListPath("/lulzlulz"); err == nil {
+	if _, _, err := ListPath("/dev/random"); err == nil {
 		t.Fatal("expected an error")
+	} else if _, _, err := ListPath("/lulzlulz"); err == nil {
+		t.Fatal("expected an error")
+	} else if _, _, err := ListPath("/root"); err == nil {
+		t.Fatal("expected permission denied")
 	}
 }
 
