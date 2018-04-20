@@ -125,19 +125,32 @@ func TestLoadOraclesWithBrokenCode(t *testing.T) {
 	}
 }
 
-func TestOraclesCreateNotUniqueId(t *testing.T) {
-	setupOracles(t, true, false, false)
+func TestOraclesCreate(t *testing.T) {
+	setupOracles(t, false, false, false)
 	defer teardownOracles(t)
 
 	oracles, err := LoadOracles(testFolder)
 	if err != nil {
 		t.Fatal(err)
+	} else if oracles.Size() != 0 {
+		t.Fatal("expected empty oracle storage")
+	} else if err := oracles.Create(&testOracle); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func BenchmarkOraclesCreate(b *testing.B) {
+	log.SetOutput(ioutil.Discard)
+
+	oracles, err := LoadOracles(testFolder)
+	if err != nil {
+		b.Fatal(err)
 	}
 
-	// ok this is kinda cheating, but i want full coverage
-	oracles.nextId = uint64(1)
-	if err := oracles.Create(&testOracle); err == nil {
-		t.Fatalf("expected error for non unique oracle id")
+	for i := 0; i < b.N; i++ {
+		if err := oracles.Create(&testOracle); err != nil {
+			b.Fatal(err)
+		}
 	}
 }
 
