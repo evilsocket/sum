@@ -54,9 +54,9 @@ func doCleanup() {
 func setupSignals() {
 	if *cpuProfile != "" {
 		if f, err := os.Create(*cpuProfile); err != nil {
-			log.Fatal("%s", err)
+			log.Fatal(err)
 		} else if err := pprof.StartCPUProfile(f); err != nil {
-			log.Fatal("%s", err)
+			log.Fatal(err)
 		}
 	}
 

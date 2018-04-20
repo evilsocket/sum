@@ -32,6 +32,12 @@ clients/php/Sum:
 		--plugin=protoc-gen-grpc=/opt/grpc/bins/opt/grpc_php_plugin \
 		proto/sum.proto
 
+test:
+	@go test ./...
+
+benchmark:
+	@go test -run=xxx -bench=. ./...
+
 clean:
 	@rm -rf proto/*.go
 	@rm -rf clients/python/proto/sum_*.py
