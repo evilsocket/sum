@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"path/filepath"
 	"sync"
 
 	pb "github.com/evilsocket/sum/proto"
@@ -66,7 +65,7 @@ func (o *Oracles) Size() uint64 {
 }
 
 func (o *Oracles) pathFor(oracle *pb.Oracle) string {
-	return filepath.Join(o.dataPath, fmt.Sprintf("%d", oracle.Id)) + DatFileExt
+	return o.dataPath + fmt.Sprintf("/%d.dat", oracle.Id)
 }
 
 func (o *Oracles) Create(oracle *pb.Oracle) error {

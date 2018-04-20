@@ -27,7 +27,7 @@ def timer_stop(with_avg=True):
 if __name__ == '__main__':
     start = 0
     end = 0
-    num_rows = 300
+    num_rows = 3000
     num_columns = 100
     index = {}
 
@@ -43,6 +43,14 @@ if __name__ == '__main__':
     for row in range (0, num_rows):
         record = client.create_record({"some": "meta data"}, [random.uniform(0,100) for i in range(0, num_columns)])
         index[record.id] = record
+    timer_stop()
+
+    # STEP 2.1: just benchmark READ operations
+    print "%d READ ops   :" % num_rows,
+    timer_start()
+    for ident, record in index.iteritems():
+        got = client.read_record(ident)
+        assert(record == got)
     timer_stop()
     
     # STEP 3: for every vector, query the oracle to get a list

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"path/filepath"
 	"sync"
 
 	pb "github.com/evilsocket/sum/proto"
@@ -63,7 +62,7 @@ func (r *Records) Size() uint64 {
 }
 
 func (r *Records) pathFor(record *pb.Record) string {
-	return filepath.Join(r.dataPath, fmt.Sprintf("%d", record.Id)) + DatFileExt
+	return r.dataPath + fmt.Sprintf("/%d.dat", record.Id)
 }
 
 func (r *Records) Create(record *pb.Record) error {
