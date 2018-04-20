@@ -16,6 +16,14 @@ const (
 	testCorruptedOracle = testFolder + "/666.dat"
 )
 
+var (
+	updatedOracle = pb.Oracle{
+		Id:   666,
+		Name: "myNameHasBeenUpdated",
+		Code: "function myBodyToo(){ return 0; }",
+	}
+)
+
 func (o *Oracles) createUncompiled(oracle *pb.Oracle) error {
 	o.Lock()
 	defer o.Unlock()
@@ -181,5 +189,20 @@ func TestOraclesCreateNotUniqueId(t *testing.T) {
 	oracles.nextId = uint64(1)
 	if err := oracles.Create(&testOracle); err == nil {
 		t.Fatalf("expected error for non unique oracle id")
+	}
+}
+
+func TestOraclesUpdate(t *testing.T) {
+	setupOracles(t, true, false, false)
+	defer teardownOracles(t)
+
+	oracles, err := LoadOracles(testFolder)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	updatedOracle.Id = 1
+	if err := oracles.Update(&updatedOracle); err != nil {
+		t.Fatal(err)
 	}
 }
