@@ -125,3 +125,16 @@ func TestLoadWithError(t *testing.T) {
 		t.Fatalf("erorr expected for %s", testBroken)
 	}
 }
+
+func BenchmarkLoad(b *testing.B) {
+	if err := Flush(&testRecord, testDatFile); err != nil {
+		b.Fatal(err)
+	}
+
+	for i := 0; i < b.N; i++ {
+		var rec pb.Record
+		if err := Load(testDatFile, &rec); err != nil {
+			b.Fatalf("erorr loading %s: %s", testDatFile, err)
+		}
+	}
+}
