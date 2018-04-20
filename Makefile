@@ -14,7 +14,7 @@ deps:
 
 proto/sum.pb.go:
 	@echo "Generating Go protocol files ..."
-	@protoc -I. --go_out=plugins=grpc:. proto/sum.proto
+	@/opt/grpc/bins/opt/protobuf/protoc -I. --go_out=plugins=grpc:. proto/sum.proto
 
 clients/python/proto/sum_pb2.py:
 	@echo "Generating Python protocol files ..."
