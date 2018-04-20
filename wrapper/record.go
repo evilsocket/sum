@@ -74,20 +74,20 @@ func (w Record) Cosine(b Record) float64 {
 
 func (w Record) Jaccard(b Record) float64 {
 	dot := float64(0.0)
-	m10 := float64(0.0)
+	accu := float64(0.0)
 
 	for i, va := range w.record.Data {
 		vb := float64(b.record.Data[i])
 		dot += float64(va) * vb
 
 		if sum := float64(va) + vb; sum == 1.0 {
-			m10 += 1
+			accu += 1
 		}
 	}
 
-	if m10+dot == 0 {
+	den := accu + dot
+	if den == 0 {
 		return 0.0
 	}
-
-	return dot / (dot + m10)
+	return dot / den
 }
