@@ -40,7 +40,7 @@ func (o *Oracles) createUncompiled(oracle *pb.Oracle) error {
 	return Flush(oracle, o.pathFor(oracle))
 }
 
-func setupOracles(t *testing.T, withValid bool, withCorrupted bool, withBroken bool) {
+func setupOracles(t testing.TB, withValid bool, withCorrupted bool, withBroken bool) {
 	log.SetOutput(ioutil.Discard)
 
 	// start clean
@@ -76,7 +76,7 @@ func setupOracles(t *testing.T, withValid bool, withCorrupted bool, withBroken b
 	}
 }
 
-func teardownOracles(t *testing.T) {
+func teardownOracles(t testing.TB) {
 	if err := unlink(testFolder); err != nil {
 		if os.IsNotExist(err) == false {
 			t.Fatalf("Error deleting %s: %s", testFolder, err)
@@ -148,7 +148,8 @@ func TestOraclesCreate(t *testing.T) {
 }
 
 func BenchmarkOraclesCreate(b *testing.B) {
-	log.SetOutput(ioutil.Discard)
+	setupOracles(b, false, false, false)
+	defer teardownOracles(b)
 
 	oracles, err := LoadOracles(testFolder)
 	if err != nil {
@@ -204,5 +205,28 @@ func TestOraclesUpdate(t *testing.T) {
 	updatedOracle.Id = 1
 	if err := oracles.Update(&updatedOracle); err != nil {
 		t.Fatal(err)
+	}
+
+	if stored := oracles.Find(updatedOracle.Id); stored == nil {
+		t.Fatal("expected stored oracle with id 1")
+	} else if reflect.DeepEqual(*stored.Oracle(), updatedOracle) == false {
+		t.Fatal("oracle has not been updated as expected")
+	}
+}
+
+func BenchmarkOraclesUpdate(b *testing.B) {
+	setupOracles(b, true, false, false)
+	defer teardownOracles(b)
+
+	oracles, err := LoadOracles(testFolder)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	for i := 0; i < b.N; i++ {
+		updatedOracle.Id = uint64(i%testOracles) + 1
+		if err := oracles.Update(&updatedOracle); err != nil {
+			b.Fatal(err)
+		}
 	}
 }
