@@ -167,3 +167,19 @@ func TestOraclesCreateBroken(t *testing.T) {
 		t.Fatalf("expected error due to broken oracle code")
 	}
 }
+
+func TestOraclesCreateNotUniqueId(t *testing.T) {
+	setupOracles(t, true, false, false)
+	defer teardownOracles(t)
+
+	oracles, err := LoadOracles(testFolder)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// ok this is kinda cheating, but i want full coverage
+	oracles.nextId = uint64(1)
+	if err := oracles.Create(&testOracle); err == nil {
+		t.Fatalf("expected error for non unique oracle id")
+	}
+}
