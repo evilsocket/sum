@@ -28,12 +28,7 @@ class Client:
         return json.loads(str(raw))
 
     def create_record(self, meta, data):
-        pbmeta = []
-        for k, v in meta.iteritems():
-            nv = proto.NamedValue(name=k, value=v)
-            pbmeta.append(nv)
-
-        record = proto.Record(data=data, meta=pbmeta)
+        record = proto.Record(data=data, meta=meta)
         resp = self._rpc.CreateRecord(record)
         self._check_resp(resp)
         record.id = int(resp.msg)

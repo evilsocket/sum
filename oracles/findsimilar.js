@@ -14,6 +14,7 @@ function findSimilar(id, threshold) {
         var similarity = v.Cosine(record);
         if( similarity >= threshold ) {
            results[record.Id] = similarity
+           record.Set(10,123.0);
         }
     });
 

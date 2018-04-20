@@ -16,13 +16,13 @@ func ForRecords(records *storage.Records) Records {
 }
 
 func (w Records) Find(id uint64) Record {
-	return ForRecord(w.records.Find(id))
+	return ForRecord(w.records, w.records.Find(id))
 }
 
 func (w Records) All() []Record {
 	wrapped := make([]Record, 0)
 	w.records.ForEach(func(record *pb.Record) {
-		wrapped = append(wrapped, ForRecord(record))
+		wrapped = append(wrapped, ForRecord(w.records, record))
 	})
 	return wrapped
 }
@@ -31,7 +31,7 @@ func (w Records) AllBut(exclude Record) []Record {
 	wrapped := make([]Record, 0)
 	w.records.ForEach(func(record *pb.Record) {
 		if record.Id != exclude.record.Id {
-			wrapped = append(wrapped, ForRecord(record))
+			wrapped = append(wrapped, ForRecord(w.records, record))
 		}
 	})
 	return wrapped

@@ -20,15 +20,10 @@ service SumService {
   rpc Info(Empty) returns (ServerInfo) {}
 }
 
-message NamedValue {
-    string name = 1;
-    string value =  2;
-}
-
 message Record {
     uint64 id = 1;
     repeated float data = 2;
-    repeated NamedValue meta = 3;
+    map<string, string> meta = 3;
 }
 
 message RecordResponse {
