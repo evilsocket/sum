@@ -310,3 +310,74 @@ func TestOraclesUpdateInvalidCode(t *testing.T) {
 		t.Fatal("expected error due to invalid code")
 	}
 }
+
+func TestOraclesDelete(t *testing.T) {
+	setupOracles(t, true, false, false)
+	defer teardownOracles(t)
+
+	oracles, err := LoadOracles(testFolder)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for i := 0; i < testOracles; i++ {
+		id := uint64(i + 1)
+		if deleted := oracles.Delete(id); deleted == nil {
+			t.Fatalf("oracle with id %d not found", id)
+		} else if deleted.Id != id {
+			t.Fatalf("should have deleted oracle with id %d, id is %d instead", id, deleted.Id)
+		} else if oracles.Size() != uint64(testOracles)-id {
+			t.Fatalf("inconsistent oracles storage size of %d", oracles.Size())
+		} else if _, err := os.Stat(oracles.pathFor(deleted)); err == nil {
+			t.Fatalf("oracle %d data file was not deleted", deleted.Id)
+		}
+	}
+
+	if oracles.Size() != 0 {
+		t.Fatalf("expected empty oracles storage, found %d instead", oracles.Size())
+	} else if doublecheck, err := LoadOracles(testFolder); err != nil {
+		t.Fatal(err)
+	} else if doublecheck.Size() != 0 {
+		t.Fatalf("%d dat files left on disk", doublecheck.Size())
+	}
+}
+
+func BenchmarkOraclesDelete(b *testing.B) {
+	defer teardownOracles(b)
+
+	var oracles *Oracles
+	var err error
+
+	for i := 0; i < b.N; i++ {
+		// this is not entirely ok as once every 5 times
+		// we neeed to recreate and reload oracles, which
+		// increases the operations being benchmarked
+		id := uint64(i%testOracles) + 1
+		if id == 1 {
+			setupOracles(b, true, false, false)
+			if oracles, err = LoadOracles(testFolder); err != nil {
+				b.Fatal(err)
+			}
+		}
+
+		if deleted := oracles.Delete(id); deleted == nil {
+			b.Fatalf("oracle with id %d not found", id)
+		}
+	}
+}
+
+func TestOraclesDeleteWithInvalidId(t *testing.T) {
+	setupOracles(t, false, false, false)
+	defer teardownOracles(t)
+
+	oracles, err := LoadOracles(testFolder)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for i := 0; i < testOracles; i++ {
+		if deleted := oracles.Delete(uint64(i + 1)); deleted != nil {
+			t.Fatalf("oracle with id %d was not expected to be found", i)
+		}
+	}
+}
