@@ -15,7 +15,7 @@ func ForRecords(records *storage.Records) Records {
 	}
 }
 
-func (w Records) Find(id string) Record {
+func (w Records) Find(id uint64) Record {
 	return ForRecord(w.records.Find(id))
 }
 

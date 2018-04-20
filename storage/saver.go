@@ -5,13 +5,7 @@ import (
 	"io/ioutil"
 
 	"github.com/golang/protobuf/proto"
-
-	"github.com/satori/go.uuid"
 )
-
-func NewID() string {
-	return uuid.Must(uuid.NewV4()).String()
-}
 
 func Flush(m proto.Message, fileName string) error {
 	data, err := proto.Marshal(m)

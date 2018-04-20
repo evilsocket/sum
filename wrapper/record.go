@@ -7,7 +7,7 @@ import (
 )
 
 type Record struct {
-	Id     string
+	Id     uint64
 	record *pb.Record
 }
 

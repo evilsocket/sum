@@ -36,11 +36,11 @@ class Client:
         record = proto.Record(data=data, meta=pbmeta)
         resp = self._rpc.CreateRecord(record)
         self._check_resp(resp)
-        record.id = resp.msg
+        record.id = int(resp.msg)
         return record 
     
     def read_record(self, identifier):
-        resp = self._rpc.ReadRecord(proto.ById(id=identifier))
+        resp = self._rpc.ReadRecord(proto.ById(id=int(identifier)))
         self._check_resp(resp)
         return resp.record
 
@@ -57,7 +57,7 @@ class Client:
                 oracle = proto.Oracle(name=name, code=fp.read())
                 resp = self._rpc.CreateOracle(oracle)
                 self._check_resp(resp)
-                return resp.msg
+                return int(resp.msg)
         else:
             return resp.oracles[0].id
 

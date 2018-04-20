@@ -13,7 +13,8 @@ import (
 type Records struct {
 	sync.RWMutex
 	dataPath string
-	index    map[string]*pb.Record
+	index    map[uint64]*pb.Record
+	nextId   uint64
 }
 
 func LoadRecords(dataPath string) (*Records, error) {
@@ -22,27 +23,28 @@ func LoadRecords(dataPath string) (*Records, error) {
 		return nil, err
 	}
 
-	records := make(map[string]*pb.Record)
+	records := make(map[uint64]*pb.Record)
 	nfiles := len(files)
+	maxId := uint64(0)
 
 	if nfiles > 0 {
 		log.Printf("Loading %d data files from %s ...", len(files), dataPath)
-		for fileUUID, fileName := range files {
+		for _, fileName := range files {
 			record := new(pb.Record)
 			if err := Load(fileName, record); err != nil {
 				return nil, err
 			}
-
-			if record.Id != fileUUID {
-				return nil, fmt.Errorf("File UUID is %s but record id is %s.", fileUUID, record.Id)
+			records[record.Id] = record
+			if record.Id > maxId {
+				maxId = record.Id
 			}
-			records[fileUUID] = record
 		}
 	}
 
 	return &Records{
 		dataPath: dataPath,
 		index:    records,
+		nextId:   maxId + 1,
 	}, nil
 }
 
@@ -61,18 +63,19 @@ func (r *Records) Size() uint64 {
 }
 
 func (r *Records) pathFor(record *pb.Record) string {
-	return filepath.Join(r.dataPath, record.Id) + DatFileExt
+	return filepath.Join(r.dataPath, fmt.Sprintf("%d", record.Id)) + DatFileExt
 }
 
 func (r *Records) Create(record *pb.Record) error {
-	record.Id = NewID()
-
 	r.Lock()
 	defer r.Unlock()
 
+	record.Id = r.nextId
+	r.nextId++
+
 	// make sure the id is unique
 	if _, found := r.index[record.Id]; found == true {
-		return fmt.Errorf("Record identifier %s violates the unicity constraint.", record.Id)
+		return fmt.Errorf("Record identifier %d violates the unicity constraint.", record.Id)
 	}
 
 	r.index[record.Id] = record
@@ -86,7 +89,7 @@ func (r *Records) Update(record *pb.Record) error {
 
 	stored, found := r.index[record.Id]
 	if found == false {
-		return fmt.Errorf("Record %s not found.", record.Id)
+		return fmt.Errorf("Record %d not found.", record.Id)
 	}
 
 	if record.Meta != nil {
@@ -100,7 +103,7 @@ func (r *Records) Update(record *pb.Record) error {
 	return Flush(stored, r.pathFor(stored))
 }
 
-func (r *Records) Find(id string) *pb.Record {
+func (r *Records) Find(id uint64) *pb.Record {
 	r.RLock()
 	defer r.RUnlock()
 
@@ -111,7 +114,7 @@ func (r *Records) Find(id string) *pb.Record {
 	return nil
 }
 
-func (r *Records) Delete(id string) *pb.Record {
+func (r *Records) Delete(id uint64) *pb.Record {
 	r.Lock()
 	defer r.Unlock()
 

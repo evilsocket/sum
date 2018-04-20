@@ -19,7 +19,7 @@ func (s *Service) CreateRecord(ctx context.Context, record *pb.Record) (*pb.Reco
 	if err := s.records.Create(record); err != nil {
 		return errRecordResponse("%s", err), nil
 	}
-	return &pb.RecordResponse{Success: true, Msg: record.Id}, nil
+	return &pb.RecordResponse{Success: true, Msg: fmt.Sprintf("%d", record.Id)}, nil
 }
 
 func (s *Service) UpdateRecord(ctx context.Context, record *pb.Record) (*pb.RecordResponse, error) {
@@ -32,7 +32,7 @@ func (s *Service) UpdateRecord(ctx context.Context, record *pb.Record) (*pb.Reco
 func (s *Service) ReadRecord(ctx context.Context, query *pb.ById) (*pb.RecordResponse, error) {
 	record := s.records.Find(query.Id)
 	if record == nil {
-		return errRecordResponse("Record %s not found.", query.Id), nil
+		return errRecordResponse("Record %d not found.", query.Id), nil
 	}
 	return &pb.RecordResponse{Success: true, Record: record}, nil
 }
@@ -40,7 +40,7 @@ func (s *Service) ReadRecord(ctx context.Context, query *pb.ById) (*pb.RecordRes
 func (s *Service) DeleteRecord(ctx context.Context, query *pb.ById) (*pb.RecordResponse, error) {
 	record := s.records.Delete(query.Id)
 	if record == nil {
-		return errRecordResponse("Record %s not found.", query.Id), nil
+		return errRecordResponse("Record %d not found.", query.Id), nil
 	}
 	return &pb.RecordResponse{Success: true}, nil
 }

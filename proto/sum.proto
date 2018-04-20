@@ -26,7 +26,7 @@ message NamedValue {
 }
 
 message Record {
-    string id = 1;
+    uint64 id = 1;
     repeated float data = 2;
     repeated NamedValue meta = 3;
 }
@@ -38,7 +38,7 @@ message RecordResponse {
 }
 
 message Oracle {
-    string id = 1;
+    uint64 id = 1;
     string name = 2;
     string code = 3;
 }
@@ -50,7 +50,7 @@ message OracleResponse {
 }
 
 message Call {
-    string oracle_id = 1;
+    uint64 oracle_id = 1;
     repeated string args = 2;
 }
 
@@ -66,7 +66,7 @@ message CallResponse {
 }
 
 message ById {
-    string id = 1;
+    uint64 id = 1;
 }
 
 message ByName {

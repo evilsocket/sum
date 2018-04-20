@@ -13,7 +13,8 @@ import (
 type Oracles struct {
 	sync.RWMutex
 	dataPath string
-	index    map[string]*CompiledOracle
+	index    map[uint64]*CompiledOracle
+	nextId   uint64
 }
 
 func LoadOracles(dataPath string) (*Oracles, error) {
@@ -22,21 +23,23 @@ func LoadOracles(dataPath string) (*Oracles, error) {
 		return nil, err
 	}
 
-	oracles := make(map[string]*CompiledOracle)
+	oracles := make(map[uint64]*CompiledOracle)
 	nfiles := len(files)
+	maxId := uint64(0)
 
 	if nfiles > 0 {
 		log.Printf("Loading %d data files from %s ...", len(files), dataPath)
-		for fileUUID, fileName := range files {
+		for _, fileName := range files {
 			oracle := new(pb.Oracle)
 			if err := Load(fileName, oracle); err != nil {
 				return nil, err
-			} else if oracle.Id != fileUUID {
-				return nil, fmt.Errorf("File UUID is %s but oracle id is %s.", fileUUID, oracle.Id)
 			} else if compiled, err := Compile(oracle); err != nil {
-				return nil, fmt.Errorf("Error compiling oracle %s: %s", fileUUID, err)
+				return nil, fmt.Errorf("Error compiling oracle %d: %s", oracle.Id, err)
 			} else {
-				oracles[fileUUID] = compiled
+				oracles[oracle.Id] = compiled
+				if oracle.Id > maxId {
+					maxId = oracle.Id
+				}
 			}
 		}
 	}
@@ -44,6 +47,7 @@ func LoadOracles(dataPath string) (*Oracles, error) {
 	return &Oracles{
 		dataPath: dataPath,
 		index:    oracles,
+		nextId:   maxId + 1,
 	}, nil
 }
 
@@ -62,23 +66,24 @@ func (o *Oracles) Size() uint64 {
 }
 
 func (o *Oracles) pathFor(oracle *pb.Oracle) string {
-	return filepath.Join(o.dataPath, oracle.Id) + DatFileExt
+	return filepath.Join(o.dataPath, fmt.Sprintf("%d", oracle.Id)) + DatFileExt
 }
 
 func (o *Oracles) Create(oracle *pb.Oracle) error {
-	oracle.Id = NewID()
-
 	o.Lock()
 	defer o.Unlock()
 
+	oracle.Id = o.nextId
+	o.nextId++
+
 	// make sure the id is unique
 	if _, found := o.index[oracle.Id]; found == true {
-		return fmt.Errorf("Oracle identifier %s violates the unicity constraint.", oracle.Id)
+		return fmt.Errorf("Oracle identifier %d violates the unicity constraint.", oracle.Id)
 	}
 
 	compiled, err := Compile(oracle)
 	if err != nil {
-		return fmt.Errorf("Error compiling oracle %s: %s", oracle.Id, err)
+		return fmt.Errorf("Error compiling oracle %d: %s", oracle.Id, err)
 	}
 
 	o.index[oracle.Id] = compiled
@@ -91,11 +96,11 @@ func (o *Oracles) Update(oracle *pb.Oracle) (err error) {
 
 	compiled, found := o.index[oracle.Id]
 	if found == false {
-		return fmt.Errorf("Oracle %s not found.", oracle.Id)
+		return fmt.Errorf("Oracle %d not found.", oracle.Id)
 	}
 
 	if compiled, err = Compile(oracle); err != nil {
-		return fmt.Errorf("Error compiling oracle %s: %s", oracle.Id, err)
+		return fmt.Errorf("Error compiling oracle %d: %s", oracle.Id, err)
 	}
 
 	o.index[oracle.Id] = compiled
@@ -103,7 +108,7 @@ func (o *Oracles) Update(oracle *pb.Oracle) (err error) {
 	return Flush(oracle, o.pathFor(oracle))
 }
 
-func (o *Oracles) Find(id string) *CompiledOracle {
+func (o *Oracles) Find(id uint64) *CompiledOracle {
 	o.RLock()
 	defer o.RUnlock()
 
@@ -113,7 +118,7 @@ func (o *Oracles) Find(id string) *CompiledOracle {
 	return nil
 }
 
-func (o *Oracles) Delete(id string) *pb.Oracle {
+func (o *Oracles) Delete(id uint64) *pb.Oracle {
 	o.Lock()
 	defer o.Unlock()
 
