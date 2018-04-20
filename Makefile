@@ -16,6 +16,19 @@ proto/sum.pb.go:
 	@echo "Generating Go protocol files ..."
 	@/opt/grpc/bins/opt/protobuf/protoc -I. --go_out=plugins=grpc:. proto/sum.proto
 
+benchmark: deps proto/sum.pb.go
+	@echo "Running benchmarks ..."
+	@go test -run=xxx -bench=. ./...
+
+test: deps proto/sum.pb.go
+	@echo "Running tests ..."
+	@go test ./... -coverprofile coverage.profile 
+	
+coverage: test
+	@echo "Generating code coverage report ..."
+	@go tool cover -html=coverage.profile -o coverage.profile.html && \
+		xdg-open coverage.profile.html > /dev/null 2>&1
+
 clients/python/proto/sum_pb2.py:
 	@echo "Generating Python protocol files ..."
 	@python -m grpc_tools.protoc \
@@ -32,18 +45,14 @@ clients/php/Sum:
 		--plugin=protoc-gen-grpc=/opt/grpc/bins/opt/grpc_php_plugin \
 		proto/sum.proto
 
-test:
-	@go test ./...
-
-benchmark:
-	@go test -run=xxx -bench=. ./...
-
 clean:
 	@rm -rf proto/*.go
 	@rm -rf clients/python/proto/sum_*.py
 	@rm -rf clients/php/Sum
 	@rm -rf clients/php/GPBMetadata
 	@rm -rf sumd
+	@rm -rf *.profile
+	@rm -rf *.profile.html
 
 run:
 	@clear 

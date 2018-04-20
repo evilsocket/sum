@@ -4,3 +4,4 @@ test_*.py
 *.csv
 *.pyc
 *.profile
+*.profile.html
