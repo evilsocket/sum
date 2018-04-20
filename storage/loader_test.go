@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	testFolder  = "/tmp/testsum"
+	testFolder  = "/tmp/sum.storage.test"
 	testBroken  = testFolder + "/bro.ken"
 	testRecords = 5
 )

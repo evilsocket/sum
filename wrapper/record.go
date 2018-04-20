@@ -15,8 +15,12 @@ type Record struct {
 }
 
 func ForRecord(store *storage.Records, record *pb.Record) Record {
+	id := uint64(0)
+	if record != nil {
+		id = record.Id
+	}
 	return Record{
-		Id:     record.Id,
+		Id:     id,
 		record: record,
 		store:  store,
 	}

@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	testDatFile = "/tmp/test.dat"
+	testDatFile = "/tmp/storage.test.dat"
 )
 
 var (
