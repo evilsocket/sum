@@ -1,31 +1,19 @@
-all: server clients
+all: sumd clients
 
-server: deps proto/sum.pb.go sumd
+server_deps: deps proto/sum.pb.go
 
 clients: clients/python/proto/sum_pb2.py clients/php/Sum 
-
-sumd:
-	@echo "Building sumd binary ..."
-	@go build -o sumd .
 
 deps:
 	@dep ensure
 
+sumd: server_deps
+	@echo "Building sumd binary ..."
+	@go build -o sumd .
+
 proto/sum.pb.go:
 	@echo "Generating Go protocol files ..."
 	@/opt/grpc/bins/opt/protobuf/protoc -I. --go_out=plugins=grpc:. proto/sum.proto
-
-benchmark: deps proto/sum.pb.go
-	@echo "Running benchmarks ..."
-	@go test -run=xxx -bench=. ./...
-
-test: deps proto/sum.pb.go
-	@echo "Running tests ...\n"
-	@go test ./... -coverprofile coverage.profile 
-	
-coverage: test
-	@echo "\nGenerating code coverage report to coverage.profile.html ..."
-	@go tool cover -html=coverage.profile -o coverage.profile.html
 
 clients/python/proto/sum_pb2.py:
 	@echo "Generating Python protocol files ..."
@@ -42,6 +30,20 @@ clients/php/Sum:
 		--grpc_out=clients/php \
 		--plugin=protoc-gen-grpc=/opt/grpc/bins/opt/grpc_php_plugin \
 		proto/sum.proto
+
+benchmark: server_deps
+	@echo "Running benchmarks ..."
+	@go test -run=xxx -bench=. ./...
+
+test: server_deps
+	@echo "Running tests ...\n"
+	@go test ./... -v
+	
+coverage: server_deps
+	@echo "Running tests with coverage profile ...\n"
+	@go test ./... -coverprofile coverage.profile 
+	@echo "\nGenerating code coverage report to coverage.profile.html ..."
+	@go tool cover -html=coverage.profile -o coverage.profile.html
 
 clean:
 	@echo "Cleaning ..."
@@ -60,10 +62,10 @@ reset_env: clean
 	@sudo mkdir -p /var/lib/sumd/data
 	@sudo mkdir -p /var/lib/sumd/oracles
 
-profile: reset_env server
+profile: reset_env sumd
 	@clear
 	@sudo ./sumd -cpu-profile cpu.profile -mem-profile mem.profile
 
-run: reset_env server
+run: reset_env sumd
 	@clear
 	@sudo ./sumd
