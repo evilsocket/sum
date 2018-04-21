@@ -52,7 +52,7 @@ define testPackage
 	@go vet ./$(1)
 	@golint -set_exit_status ./$(1)
 	@megacheck ./$(1)
-	@go test -v ./$(1) -coverprofile=$(1).profile
+	@go test -v -race ./$(1) -coverprofile=$(1).profile
 	@tail -n +2 $(1).profile >> coverage.profile && rm $(1).profile
 endef
 
