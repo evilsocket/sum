@@ -14,7 +14,6 @@ import (
 	"github.com/evilsocket/sum/storage"
 	"github.com/evilsocket/sum/wrapper"
 
-	// "github.com/dustin/go-humanize"
 	"golang.org/x/net/context"
 )
 
@@ -76,7 +75,7 @@ func errCallResponse(format string, args ...interface{}) *pb.CallResponse {
 func (s *Service) Run(ctx context.Context, call *pb.Call) (*pb.CallResponse, error) {
 	compiled := s.oracles.Find(call.OracleId)
 	if compiled == nil {
-		return errCallResponse("Oracle %s not found.", call.OracleId), nil
+		return errCallResponse("Oracle %d not found.", call.OracleId), nil
 	}
 
 	vm := compiled.VM()
@@ -105,14 +104,9 @@ func (s *Service) Run(ctx context.Context, call *pb.Call) (*pb.CallResponse, err
 	jsonSize := len(j)
 	if jsonSize > gzipResponseSize {
 		var buf bytes.Buffer
-
-		// log.Printf("compressing payload of %s ...", humanize.Bytes(uint64(jsonSize)))
-		// started := time.Now()
 		if w, err := gzip.NewWriterLevel(&buf, gzip.BestCompression); err == nil {
 			w.Write(j)
 			w.Close()
-
-			// log.Printf("compressed to %s in %fs", humanize.Bytes(uint64(buf.Len())), time.Since(started).Seconds())
 
 			data.Compressed = true
 			data.Payload = buf.Bytes()
