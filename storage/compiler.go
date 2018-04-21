@@ -35,17 +35,17 @@ func Compile(oracle *pb.Oracle) (*CompiledOracle, error) {
 	}, nil
 }
 
-// Returns the raw *pb.Oracle object.
+// Oracle returns the raw *pb.Oracle object.
 func (c *CompiledOracle) Oracle() *pb.Oracle {
 	return c.oracle
 }
 
-// Returns the dedicate VM object.
+// VM returns the dedicate VM object.
 func (c *CompiledOracle) VM() *otto.Otto {
 	return c.vm
 }
 
-// Locks the VM and evaluates a call to this oracle using the provided
+// Run locks the VM and evaluates a call to this oracle using the provided
 // arguments list.
 func (c *CompiledOracle) Run(args []string) (otto.Value, error) {
 	c.Lock()
