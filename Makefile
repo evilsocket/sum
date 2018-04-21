@@ -4,7 +4,6 @@ server: deps proto/sum.pb.go sumd
 
 clients: clients/python/proto/sum_pb2.py clients/php/Sum 
 
-
 sumd:
 	@echo "Building sumd binary ..."
 	@go build -o sumd .
@@ -45,6 +44,7 @@ clients/php/Sum:
 		proto/sum.proto
 
 clean:
+	@echo "Cleaning ..."
 	@rm -rf proto/*.go
 	@rm -rf clients/python/proto/sum_*.py
 	@rm -rf clients/php/Sum
@@ -53,12 +53,18 @@ clean:
 	@rm -rf *.profile
 	@rm -rf *.profile.html
 
-run:
+reset_env: clean
+	@echo "Resetting environment ..."
 	@clear 
-	@make clean
 	@make 
-	@clear 
 	@sudo rm -rf /var/lib/sumd
 	@sudo mkdir -p /var/lib/sumd/data
 	@sudo mkdir -p /var/lib/sumd/oracles
+
+profile: reset_env
+	@clear
 	@sudo ./sumd -cpu-profile cpu.profile -mem-profile mem.profile
+
+run: reset_env
+	@clear
+	@sudo ./sumd
