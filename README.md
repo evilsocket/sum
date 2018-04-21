@@ -1,6 +1,8 @@
 # SUM
+[![Build](https://img.shields.io/travis/evilsocket/sum/master.svg?style=flat-square)](https://travis-ci.org/evilsocket/sum) 
 [![Go Report Card](https://goreportcard.com/badge/github.com/evilsocket/sum)](https://goreportcard.com/report/github.com/evilsocket/sum)
-[![GoDoc](https://godoc.org/github.com/evilsocket/sum?status.svg)](https://godoc.org/github.com/evilsocket/sum)
+[![GoDoc](https://godoc.org/github.com/evilsocket/sum?status.svg)](https://godoc.org/github.com/evilsocket/sum) 
+[![Release](https://img.shields.io/github/release/evilsocket/sum.svg?style=flat-square)](https://github.com/evilsocket/sum/releases/latest)
 
 If you work with machine learning you probably find yourself having around a bunch of huge CSV files that maybe you 
 keep using to train your models, or you run PCA on them, or you perform any sort of analysis. If this is the case, you 
