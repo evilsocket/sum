@@ -37,7 +37,7 @@ benchmark: server_deps
 
 test: server_deps
 	@echo "Running tests ...\n"
-	@go test ./... -v -coverprofile=coverage.profile -covermode=atomic
+	@go test ./... -coverprofile=coverage.profile
 
 html_coverage: test
 	@echo "\nGenerating code coverage report to coverage.profile.html ..."

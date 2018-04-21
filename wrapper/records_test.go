@@ -10,6 +10,8 @@ import (
 
 	pb "github.com/evilsocket/sum/proto"
 	"github.com/evilsocket/sum/storage"
+
+	"github.com/golang/protobuf/proto"
 )
 
 const (
@@ -173,8 +175,8 @@ func TestAll(t *testing.T) {
 
 	for _, wRec := range all {
 		found := false
-		records.ForEach(func(r *pb.Record) {
-			if reflect.DeepEqual(r, wRec.record) == true {
+		records.ForEach(func(m proto.Message) {
+			if reflect.DeepEqual(m.(*pb.Record), wRec.record) == true {
 				found = true
 			}
 		})
@@ -227,8 +229,8 @@ func TestAllBut(t *testing.T) {
 		}
 
 		found := false
-		records.ForEach(func(r *pb.Record) {
-			if reflect.DeepEqual(r, wRec.record) == true {
+		records.ForEach(func(m proto.Message) {
+			if reflect.DeepEqual(m.(*pb.Record), wRec.record) == true {
 				found = true
 			}
 		})

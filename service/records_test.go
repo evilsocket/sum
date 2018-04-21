@@ -1,11 +1,11 @@
 package service
 
 import (
-	"fmt"
 	"reflect"
 	"testing"
 
 	pb "github.com/evilsocket/sum/proto"
+	"github.com/evilsocket/sum/storage"
 )
 
 var (
@@ -30,7 +30,7 @@ func TestErrRecordResponse(t *testing.T) {
 }
 
 func TestCreateRecord(t *testing.T) {
-	setup(t, true, true)
+	setupFolders(t)
 	defer teardown(t)
 
 	if svc, err := New(testFolder); err != nil {
@@ -41,7 +41,7 @@ func TestCreateRecord(t *testing.T) {
 		t.Fatalf("expected success response: %v", resp)
 	} else if resp.Record != nil {
 		t.Fatalf("unexpected record pointer: %v", resp.Record)
-	} else if resp.Msg != fmt.Sprintf("%d", testRecords+1) {
+	} else if resp.Msg != "1" {
 		t.Fatalf("unexpected response message: %s", resp.Msg)
 	}
 }
@@ -81,7 +81,7 @@ func TestCreateRecordNotUniqueId(t *testing.T) {
 		t.Fatalf("expected error response: %v", resp)
 	} else if resp.Record != nil {
 		t.Fatalf("unexpected record pointer: %v", resp.Record)
-	} else if resp.Msg != "Record identifier 1 violates the unicity constraint." {
+	} else if resp.Msg != storage.ErrInvalidId.Error() {
 		t.Fatalf("unexpected response message: %s", resp.Msg)
 	}
 }
@@ -144,7 +144,7 @@ func TestUpdateRecordWithInvalidId(t *testing.T) {
 		t.Fatalf("expected error response: %v", resp)
 	} else if resp.Record != nil {
 		t.Fatalf("unexpected record pointer: %v", resp.Record)
-	} else if resp.Msg != "Record 666 not found." {
+	} else if resp.Msg != storage.ErrRecordNotFound.Error() {
 		t.Fatalf("unexpected response message: %s", resp.Msg)
 	}
 }
@@ -196,7 +196,7 @@ func TestReadRecordWithInvalidId(t *testing.T) {
 		t.Fatalf("expected error response: %v", resp)
 	} else if resp.Record != nil {
 		t.Fatalf("unexpected record pointer: %v", resp.Record)
-	} else if resp.Msg != "Record 666 not found." {
+	} else if resp.Msg != "record 666 not found." {
 		t.Fatalf("unexpected message: %s", resp.Msg)
 	}
 }
@@ -269,7 +269,7 @@ func TestDeleteRecordWithInvalidId(t *testing.T) {
 		t.Fatalf("expected error response: %v", resp)
 	} else if resp.Record != nil {
 		t.Fatalf("unexpected record pointer: %v", resp.Record)
-	} else if resp.Msg != "Record 666 not found." {
+	} else if resp.Msg != "record 666 not found." {
 		t.Fatalf("unexpected message: %s", resp.Msg)
 	}
 }

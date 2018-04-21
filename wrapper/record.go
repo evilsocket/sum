@@ -1,7 +1,7 @@
 package wrapper
 
 import (
-	"fmt"
+	"log"
 	"math"
 
 	pb "github.com/evilsocket/sum/proto"
@@ -34,7 +34,7 @@ func ForRecord(store *storage.Records, record *pb.Record) Record {
 func (w Record) flush() bool {
 	if w.store != nil {
 		if err := w.store.Update(w.record); err != nil {
-			fmt.Printf("error while fushing record %d after an update: %s\n", w.record.Id, err)
+			log.Printf("error while fushing record %d after an update: %s", w.record.Id, err)
 			return false
 		}
 	}

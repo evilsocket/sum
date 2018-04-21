@@ -79,20 +79,21 @@ func setup(t testing.TB, withRecords bool, withOracles bool) {
 	teardown(t)
 
 	if err := os.MkdirAll(testFolder, 0755); err != nil {
-		t.Fatalf("Error creating %s: %s", testFolder, err)
+		t.Fatalf("error creating %s: %s", testFolder, err)
 	}
 
 	if withRecords {
 		basePath := filepath.Join(testFolder, dataFolderName)
 		if err := os.MkdirAll(basePath, 0755); err != nil {
-			t.Fatalf("Error creating folder %s: %s", basePath, err)
-		} else if recs, err := storage.LoadRecords(basePath); err != nil {
+			t.Fatalf("error creating folder %s: %s", basePath, err)
+		}
+		recs, err := storage.LoadRecords(basePath)
+		if err != nil {
 			t.Fatal(err)
-		} else {
-			for i := 1; i <= testRecords; i++ {
-				if err := recs.Create(&testRecord); err != nil {
-					t.Fatalf("Error while creating record: %s", err)
-				}
+		}
+		for i := 1; i <= testRecords; i++ {
+			if err := recs.Create(&testRecord); err != nil {
+				t.Fatalf("error while creating record: %s", err)
 			}
 		}
 	}
@@ -100,15 +101,35 @@ func setup(t testing.TB, withRecords bool, withOracles bool) {
 	if withOracles {
 		basePath := filepath.Join(testFolder, oraclesFolderName)
 		if err := os.MkdirAll(basePath, 0755); err != nil {
-			t.Fatalf("Error creating folder %s: %s", basePath, err)
-		} else if ors, err := storage.LoadOracles(basePath); err != nil {
+			t.Fatalf("error creating folder %s: %s", basePath, err)
+		}
+
+		ors, err := storage.LoadOracles(basePath)
+		if err != nil {
 			t.Fatal(err)
-		} else {
-			for i := 1; i <= testOracles; i++ {
-				if err := ors.Create(&testOracle); err != nil {
-					t.Fatalf("Error creating oracle: %s", err)
-				}
+		}
+		for i := 1; i <= testOracles; i++ {
+			if err := ors.Create(&testOracle); err != nil {
+				t.Fatalf("error creating oracle: %s", err)
 			}
+		}
+	}
+}
+
+func setupFolders(t testing.TB) {
+	log.SetOutput(ioutil.Discard)
+
+	// start clean
+	teardown(t)
+
+	if err := os.MkdirAll(testFolder, 0755); err != nil {
+		t.Fatalf("error creating %s: %s", testFolder, err)
+	}
+
+	for _, sub := range []string{dataFolderName, oraclesFolderName} {
+		basePath := filepath.Join(testFolder, sub)
+		if err := os.MkdirAll(basePath, 0755); err != nil {
+			t.Fatalf("error creating folder %s: %s", basePath, err)
 		}
 	}
 }
@@ -116,7 +137,7 @@ func setup(t testing.TB, withRecords bool, withOracles bool) {
 func teardown(t testing.TB) {
 	if err := unlink(testFolder); err != nil {
 		if os.IsNotExist(err) == false {
-			t.Fatalf("Error deleting %s: %s", testFolder, err)
+			t.Fatalf("error deleting %s: %s", testFolder, err)
 		}
 	}
 }
@@ -306,7 +327,7 @@ func TestRunWithWithInvalidId(t *testing.T) {
 	defer teardown(t)
 
 	call := pb.Call{OracleId: 12345}
-	msg := "Oracle 12345 not found."
+	msg := "oracle 12345 not found."
 
 	if svc, err := New(testFolder); err != nil {
 		t.Fatal(err)
@@ -344,7 +365,7 @@ func TestRunWithWithInvalidArgs(t *testing.T) {
 
 func TestRunWithContextError(t *testing.T) {
 	bak := testOracle.Code
-	msg := "Error while running oracle 1: nope"
+	msg := "error while running oracle 1: nope"
 	testOracle.Code = "function findReasonsToLive(){ ctx.Error('nope'); }"
 	defer func() {
 		testOracle.Code = bak

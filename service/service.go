@@ -3,16 +3,17 @@ package service
 import (
 	"bytes"
 	"compress/gzip"
-	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
 	pb "github.com/evilsocket/sum/proto"
 	"github.com/evilsocket/sum/storage"
-	"github.com/evilsocket/sum/wrapper"
 
+	"github.com/golang/protobuf/proto"
 	"golang.org/x/net/context"
 )
 
@@ -30,13 +31,15 @@ func errCallResponse(format string, args ...interface{}) *pb.CallResponse {
 // Service represents a single instance of the Sum database
 // service.
 type Service struct {
+	sync.RWMutex
+
 	started  time.Time
 	pid      uint64
 	uid      uint64
 	argv     []string
 	records  *storage.Records
-	wrecords wrapper.Records
 	oracles  *storage.Oracles
+	compiled map[uint64]*compiled
 }
 
 // New loads records and oracles from a given path and returns
@@ -52,14 +55,35 @@ func New(dataPath string) (*Service, error) {
 		return nil, err
 	}
 
+	precompiled := make(map[uint64]*compiled)
+	if oracles.Size() > 0 {
+		log.Printf("precompiling %d oracles ...", oracles.Size())
+		err := error(nil)
+		c := (*compiled)(nil)
+		oracles.ForEach(func(m proto.Message) {
+			if err == nil {
+				oracle := m.(*pb.Oracle)
+				if c, err = compileOracle(oracle); err != nil {
+					err = fmt.Errorf("error while compiling oracle %d: %s", oracle.Id, err)
+				} else {
+					precompiled[oracle.Id] = c
+				}
+			}
+		})
+
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return &Service{
 		started:  time.Now(),
 		pid:      uint64(os.Getpid()),
 		uid:      uint64(os.Getuid()),
 		argv:     os.Args,
 		records:  records,
-		wrecords: wrapper.ForRecords(records),
 		oracles:  oracles,
+		compiled: precompiled,
 	}, nil
 }
 
@@ -80,26 +104,16 @@ func (s *Service) Info(ctx context.Context, dummy *pb.Empty) (*pb.ServerInfo, er
 // Run executes a compiled oracle given its identifier and the arguments
 // in the *pb.Call object.
 func (s *Service) Run(ctx context.Context, call *pb.Call) (*pb.CallResponse, error) {
-	compiled := s.oracles.Find(call.OracleId)
+	compiled := s.getCompiled(call.OracleId)
 	if compiled == nil {
-		return errCallResponse("Oracle %d not found.", call.OracleId), nil
+		return errCallResponse("oracle %d not found.", call.OracleId), nil
 	}
 
-	vm := compiled.VM()
-	callCtx := wrapper.NewContext()
-
-	vm.Set("records", s.wrecords)
-	vm.Set("ctx", callCtx)
-
-	ret, err := compiled.Run(call.Args)
+	_, err, raw := compiled.RunWithContext(s.records, call.Args)
 	if err != nil {
-		return errCallResponse("Error while running oracle %d: %s", call.OracleId, err), nil
-	} else if callCtx.IsError() {
-		return errCallResponse("Error while running oracle %d: %s", call.OracleId, callCtx.Message()), nil
+		return errCallResponse("error while running oracle %d: %s", call.OracleId, err), nil
 	}
 
-	obj, _ := ret.Export()
-	raw, _ := json.Marshal(obj)
 	size := len(raw)
 	compressed := false
 

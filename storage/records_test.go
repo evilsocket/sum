@@ -2,11 +2,14 @@ package storage
 
 import (
 	"io/ioutil"
+	"log"
 	"os"
 	"reflect"
 	"testing"
 
 	pb "github.com/evilsocket/sum/proto"
+
+	"github.com/golang/protobuf/proto"
 )
 
 var (
@@ -19,6 +22,8 @@ var (
 )
 
 func setupRecords(t testing.TB, withValid bool, withCorrupted bool) {
+	log.SetOutput(ioutil.Discard)
+
 	// start clean
 	teardownRecords(t)
 
@@ -59,7 +64,8 @@ func TestLoadRecords(t *testing.T) {
 		t.Fatalf("expected %d records, %d found in %s", testRecords, records.Size(), testFolder)
 	}
 
-	records.ForEach(func(r *pb.Record) {
+	records.ForEach(func(m proto.Message) {
+		r := m.(*pb.Record)
 		// id was updated while saving the record
 		if r.Id = testRecord.Id; reflect.DeepEqual(*r, testRecord) == false {
 			t.Fatalf("records should be the same here")
@@ -79,52 +85,6 @@ func TestLoadRecordsWithCorruptedData(t *testing.T) {
 		t.Fatal("expected error due to broken record dat file")
 	} else if records != nil {
 		t.Fatal("expected no storage loaded due to corrupted record dat file")
-	}
-}
-
-func TestRecordsCreate(t *testing.T) {
-	setupRecords(t, false, false)
-	defer teardownRecords(t)
-
-	records, err := LoadRecords(testFolder)
-	if err != nil {
-		t.Fatal(err)
-	} else if records.Size() != 0 {
-		t.Fatal("expected empty record storage")
-	} else if err := records.Create(&testRecord); err != nil {
-		t.Fatal(err)
-	}
-}
-
-func BenchmarkRecordsCreate(b *testing.B) {
-	setupRecords(b, false, false)
-	defer teardownRecords(b)
-
-	records, err := LoadRecords(testFolder)
-	if err != nil {
-		b.Fatal(err)
-	}
-
-	for i := 0; i < b.N; i++ {
-		if err := records.Create(&testRecord); err != nil {
-			b.Fatal(err)
-		}
-	}
-}
-
-func TestRecordsCreateNotUniqueId(t *testing.T) {
-	setupRecords(t, true, false)
-	defer teardownRecords(t)
-
-	records, err := LoadRecords(testFolder)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// ok this is kinda cheating, but i want full coverage
-	records.NextId(1)
-	if err := records.Create(&testRecord); err == nil {
-		t.Fatalf("expected error for non unique record id")
 	}
 }
 
@@ -174,59 +134,6 @@ func TestRecordsFindWithInvalidId(t *testing.T) {
 		if record := records.Find(uint64(i + 1)); record != nil {
 			t.Fatalf("record with id %d was not expected to be found", i)
 		}
-	}
-}
-
-func TestRecordsUpdate(t *testing.T) {
-	setupRecords(t, true, false)
-	defer teardownRecords(t)
-
-	records, err := LoadRecords(testFolder)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	updatedRecord.Id = 1
-	if err := records.Update(&updatedRecord); err != nil {
-		t.Fatal(err)
-	}
-
-	if stored := records.Find(updatedRecord.Id); stored == nil {
-		t.Fatal("expected stored record with id 1")
-	} else if reflect.DeepEqual(*stored, updatedRecord) == false {
-		t.Fatal("record has not been updated as expected")
-	}
-}
-
-func BenchmarkRecordsUpdate(b *testing.B) {
-	setupRecords(b, true, false)
-	defer teardownRecords(b)
-
-	records, err := LoadRecords(testFolder)
-	if err != nil {
-		b.Fatal(err)
-	}
-
-	for i := 0; i < b.N; i++ {
-		updatedRecord.Id = uint64(i%testRecords) + 1
-		if err := records.Update(&updatedRecord); err != nil {
-			b.Fatal(err)
-		}
-	}
-}
-
-func TestRecordsUpdateInvalidId(t *testing.T) {
-	setupRecords(t, true, false)
-	defer teardownRecords(t)
-
-	records, err := LoadRecords(testFolder)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	updatedRecord.Id = ^uint64(0)
-	if err := records.Update(&updatedRecord); err == nil {
-		t.Fatal("expected error due to invalid id")
 	}
 }
 

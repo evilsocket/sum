@@ -38,7 +38,7 @@ func (s *Service) UpdateRecord(ctx context.Context, record *pb.Record) (*pb.Reco
 func (s *Service) ReadRecord(ctx context.Context, query *pb.ById) (*pb.RecordResponse, error) {
 	record := s.records.Find(query.Id)
 	if record == nil {
-		return errRecordResponse("Record %d not found.", query.Id), nil
+		return errRecordResponse("record %d not found.", query.Id), nil
 	}
 	return &pb.RecordResponse{Success: true, Record: record}, nil
 }
@@ -47,7 +47,7 @@ func (s *Service) ReadRecord(ctx context.Context, query *pb.ById) (*pb.RecordRes
 func (s *Service) DeleteRecord(ctx context.Context, query *pb.ById) (*pb.RecordResponse, error) {
 	record := s.records.Delete(query.Id)
 	if record == nil {
-		return errRecordResponse("Record %d not found.", query.Id), nil
+		return errRecordResponse("record %d not found.", query.Id), nil
 	}
 	return &pb.RecordResponse{Success: true}, nil
 }

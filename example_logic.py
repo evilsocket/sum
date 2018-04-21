@@ -27,7 +27,7 @@ def timer_stop(with_avg=True):
 if __name__ == '__main__':
     start = 0
     end = 0
-    num_rows = 3000
+    num_rows = 300
     num_columns = 100
     index = {}
 

@@ -1,7 +1,6 @@
 package service
 
 import (
-	"fmt"
 	"reflect"
 	"testing"
 
@@ -34,7 +33,7 @@ func TestErrOracleResponse(t *testing.T) {
 }
 
 func TestCreateOracle(t *testing.T) {
-	setup(t, true, true)
+	setupFolders(t)
 	defer teardown(t)
 
 	if svc, err := New(testFolder); err != nil {
@@ -45,7 +44,7 @@ func TestCreateOracle(t *testing.T) {
 		t.Fatalf("expected success response: %v", resp)
 	} else if resp.Oracles != nil {
 		t.Fatalf("unexpected oracles list: %v", resp.Oracles)
-	} else if resp.Msg != fmt.Sprintf("%d", testOracles+1) {
+	} else if resp.Msg != "1" {
 		t.Fatalf("unexpected response message: %s", resp.Msg)
 	}
 }
@@ -99,7 +98,7 @@ func TestUpdateOracle(t *testing.T) {
 		t.Fatalf("unexpected oracles list: %v", resp.Oracles)
 	} else if stored := svc.oracles.Find(updatedOracle.Id); stored == nil {
 		t.Fatal("expected stored oracle with id 1")
-	} else if reflect.DeepEqual(*stored.Oracle(), updatedOracle) == false {
+	} else if reflect.DeepEqual(*stored, updatedOracle) == false {
 		t.Fatal("oracle has not been updated as expected")
 	}
 }
@@ -191,7 +190,7 @@ func TestReadOracleWithInvalidId(t *testing.T) {
 		t.Fatalf("expected error response: %v", resp)
 	} else if resp.Oracles != nil {
 		t.Fatalf("unexpected oracles list: %v", resp.Oracles)
-	} else if resp.Msg != "Oracle 666 not found." {
+	} else if resp.Msg != "oracle 666 not found." {
 		t.Fatalf("unexpected message: %s", resp.Msg)
 	}
 }
