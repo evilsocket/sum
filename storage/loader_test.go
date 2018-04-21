@@ -74,7 +74,7 @@ func canWriteOnRoot() bool {
 	return false
 }
 
-func TestListPath(t *testing.T) {
+func TestLoaderListPath(t *testing.T) {
 	setupRawRecords(t)
 	defer teardownRecords(t)
 
@@ -98,7 +98,7 @@ func TestListPath(t *testing.T) {
 	}
 }
 
-func TestListPathWithError(t *testing.T) {
+func TestLoaderListPathWithError(t *testing.T) {
 	if _, _, err := ListPath("/dev/random"); err == nil {
 		t.Fatal("expected an error")
 	} else if _, _, err := ListPath("/lulzlulz"); err == nil {
@@ -111,7 +111,7 @@ func TestListPathWithError(t *testing.T) {
 	}
 }
 
-func TestLoad(t *testing.T) {
+func TestLoaderLoad(t *testing.T) {
 	setupRawRecords(t)
 	defer teardownRecords(t)
 
@@ -130,7 +130,7 @@ func TestLoad(t *testing.T) {
 	}
 }
 
-func TestLoadWithError(t *testing.T) {
+func TestLoaderLoadWithError(t *testing.T) {
 	setupRawRecords(t)
 	defer teardownRecords(t)
 
@@ -140,18 +140,5 @@ func TestLoadWithError(t *testing.T) {
 		t.Fatal("error expected for /lulz.dat")
 	} else if err := Load(testBroken, &rec); err == nil {
 		t.Fatalf("erorr expected for %s", testBroken)
-	}
-}
-
-func BenchmarkLoad(b *testing.B) {
-	if err := Flush(&testRecord, testDatFile); err != nil {
-		b.Fatal(err)
-	}
-
-	for i := 0; i < b.N; i++ {
-		var rec pb.Record
-		if err := Load(testDatFile, &rec); err != nil {
-			b.Fatalf("erorr loading %s: %s", testDatFile, err)
-		}
 	}
 }

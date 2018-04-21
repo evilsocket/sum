@@ -46,18 +46,6 @@ func TestIndexLoad(t *testing.T) {
 	}
 }
 
-func BenchmarkIndexLoad(b *testing.B) {
-	setupRecords(b, true, false)
-	defer teardownRecords(b)
-
-	i := setupIndex(testFolder)
-	for n := 0; n < b.N; n++ {
-		if err := i.Load(); err != nil {
-			b.Fatal(err)
-		}
-	}
-}
-
 func TestIndexLoadWithNoFolder(t *testing.T) {
 	i := setupIndex("/ilulzsomuch")
 	if err := i.Load(); err == nil {
@@ -81,26 +69,11 @@ func TestIndexPathForId(t *testing.T) {
 	}
 }
 
-func BenchmarkIndexPathForId(b *testing.B) {
-	i := setupIndex("/foo")
-	for n := 0; n < b.N; n++ {
-		_ = i.pathForID(uint64(n%666) + 1)
-	}
-}
-
 func TestIndexPathFor(t *testing.T) {
 	i := setupIndex("/foo")
 	testRecord.Id = 1234
 	if path := i.pathFor(&testRecord); path != "/foo/1234.dat" {
 		t.Fatalf("unpexpected path: %s", path)
-	}
-}
-
-func BenchmarkIndexPathFor(b *testing.B) {
-	i := setupIndex("/foo")
-	for n := 0; n < b.N; n++ {
-		testRecord.Id = uint64(n%666) + 1
-		_ = i.pathFor(&testRecord)
 	}
 }
 
@@ -124,22 +97,6 @@ func TestIndexForEach(t *testing.T) {
 	})
 }
 
-func BenchmarkIndexForEach(b *testing.B) {
-	setupRecords(b, true, false)
-	defer teardownRecords(b)
-
-	i := setupIndex(testFolder)
-	if err := i.Load(); err != nil {
-		b.Fatal(err)
-	} else if i.Size() != testRecords {
-		b.Fatalf("expected %d records, got %d", testRecords, i.Size())
-	}
-
-	for n := 0; n < b.N; n++ {
-		i.ForEach(func(m proto.Message) {})
-	}
-}
-
 func TestIndexCreateRecord(t *testing.T) {
 	setupRecords(t, false, false)
 	defer teardownRecords(t)
@@ -157,26 +114,6 @@ func TestIndexCreateRecord(t *testing.T) {
 		t.Fatalf("expected record with id %d", testRecord.Id)
 	} else if r := m.(*pb.Record); !reflect.DeepEqual(*r, testRecord) {
 		t.Fatal("records should match")
-	}
-}
-
-func BenchmarkIndexCreateRecord(b *testing.B) {
-	setupRecords(b, false, false)
-	defer teardownRecords(b)
-
-	i := setupIndex(testFolder)
-	if err := i.Load(); err != nil {
-		b.Fatal(err)
-	} else if i.Size() != 0 {
-		b.Fatalf("expected %d records, got %d", 0, i.Size())
-	}
-
-	for n := 0; n < b.N; n++ {
-		_ = i.Create(&testRecord)
-	}
-
-	if i.Size() != uint64(b.N) {
-		b.Fatalf("expected %d records, found %d", b.N, i.Size())
 	}
 }
 
@@ -230,23 +167,6 @@ func TestIndexUpdateRecord(t *testing.T) {
 		t.Fatalf("expected record with id %d", updatedRecord.Id)
 	} else if r := m.(*pb.Record); !reflect.DeepEqual(*r, updatedRecord) {
 		t.Fatal("records should match")
-	}
-}
-
-func BenchmarkIndexUpdateRecord(b *testing.B) {
-	setupRecords(b, true, false)
-	defer teardownRecords(b)
-
-	i := setupIndex(testFolder)
-	if err := i.Load(); err != nil {
-		b.Fatal(err)
-	} else if i.Size() != testRecords {
-		b.Fatalf("expected %d records, got %d", testRecords, i.Size())
-	}
-
-	for n := 0; n < b.N; n++ {
-		updatedRecord.Id = uint64(n%testRecords) + 1
-		_ = i.Update(&updatedRecord)
 	}
 }
 
@@ -305,21 +225,6 @@ func TestIndexFindRecord(t *testing.T) {
 	}
 }
 
-func BenchmarkIndexFindRecord(b *testing.B) {
-	setupRecords(b, true, false)
-	defer teardownRecords(b)
-
-	i := setupIndex(testFolder)
-	if err := i.Load(); err != nil {
-		b.Fatal(err)
-	}
-
-	for n := 0; n < b.N; n++ {
-		testRecord.Id = uint64(n%666) + 1
-		_ = i.Find(testRecord.Id)
-	}
-}
-
 func TestIndexFindRecordWithInvalidId(t *testing.T) {
 	setupRecords(t, true, false)
 	defer teardownRecords(t)
@@ -356,27 +261,6 @@ func TestIndexDeleteRecord(t *testing.T) {
 
 	if i.Size() != 0 {
 		t.Fatalf("expected empty index, found %d elements instead", i.Size())
-	}
-}
-
-func BenchmarkIndexDeleteRecord(b *testing.B) {
-	defer teardownRecords(b)
-
-	var idx *Index
-	for i := 0; i < b.N; i++ {
-		// this is not entirely ok as once every 5 times
-		// we neeed to recreate and reload records, which
-		// increases the operations being benchmarked
-		id := uint64(i%testRecords) + 1
-		if id == 1 {
-			setupRecords(b, true, false)
-			idx = setupIndex(testFolder)
-			if err := idx.Load(); err != nil {
-				b.Fatal(err)
-			}
-		}
-
-		_ = idx.Delete(id)
 	}
 }
 

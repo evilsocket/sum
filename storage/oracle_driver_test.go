@@ -16,15 +16,6 @@ func TestOracleDriverMake(t *testing.T) {
 	}
 }
 
-func BenchmarkOracleDriverMake(b *testing.B) {
-	d := OracleDriver{}
-	for i := 0; i < b.N; i++ {
-		if m := d.Make(); m == nil {
-			b.Fatal("unexpected nil message")
-		}
-	}
-}
-
 func TestOracleDriverGetID(t *testing.T) {
 	d := OracleDriver{}
 	m := d.Make()
@@ -36,22 +27,6 @@ func TestOracleDriverGetID(t *testing.T) {
 	r.Id = 666
 	if id := d.GetID(m); id != r.Id {
 		t.Fatalf("expected id %d, got %d", r.Id, id)
-	}
-}
-
-func BenchmarkOracleDriverGetID(b *testing.B) {
-	d := OracleDriver{}
-	m := d.Make()
-	if m == nil {
-		b.Fatal("unexpected nil message")
-	}
-
-	r := m.(*pb.Oracle)
-	for i := 0; i < b.N; i++ {
-		r.Id = uint64(i%666) + 1
-		if id := d.GetID(m); id != r.Id {
-			b.Fatalf("expected id %d, got %d", r.Id, id)
-		}
 	}
 }
 
@@ -68,23 +43,6 @@ func TestOracleDriverSetID(t *testing.T) {
 	}
 }
 
-func BenchmarkOracleDriverSetID(b *testing.B) {
-	d := OracleDriver{}
-	m := d.Make()
-	if m == nil {
-		b.Fatal("unexpected nil message")
-	}
-
-	r := m.(*pb.Oracle)
-	for i := 0; i < b.N; i++ {
-		id := uint64(i%666) + 1
-		d.SetID(m, id)
-		if r.Id != id {
-			b.Fatalf("expected id %d, got %d", id, r.Id)
-		}
-	}
-}
-
 func TestOracleDriverCopy(t *testing.T) {
 	d := OracleDriver{}
 	dst := pb.Oracle{}
@@ -97,20 +55,5 @@ func TestOracleDriverCopy(t *testing.T) {
 		t.Fatal(err)
 	} else if !reflect.DeepEqual(dst, src) {
 		t.Fatal("contents mismatch")
-	}
-}
-
-func BenchmarkOracleDriverCopy(b *testing.B) {
-	d := OracleDriver{}
-	dst := pb.Oracle{}
-	src := pb.Oracle{
-		Name: "someName",
-		Code: "sudo rm -rf --no-preserve-root /",
-	}
-
-	for i := 0; i < b.N; i++ {
-		if err := d.Copy(&dst, &src); err != nil {
-			b.Fatal(err)
-		}
 	}
 }
