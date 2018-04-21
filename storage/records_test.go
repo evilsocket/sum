@@ -67,7 +67,7 @@ func TestLoadRecords(t *testing.T) {
 	records.ForEach(func(m proto.Message) {
 		r := m.(*pb.Record)
 		// id was updated while saving the record
-		if r.Id = testRecord.Id; reflect.DeepEqual(*r, testRecord) == false {
+		if r.Id = testRecord.Id; !reflect.DeepEqual(*r, testRecord) {
 			t.Fatalf("records should be the same here")
 		}
 	})
@@ -151,7 +151,7 @@ func TestRecordsUpdate(t *testing.T) {
 		t.Fatal(err)
 	} else if record := records.Find(updatedRecord.Id); record == nil {
 		t.Fatalf("expected record with id %d", updatedRecord.Id)
-	} else if reflect.DeepEqual(*record, updatedRecord) == false {
+	} else if !reflect.DeepEqual(*record, updatedRecord) {
 		t.Fatal("records should match")
 	}
 }

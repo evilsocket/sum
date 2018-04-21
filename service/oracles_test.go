@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"reflect"
 	"testing"
 
@@ -24,7 +25,7 @@ var (
 )
 
 func TestErrOracleResponse(t *testing.T) {
-	if r := errOracleResponse("test %d", 123); r.Success == true {
+	if r := errOracleResponse("test %d", 123); r.Success {
 		t.Fatal("success should be false")
 	} else if r.Msg != "test 123" {
 		t.Fatalf("unexpected message: %s", r.Msg)
@@ -39,9 +40,9 @@ func TestCreateOracle(t *testing.T) {
 
 	if svc, err := New(testFolder); err != nil {
 		t.Fatal(err)
-	} else if resp, err := svc.CreateOracle(nil, &testOracle); err != nil {
+	} else if resp, err := svc.CreateOracle(context.TODO(), &testOracle); err != nil {
 		t.Fatal(err)
-	} else if resp.Success == false {
+	} else if !resp.Success {
 		t.Fatalf("expected success response: %v", resp)
 	} else if resp.Oracles != nil {
 		t.Fatalf("unexpected oracles list: %v", resp.Oracles)
@@ -51,7 +52,7 @@ func TestCreateOracle(t *testing.T) {
 }
 
 func BenchmarkCreateOracle(b *testing.B) {
-	setup(b, true, true)
+	setupFolders(b)
 	defer teardown(b)
 
 	svc, err := New(testFolder)
@@ -60,9 +61,9 @@ func BenchmarkCreateOracle(b *testing.B) {
 	}
 
 	for i := 0; i < b.N; i++ {
-		if resp, err := svc.CreateOracle(nil, &testOracle); err != nil {
+		if resp, err := svc.CreateOracle(context.TODO(), &testOracle); err != nil {
 			b.Fatal(err)
-		} else if resp.Success == false {
+		} else if !resp.Success {
 			b.Fatalf("expected success response: %v", resp)
 		}
 	}
@@ -78,9 +79,9 @@ func TestCreateOracleWithInvalidId(t *testing.T) {
 	}
 
 	svc.oracles.NextId(1)
-	if resp, err := svc.CreateOracle(nil, &testOracle); err != nil {
+	if resp, err := svc.CreateOracle(context.TODO(), &testOracle); err != nil {
 		t.Fatal(err)
-	} else if resp.Success == true {
+	} else if resp.Success {
 		t.Fatalf("expected error response: %v", resp)
 	} else if resp.Msg != storage.ErrInvalidId.Error() {
 		t.Fatalf("unexpected response message: %s", resp.Msg)
@@ -93,9 +94,9 @@ func TestCreateBrokenOracle(t *testing.T) {
 
 	if svc, err := New(testFolder); err != nil {
 		t.Fatal(err)
-	} else if resp, err := svc.CreateOracle(nil, &brokenOracle); err != nil {
+	} else if resp, err := svc.CreateOracle(context.TODO(), &brokenOracle); err != nil {
 		t.Fatal(err)
-	} else if resp.Success == true {
+	} else if resp.Success {
 		t.Fatalf("expected error response: %v", resp)
 	} else if resp.Oracles != nil {
 		t.Fatalf("unexpected oracles list: %v", resp.Oracles)
@@ -110,15 +111,15 @@ func TestUpdateOracle(t *testing.T) {
 
 	if svc, err := New(testFolder); err != nil {
 		t.Fatal(err)
-	} else if resp, err := svc.UpdateOracle(nil, &updatedOracle); err != nil {
+	} else if resp, err := svc.UpdateOracle(context.TODO(), &updatedOracle); err != nil {
 		t.Fatal(err)
-	} else if resp.Success == false {
+	} else if !resp.Success {
 		t.Fatalf("expected success response: %v", resp)
 	} else if resp.Oracles != nil {
 		t.Fatalf("unexpected oracles list: %v", resp.Oracles)
 	} else if stored := svc.oracles.Find(updatedOracle.Id); stored == nil {
 		t.Fatal("expected stored oracle with id 1")
-	} else if reflect.DeepEqual(*stored, updatedOracle) == false {
+	} else if !reflect.DeepEqual(*stored, updatedOracle) {
 		t.Fatal("oracle has not been updated as expected")
 	}
 }
@@ -134,9 +135,9 @@ func BenchmarkUpdateOracle(b *testing.B) {
 	}
 
 	for i := 0; i < b.N; i++ {
-		if resp, err := svc.UpdateOracle(nil, &updatedOracle); err != nil {
+		if resp, err := svc.UpdateOracle(context.TODO(), &updatedOracle); err != nil {
 			b.Fatal(err)
-		} else if resp.Success == false {
+		} else if !resp.Success {
 			b.Fatalf("expected success response: %v", resp)
 		}
 	}
@@ -149,9 +150,9 @@ func TestUpdateOracleWithInvalidId(t *testing.T) {
 	updatedOracle.Id = 1
 	if svc, err := New(testFolder); err != nil {
 		t.Fatal(err)
-	} else if resp, err := svc.UpdateOracle(nil, &updatedOracle); err != nil {
+	} else if resp, err := svc.UpdateOracle(context.TODO(), &updatedOracle); err != nil {
 		t.Fatal(err)
-	} else if resp.Success == true {
+	} else if resp.Success {
 		t.Fatalf("expected error response: %v", resp)
 	} else if resp.Msg != storage.ErrRecordNotFound.Error() {
 		t.Fatalf("unexpected response message: %s", resp.Msg)
@@ -166,9 +167,9 @@ func TestUpdateWithBrokenOracle(t *testing.T) {
 
 	if svc, err := New(testFolder); err != nil {
 		t.Fatal(err)
-	} else if resp, err := svc.UpdateOracle(nil, &brokenOracle); err != nil {
+	} else if resp, err := svc.UpdateOracle(context.TODO(), &brokenOracle); err != nil {
 		t.Fatal(err)
-	} else if resp.Success == true {
+	} else if resp.Success {
 		t.Fatalf("expected error response: %v", resp)
 	} else if resp.Oracles != nil {
 		t.Fatalf("unexpected oracles list: %v", resp.Oracles)
@@ -182,15 +183,15 @@ func TestReadOracle(t *testing.T) {
 	byId.Id = 1
 	if svc, err := New(testFolder); err != nil {
 		t.Fatal(err)
-	} else if resp, err := svc.ReadOracle(nil, &byId); err != nil {
+	} else if resp, err := svc.ReadOracle(context.TODO(), &byId); err != nil {
 		t.Fatal(err)
-	} else if resp.Success == false {
+	} else if !resp.Success {
 		t.Fatalf("expected success response: %v", resp)
 	} else if resp.Oracles == nil {
 		t.Fatal("expected oracles list")
 	} else if len(resp.Oracles) != 1 {
 		t.Fatalf("unexpected oracles list size: %d", len(resp.Oracles))
-	} else if testOracle.Id = byId.Id; reflect.DeepEqual(*resp.Oracles[0], testOracle) == false {
+	} else if testOracle.Id = byId.Id; !reflect.DeepEqual(*resp.Oracles[0], testOracle) {
 		t.Fatalf("oracle does not match: %v", resp.Oracles[0])
 	}
 }
@@ -206,9 +207,9 @@ func BenchmarkReadOracle(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		byId.Id = uint64(i%testOracles) + 1
-		if resp, err := svc.ReadOracle(nil, &byId); err != nil {
+		if resp, err := svc.ReadOracle(context.TODO(), &byId); err != nil {
 			b.Fatal(err)
-		} else if resp.Success == false {
+		} else if !resp.Success {
 			b.Fatalf("expected success response: %v", resp)
 		}
 	}
@@ -220,9 +221,9 @@ func TestReadOracleWithInvalidId(t *testing.T) {
 
 	if svc, err := New(testFolder); err != nil {
 		t.Fatal(err)
-	} else if resp, err := svc.ReadOracle(nil, &pb.ById{Id: 666}); err != nil {
+	} else if resp, err := svc.ReadOracle(context.TODO(), &pb.ById{Id: 666}); err != nil {
 		t.Fatal(err)
-	} else if resp.Success == true {
+	} else if resp.Success {
 		t.Fatalf("expected error response: %v", resp)
 	} else if resp.Oracles != nil {
 		t.Fatalf("unexpected oracles list: %v", resp.Oracles)
@@ -243,15 +244,15 @@ func TestFindOracle(t *testing.T) {
 
 	if svc, err := New(testFolder); err != nil {
 		t.Fatal(err)
-	} else if resp, err := svc.FindOracle(nil, &byName); err != nil {
+	} else if resp, err := svc.FindOracle(context.TODO(), &byName); err != nil {
 		t.Fatal(err)
-	} else if resp.Success == false {
+	} else if !resp.Success {
 		t.Fatalf("expected success response: %v", resp)
 	} else if resp.Oracles == nil {
 		t.Fatal("expected oracles list")
 	} else if len(resp.Oracles) != testOracles {
 		t.Fatalf("unexpected oracles list size: %v", resp.Oracles)
-	} else if testOracle.Id = byId.Id; reflect.DeepEqual(*resp.Oracles[0], testOracle) == false {
+	} else if testOracle.Id = byId.Id; !reflect.DeepEqual(*resp.Oracles[0], testOracle) {
 		t.Fatalf("oracle does not match: %v", resp.Oracles[0])
 	}
 }
@@ -272,9 +273,9 @@ func BenchmarkFindOracle(b *testing.B) {
 	}
 
 	for i := 0; i < b.N; i++ {
-		if resp, err := svc.FindOracle(nil, &byName); err != nil {
+		if resp, err := svc.FindOracle(context.TODO(), &byName); err != nil {
 			b.Fatal(err)
-		} else if resp.Success == false {
+		} else if !resp.Success {
 			b.Fatalf("expected success response: %v", resp)
 		}
 	}
@@ -286,9 +287,9 @@ func TestFindOracleWithInvalidName(t *testing.T) {
 
 	if svc, err := New(testFolder); err != nil {
 		t.Fatal(err)
-	} else if resp, err := svc.FindOracle(nil, &pb.ByName{Name: "no way i'm an oracle name :D"}); err != nil {
+	} else if resp, err := svc.FindOracle(context.TODO(), &pb.ByName{Name: "no way i'm an oracle name :D"}); err != nil {
 		t.Fatal(err)
-	} else if resp.Success == false {
+	} else if !resp.Success {
 		t.Fatalf("expected success response: %v", resp)
 	} else if resp.Oracles == nil {
 		t.Fatal("expected oracles list")
@@ -308,9 +309,9 @@ func TestDeleteOracle(t *testing.T) {
 
 	for i := 0; i < testOracles; i++ {
 		id := uint64(i + 1)
-		if resp, err := svc.DeleteOracle(nil, &pb.ById{Id: id}); err != nil {
+		if resp, err := svc.DeleteOracle(context.TODO(), &pb.ById{Id: id}); err != nil {
 			t.Fatal(err)
-		} else if resp.Success == false {
+		} else if !resp.Success {
 			t.Fatalf("expected success response: %v", resp)
 		} else if resp.Oracles != nil {
 			t.Fatalf("unexpected oracles list: %v", resp.Oracles)
@@ -345,9 +346,9 @@ func BenchmarkDeleteOracle(b *testing.B) {
 			}
 		}
 
-		if resp, err := svc.DeleteOracle(nil, &pb.ById{Id: id}); err != nil {
+		if resp, err := svc.DeleteOracle(context.TODO(), &pb.ById{Id: id}); err != nil {
 			b.Fatal(err)
-		} else if resp.Success == false {
+		} else if !resp.Success {
 			b.Fatalf("expected success response: %v", resp)
 		}
 	}
@@ -359,9 +360,9 @@ func TestDeleteOracleWithInvalidId(t *testing.T) {
 
 	if svc, err := New(testFolder); err != nil {
 		t.Fatal(err)
-	} else if resp, err := svc.DeleteOracle(nil, &pb.ById{Id: 666}); err != nil {
+	} else if resp, err := svc.DeleteOracle(context.TODO(), &pb.ById{Id: 666}); err != nil {
 		t.Fatal(err)
-	} else if resp.Success == true {
+	} else if resp.Success {
 		t.Fatalf("expected error response: %v", resp)
 	} else if resp.Oracles != nil {
 		t.Fatalf("unexpected oracles list: %v", resp.Oracles)

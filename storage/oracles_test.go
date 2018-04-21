@@ -72,7 +72,7 @@ func setupOracles(t testing.TB, withValid bool, withCorrupted bool, withBroken b
 
 func teardownOracles(t testing.TB) {
 	if err := unlink(testFolder); err != nil {
-		if os.IsNotExist(err) == false {
+		if !os.IsNotExist(err) {
 			t.Fatalf("Error deleting %s: %s", testFolder, err)
 		}
 	}
@@ -94,7 +94,7 @@ func TestLoadOracles(t *testing.T) {
 	oracles.ForEach(func(m proto.Message) {
 		oracle := m.(*pb.Oracle)
 		// id was updated while saving the oracle
-		if oracle.Id = testOracle.Id; reflect.DeepEqual(*oracle, testOracle) == false {
+		if oracle.Id = testOracle.Id; !reflect.DeepEqual(*oracle, testOracle) {
 			t.Fatalf("oracles should be the same here")
 		}
 	})
@@ -178,7 +178,7 @@ func TestOraclesUpdate(t *testing.T) {
 		t.Fatal(err)
 	} else if oracle := oracles.Find(updatedOracle.Id); oracle == nil {
 		t.Fatalf("expected oracle with id %d", updatedOracle.Id)
-	} else if reflect.DeepEqual(*oracle, updatedOracle) == false {
+	} else if !reflect.DeepEqual(*oracle, updatedOracle) {
 		t.Fatal("oracles should match")
 	}
 }

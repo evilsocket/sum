@@ -3,6 +3,7 @@ package service
 import (
 	"bytes"
 	"compress/gzip"
+	"context"
 	"io/ioutil"
 	"log"
 	"os"
@@ -59,7 +60,7 @@ func unlink(dir string) error {
 
 func decompress(t testing.TB, d *pb.Data) string {
 	data := d.Payload
-	if d.Compressed == true {
+	if d.Compressed {
 		r, err := gzip.NewReader(bytes.NewBuffer(data))
 		if err != nil {
 			t.Fatalf("error while decompressing response payload: %s", err)
@@ -136,14 +137,14 @@ func setupFolders(t testing.TB) {
 
 func teardown(t testing.TB) {
 	if err := unlink(testFolder); err != nil {
-		if os.IsNotExist(err) == false {
+		if !os.IsNotExist(err) {
 			t.Fatalf("error deleting %s: %s", testFolder, err)
 		}
 	}
 }
 
 func TestErrCallResponse(t *testing.T) {
-	if r := errCallResponse("test %d", 123); r.Success == true {
+	if r := errCallResponse("test %d", 123); r.Success {
 		t.Fatal("success should be false")
 	} else if r.Msg != "test 123" {
 		t.Fatalf("unexpected message: %s", r.Msg)
@@ -166,7 +167,7 @@ func TestNew(t *testing.T) {
 		t.Fatalf("wrong pid: %d", svc.pid)
 	} else if svc.uid != uint64(os.Getuid()) {
 		t.Fatalf("wrong uid: %d", svc.uid)
-	} else if reflect.DeepEqual(svc.argv, os.Args) == false {
+	} else if !reflect.DeepEqual(svc.argv, os.Args) {
 		t.Fatalf("wrong args: %v", svc.argv)
 	} else if svc.NumRecords() != uint64(testRecords) {
 		t.Fatalf("wrong number of records: %d", svc.NumRecords())
@@ -214,7 +215,7 @@ func TestInfo(t *testing.T) {
 
 	if svc, err := New(testFolder); err != nil {
 		t.Fatal(err)
-	} else if info, err := svc.Info(nil, nil); err != nil {
+	} else if info, err := svc.Info(context.TODO(), nil); err != nil {
 		t.Fatal(err)
 	} else if info.Version != Version {
 		t.Fatalf("wrong version: %s", info.Version)
@@ -224,7 +225,7 @@ func TestInfo(t *testing.T) {
 		t.Fatalf("wrong pid: %d", info.Pid)
 	} else if svc.uid != info.Uid {
 		t.Fatalf("wrong uid: %d", info.Uid)
-	} else if reflect.DeepEqual(svc.argv, info.Argv) == false {
+	} else if !reflect.DeepEqual(svc.argv, info.Argv) {
 		t.Fatalf("wrong args: %v", info.Argv)
 	} else if svc.NumRecords() != info.Records {
 		t.Fatalf("wrong number of records: %d", info.Records)
@@ -239,15 +240,15 @@ func TestRun(t *testing.T) {
 
 	if svc, err := New(testFolder); err != nil {
 		t.Fatal(err)
-	} else if resp, err := svc.Run(nil, &testCall); err != nil {
+	} else if resp, err := svc.Run(context.TODO(), &testCall); err != nil {
 		t.Fatal(err)
-	} else if resp.Success == false {
+	} else if !resp.Success {
 		t.Fatal("expected success response")
 	} else if resp.Msg != "" {
 		t.Fatalf("expected empty message: %s", resp.Msg)
 	} else if resp.Data == nil {
 		t.Fatal("expected response data")
-	} else if resp.Data.Compressed == true {
+	} else if resp.Data.Compressed {
 		t.Fatal("expected uncompressed data")
 	} else if resp.Data.Payload == nil {
 		t.Fatal("expected data payload")
@@ -266,7 +267,7 @@ func BenchmarkRun(b *testing.B) {
 	}
 
 	for i := 0; i < b.N; i++ {
-		if resp, err := svc.Run(nil, &testCall); err != nil {
+		if resp, err := svc.Run(context.TODO(), &testCall); err != nil {
 			b.Fatal(err)
 		} else if resp.Data == nil {
 			b.Fatal("expected response data")
@@ -291,15 +292,15 @@ func TestRunWithCompression(t *testing.T) {
 
 	if svc, err := New(testFolder); err != nil {
 		t.Fatal(err)
-	} else if resp, err := svc.Run(nil, &testCall); err != nil {
+	} else if resp, err := svc.Run(context.TODO(), &testCall); err != nil {
 		t.Fatal(err)
-	} else if resp.Success == false {
+	} else if !resp.Success {
 		t.Fatalf("expected success response: %v", resp)
 	} else if resp.Msg != "" {
 		t.Fatalf("expected empty message: %s", resp.Msg)
 	} else if resp.Data == nil {
 		t.Fatal("expected response data")
-	} else if resp.Data.Compressed == false {
+	} else if !resp.Data.Compressed {
 		t.Fatal("expected compressed data")
 	} else if resp.Data.Payload == nil {
 		t.Fatal("expected data payload")
@@ -325,11 +326,11 @@ func BenchmarkRunWithCompression(b *testing.B) {
 	}
 
 	for i := 0; i < b.N; i++ {
-		if resp, err := svc.Run(nil, &testCall); err != nil {
+		if resp, err := svc.Run(context.TODO(), &testCall); err != nil {
 			b.Fatal(err)
 		} else if resp.Data == nil {
 			b.Fatal("expected response data")
-		} else if resp.Data.Compressed == false {
+		} else if !resp.Data.Compressed {
 			b.Fatal("expected compressed data")
 		} else if resp.Data.Payload == nil {
 			b.Fatal("expected data payload")
@@ -346,11 +347,11 @@ func TestRunWithWithInvalidId(t *testing.T) {
 
 	if svc, err := New(testFolder); err != nil {
 		t.Fatal(err)
-	} else if resp, err := svc.Run(nil, &call); err != nil {
+	} else if resp, err := svc.Run(context.TODO(), &call); err != nil {
 		t.Fatal(err)
 	} else if resp == nil {
 		t.Fatal("expected error response")
-	} else if resp.Success == true {
+	} else if resp.Success {
 		t.Fatal("expected error response")
 	} else if resp.Msg != msg {
 		t.Fatalf("unexpected response message: %s", resp.Msg)
@@ -367,11 +368,11 @@ func TestRunWithWithInvalidArgs(t *testing.T) {
 
 	if svc, err := New(testFolder); err != nil {
 		t.Fatal(err)
-	} else if resp, err := svc.Run(nil, &call); err != nil {
+	} else if resp, err := svc.Run(context.TODO(), &call); err != nil {
 		t.Fatal(err)
 	} else if resp == nil {
 		t.Fatal("expected error response")
-	} else if resp.Success == true {
+	} else if resp.Success {
 		t.Fatal("expected error response")
 	} else if resp.Data != nil {
 		t.Fatalf("unexpected response data: %v", resp.Data)
@@ -391,11 +392,11 @@ func TestRunWithContextError(t *testing.T) {
 
 	if svc, err := New(testFolder); err != nil {
 		t.Fatal(err)
-	} else if resp, err := svc.Run(nil, &testCall); err != nil {
+	} else if resp, err := svc.Run(context.TODO(), &testCall); err != nil {
 		t.Fatal(err)
 	} else if resp == nil {
 		t.Fatal("expected error response")
-	} else if resp.Success == true {
+	} else if resp.Success {
 		t.Fatal("expected error response")
 	} else if resp.Msg != msg {
 		t.Fatalf("unexpected response message: %s", resp.Msg)

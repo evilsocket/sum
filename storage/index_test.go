@@ -40,7 +40,7 @@ func TestIndexLoad(t *testing.T) {
 		testRecord.Id = id
 		if m := i.Find(id); m == nil {
 			t.Fatalf("expected record %d not found", id)
-		} else if o := m.(*pb.Record); reflect.DeepEqual(*o, testRecord) == false {
+		} else if o := m.(*pb.Record); !reflect.DeepEqual(*o, testRecord) {
 			t.Fatalf("records do not match:\nexpected %v\ngot %v", testRecord, *o)
 		}
 	}
@@ -118,7 +118,7 @@ func TestIndexForEach(t *testing.T) {
 	i.ForEach(func(m proto.Message) {
 		record := m.(*pb.Record)
 		testRecord.Id = record.Id
-		if reflect.DeepEqual(*record, testRecord) == false {
+		if !reflect.DeepEqual(*record, testRecord) {
 			t.Fatal("records should match")
 		}
 	})
@@ -155,7 +155,7 @@ func TestIndexCreateRecord(t *testing.T) {
 		t.Fatalf("expected %d records, got %d", 1, i.Size())
 	} else if m := i.Find(testRecord.Id); m == nil {
 		t.Fatalf("expected record with id %d", testRecord.Id)
-	} else if r := m.(*pb.Record); reflect.DeepEqual(*r, testRecord) == false {
+	} else if r := m.(*pb.Record); !reflect.DeepEqual(*r, testRecord) {
 		t.Fatal("records should match")
 	}
 }
@@ -228,7 +228,7 @@ func TestIndexUpdateRecord(t *testing.T) {
 		t.Fatalf("expected %d records, got %d", testRecords, i.Size())
 	} else if m := i.Find(updatedRecord.Id); m == nil {
 		t.Fatalf("expected record with id %d", updatedRecord.Id)
-	} else if r := m.(*pb.Record); reflect.DeepEqual(*r, updatedRecord) == false {
+	} else if r := m.(*pb.Record); !reflect.DeepEqual(*r, updatedRecord) {
 		t.Fatal("records should match")
 	}
 }
@@ -300,7 +300,7 @@ func TestIndexFindRecord(t *testing.T) {
 		t.Fatal(err)
 	} else if m := i.Find(testRecord.Id); m == nil {
 		t.Fatalf("expected record with id %d", testRecord.Id)
-	} else if r := m.(*pb.Record); reflect.DeepEqual(*r, testRecord) == false {
+	} else if r := m.(*pb.Record); !reflect.DeepEqual(*r, testRecord) {
 		t.Fatal("records should match")
 	}
 }

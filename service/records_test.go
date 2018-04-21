@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"reflect"
 	"testing"
 
@@ -20,7 +21,7 @@ var (
 )
 
 func TestErrRecordResponse(t *testing.T) {
-	if r := errRecordResponse("test %d", 123); r.Success == true {
+	if r := errRecordResponse("test %d", 123); r.Success {
 		t.Fatal("success should be false")
 	} else if r.Msg != "test 123" {
 		t.Fatalf("unexpected message: %s", r.Msg)
@@ -35,9 +36,9 @@ func TestCreateRecord(t *testing.T) {
 
 	if svc, err := New(testFolder); err != nil {
 		t.Fatal(err)
-	} else if resp, err := svc.CreateRecord(nil, &testRecord); err != nil {
+	} else if resp, err := svc.CreateRecord(context.TODO(), &testRecord); err != nil {
 		t.Fatal(err)
-	} else if resp.Success == false {
+	} else if !resp.Success {
 		t.Fatalf("expected success response: %v", resp)
 	} else if resp.Record != nil {
 		t.Fatalf("unexpected record pointer: %v", resp.Record)
@@ -47,7 +48,7 @@ func TestCreateRecord(t *testing.T) {
 }
 
 func BenchmarkCreateRecord(b *testing.B) {
-	setup(b, true, true)
+	setupFolders(b)
 	defer teardown(b)
 
 	svc, err := New(testFolder)
@@ -56,9 +57,9 @@ func BenchmarkCreateRecord(b *testing.B) {
 	}
 
 	for i := 0; i < b.N; i++ {
-		if resp, err := svc.CreateRecord(nil, &testRecord); err != nil {
+		if resp, err := svc.CreateRecord(context.TODO(), &testRecord); err != nil {
 			b.Fatal(err)
-		} else if resp.Success == false {
+		} else if !resp.Success {
 			b.Fatalf("expected success response: %v", resp)
 		}
 	}
@@ -75,9 +76,9 @@ func TestCreateRecordNotUniqueId(t *testing.T) {
 
 	// ok this is kinda cheating, but i want full coverage
 	svc.records.NextId(1)
-	if resp, err := svc.CreateRecord(nil, &testRecord); err != nil {
+	if resp, err := svc.CreateRecord(context.TODO(), &testRecord); err != nil {
 		t.Fatal(err)
-	} else if resp.Success == true {
+	} else if resp.Success {
 		t.Fatalf("expected error response: %v", resp)
 	} else if resp.Record != nil {
 		t.Fatalf("unexpected record pointer: %v", resp.Record)
@@ -96,15 +97,15 @@ func TestUpdateRecord(t *testing.T) {
 	}
 
 	updatedRecord.Id = 1
-	if resp, err := svc.UpdateRecord(nil, &updatedRecord); err != nil {
+	if resp, err := svc.UpdateRecord(context.TODO(), &updatedRecord); err != nil {
 		t.Fatal(err)
-	} else if resp.Success == false {
+	} else if !resp.Success {
 		t.Fatalf("expected success response: %v", resp)
 	} else if resp.Record != nil {
 		t.Fatalf("unexpected record pointer: %v", resp.Record)
 	} else if stored := svc.records.Find(updatedRecord.Id); stored == nil {
 		t.Fatal("expected stored record with id 1")
-	} else if reflect.DeepEqual(*stored, updatedRecord) == false {
+	} else if !reflect.DeepEqual(*stored, updatedRecord) {
 		t.Fatal("record has not been updated as expected")
 	}
 }
@@ -120,9 +121,9 @@ func BenchmarkUpdateRecord(b *testing.B) {
 
 	updatedRecord.Id = 1
 	for i := 0; i < b.N; i++ {
-		if resp, err := svc.UpdateRecord(nil, &updatedRecord); err != nil {
+		if resp, err := svc.UpdateRecord(context.TODO(), &updatedRecord); err != nil {
 			b.Fatal(err)
-		} else if resp.Success == false {
+		} else if !resp.Success {
 			b.Fatalf("expected success response: %v", resp)
 		}
 	}
@@ -138,9 +139,9 @@ func TestUpdateRecordWithInvalidId(t *testing.T) {
 	}
 
 	updatedRecord.Id = 666
-	if resp, err := svc.UpdateRecord(nil, &updatedRecord); err != nil {
+	if resp, err := svc.UpdateRecord(context.TODO(), &updatedRecord); err != nil {
 		t.Fatal(err)
-	} else if resp.Success == true {
+	} else if resp.Success {
 		t.Fatalf("expected error response: %v", resp)
 	} else if resp.Record != nil {
 		t.Fatalf("unexpected record pointer: %v", resp.Record)
@@ -155,13 +156,13 @@ func TestReadRecord(t *testing.T) {
 
 	if svc, err := New(testFolder); err != nil {
 		t.Fatal(err)
-	} else if resp, err := svc.ReadRecord(nil, &byId); err != nil {
+	} else if resp, err := svc.ReadRecord(context.TODO(), &byId); err != nil {
 		t.Fatal(err)
-	} else if resp.Success == false {
+	} else if !resp.Success {
 		t.Fatalf("expected success response: %v", resp)
 	} else if resp.Record == nil {
 		t.Fatal("expected record pointer")
-	} else if testRecord.Id = byId.Id; reflect.DeepEqual(*resp.Record, testRecord) == false {
+	} else if testRecord.Id = byId.Id; !reflect.DeepEqual(*resp.Record, testRecord) {
 		t.Fatalf("unexpected record: %v", resp.Record)
 	}
 }
@@ -176,9 +177,9 @@ func BenchmarkReadRecord(b *testing.B) {
 	}
 
 	for i := 0; i < b.N; i++ {
-		if resp, err := svc.ReadRecord(nil, &byId); err != nil {
+		if resp, err := svc.ReadRecord(context.TODO(), &byId); err != nil {
 			b.Fatal(err)
-		} else if resp.Success == false {
+		} else if !resp.Success {
 			b.Fatalf("expected success response: %v", resp)
 		}
 	}
@@ -190,9 +191,9 @@ func TestReadRecordWithInvalidId(t *testing.T) {
 
 	if svc, err := New(testFolder); err != nil {
 		t.Fatal(err)
-	} else if resp, err := svc.ReadRecord(nil, &pb.ById{Id: 666}); err != nil {
+	} else if resp, err := svc.ReadRecord(context.TODO(), &pb.ById{Id: 666}); err != nil {
 		t.Fatal(err)
-	} else if resp.Success == true {
+	} else if resp.Success {
 		t.Fatalf("expected error response: %v", resp)
 	} else if resp.Record != nil {
 		t.Fatalf("unexpected record pointer: %v", resp.Record)
@@ -212,9 +213,9 @@ func TestDeleteRecord(t *testing.T) {
 
 	for i := 0; i < testRecords; i++ {
 		id := uint64(i + 1)
-		if resp, err := svc.DeleteRecord(nil, &pb.ById{Id: id}); err != nil {
+		if resp, err := svc.DeleteRecord(context.TODO(), &pb.ById{Id: id}); err != nil {
 			t.Fatal(err)
-		} else if resp.Success == false {
+		} else if !resp.Success {
 			t.Fatalf("expected success response: %v", resp)
 		} else if resp.Record != nil {
 			t.Fatalf("unexpected record pointer: %v", resp.Record)
@@ -249,9 +250,9 @@ func BenchmarkDeleteRecord(b *testing.B) {
 			}
 		}
 
-		if resp, err := svc.DeleteRecord(nil, &pb.ById{Id: id}); err != nil {
+		if resp, err := svc.DeleteRecord(context.TODO(), &pb.ById{Id: id}); err != nil {
 			b.Fatal(err)
-		} else if resp.Success == false {
+		} else if !resp.Success {
 			b.Fatalf("expected success response: %v", resp)
 		}
 	}
@@ -263,9 +264,9 @@ func TestDeleteRecordWithInvalidId(t *testing.T) {
 
 	if svc, err := New(testFolder); err != nil {
 		t.Fatal(err)
-	} else if resp, err := svc.DeleteRecord(nil, &pb.ById{Id: 666}); err != nil {
+	} else if resp, err := svc.DeleteRecord(context.TODO(), &pb.ById{Id: 666}); err != nil {
 		t.Fatal(err)
-	} else if resp.Success == true {
+	} else if resp.Success {
 		t.Fatalf("expected error response: %v", resp)
 	} else if resp.Record != nil {
 		t.Fatalf("unexpected record pointer: %v", resp.Record)

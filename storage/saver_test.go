@@ -43,7 +43,7 @@ func TestFlushAndBack(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if reflect.DeepEqual(rec, testRecord) == false {
+	if !reflect.DeepEqual(rec, testRecord) {
 		t.Fatal("records should be the same")
 	}
 }

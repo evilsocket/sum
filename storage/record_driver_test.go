@@ -11,7 +11,7 @@ func TestRecordDriverMake(t *testing.T) {
 	d := RecordDriver{}
 	if m := d.Make(); m == nil {
 		t.Fatal("unexpected nil message")
-	} else if _, ok := m.(*pb.Record); ok == false {
+	} else if _, ok := m.(*pb.Record); !ok {
 		t.Fatalf("unexpected type of record: %v", m)
 	}
 }
@@ -100,15 +100,15 @@ func TestRecordDriverCopy(t *testing.T) {
 
 	if err := d.Copy(&dst, &metaSrc); err != nil {
 		t.Fatal(err)
-	} else if reflect.DeepEqual(dst.Meta, metaSrc.Meta) == false {
+	} else if !reflect.DeepEqual(dst.Meta, metaSrc.Meta) {
 		t.Fatal("meta values mismatch")
 	} else if dst.Data != nil {
 		t.Fatal("data field expected as nil")
 	} else if err := d.Copy(&dst, &dataSrc); err != nil {
 		t.Fatal(err)
-	} else if reflect.DeepEqual(dst.Meta, metaSrc.Meta) == false {
+	} else if !reflect.DeepEqual(dst.Meta, metaSrc.Meta) {
 		t.Fatal("meta values mismatch")
-	} else if reflect.DeepEqual(dst.Data, dataSrc.Data) == false {
+	} else if !reflect.DeepEqual(dst.Data, dataSrc.Data) {
 		t.Fatal("data vectors mismatch")
 	}
 }

@@ -62,9 +62,16 @@ create a few vectors on the server, define an oracle, call it for every vector a
 
 ## Useful links
 
+**gRPC, client dependencies, compilation, etc**
+
 * https://github.com/grpc/grpc-go
 * https://github.com/grpc/grpc/blob/master/examples
 * https://grpc.io/docs/quickstart/go.html
 * https://grpc.io/docs/quickstart/python.html
 * https://grpc.io/docs/quickstart/php.html
 * https://github.com/lvht/protoc-gen-grpc-php
+
+**Performances optimization and benchmarking**
+
+* https://github.com/dgryski/go-perfbook
+* https://medium.com/@felipedutratine/how-to-organize-the-go-struct-in-order-to-save-memory-c78afcf59ec2

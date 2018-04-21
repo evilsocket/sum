@@ -81,7 +81,7 @@ func setupRecords(t testing.TB, withValid bool) {
 
 func teardownRecords(t testing.TB) {
 	if err := unlink(testFolder); err != nil {
-		if os.IsNotExist(err) == false {
+		if !os.IsNotExist(err) {
 			t.Fatalf("Error deleting %s: %s", testFolder, err)
 		}
 	}
@@ -152,7 +152,7 @@ func TestFindWithInvalidId(t *testing.T) {
 	wrapped := ForRecords(records)
 	for i := 0; i < testRecords; i++ {
 		id := uint64(i + 1)
-		if r := wrapped.Find(id); r.IsNull() == false {
+		if r := wrapped.Find(id); !r.IsNull() {
 			t.Fatalf("wrapped record with id %d found, expected none", id)
 		}
 	}
@@ -176,12 +176,12 @@ func TestAll(t *testing.T) {
 	for _, wRec := range all {
 		found := false
 		records.ForEach(func(m proto.Message) {
-			if reflect.DeepEqual(m.(*pb.Record), wRec.record) == true {
+			if reflect.DeepEqual(m.(*pb.Record), wRec.record) {
 				found = true
 			}
 		})
 
-		if found == false {
+		if !found {
 			t.Fatalf("record %d not wrapped correctly", wRec.Id)
 		}
 	}
@@ -230,12 +230,12 @@ func TestAllBut(t *testing.T) {
 
 		found := false
 		records.ForEach(func(m proto.Message) {
-			if reflect.DeepEqual(m.(*pb.Record), wRec.record) == true {
+			if reflect.DeepEqual(m.(*pb.Record), wRec.record) {
 				found = true
 			}
 		})
 
-		if found == false {
+		if !found {
 			t.Fatalf("record %d not wrapped correctly", wRec.Id)
 		}
 	}

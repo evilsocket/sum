@@ -49,7 +49,7 @@ func (i *Index) pathFor(record proto.Message) string {
 // used to handle the specifics of the protobuf messages being handled
 // but this instance of the index.
 func WithDriver(dataPath string, driver Driver) *Index {
-	if strings.HasSuffix(dataPath, pathSep) == false {
+	if !strings.HasSuffix(dataPath, pathSep) {
 		dataPath += pathSep
 	}
 	return &Index{
@@ -129,7 +129,7 @@ func (i *Index) Create(record proto.Message) error {
 	// are able to create the data file
 	recId := i.nextId
 	i.driver.SetId(record, recId)
-	if _, found := i.index[recId]; found == true {
+	if _, found := i.index[recId]; found {
 		return ErrInvalidId
 	} else if err := Flush(record, i.pathForId(recId)); err != nil {
 		return err
@@ -150,7 +150,7 @@ func (i *Index) Update(record proto.Message) error {
 
 	recId := i.driver.GetId(record)
 	stored, found := i.index[recId]
-	if found == false {
+	if !found {
 		return ErrRecordNotFound
 	} else if err := i.driver.Copy(stored, record); err != nil {
 		return err
@@ -165,7 +165,7 @@ func (i *Index) Find(id uint64) proto.Message {
 	defer i.RUnlock()
 
 	record, found := i.index[id]
-	if found == true {
+	if found {
 		return record
 	}
 	return nil
@@ -179,7 +179,7 @@ func (i *Index) Delete(id uint64) proto.Message {
 	defer i.Unlock()
 
 	record, found := i.index[id]
-	if found == false {
+	if !found {
 		return nil
 	}
 

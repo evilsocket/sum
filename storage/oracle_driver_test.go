@@ -11,7 +11,7 @@ func TestOracleDriverMake(t *testing.T) {
 	d := OracleDriver{}
 	if m := d.Make(); m == nil {
 		t.Fatal("unexpected nil message")
-	} else if _, ok := m.(*pb.Oracle); ok == false {
+	} else if _, ok := m.(*pb.Oracle); !ok {
 		t.Fatalf("unexpected type of record: %v", m)
 	}
 }
@@ -95,7 +95,7 @@ func TestOracleDriverCopy(t *testing.T) {
 
 	if err := d.Copy(&dst, &src); err != nil {
 		t.Fatal(err)
-	} else if reflect.DeepEqual(dst, src) == false {
+	} else if !reflect.DeepEqual(dst, src) {
 		t.Fatal("contents mismatch")
 	}
 }

@@ -21,7 +21,7 @@ func ListPath(dataPath string) (string, map[string]string, error) {
 	dataPath, _ = filepath.Abs(dataPath)
 	if info, err := os.Stat(dataPath); err != nil {
 		return "", nil, err
-	} else if info.IsDir() == false {
+	} else if !info.IsDir() {
 		return "", nil, fmt.Errorf("%s is not a folder.", dataPath)
 	}
 

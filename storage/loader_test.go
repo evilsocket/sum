@@ -58,7 +58,7 @@ func setupRawRecords(t testing.TB) {
 
 func teardownRecords(t testing.TB) {
 	if err := unlink(testFolder); err != nil {
-		if os.IsNotExist(err) == false {
+		if !os.IsNotExist(err) {
 			t.Fatalf("Error deleting %s: %s", testFolder, err)
 		}
 	}
@@ -90,7 +90,7 @@ func TestListPath(t *testing.T) {
 	for i := 1; i <= testRecords; i++ {
 		idKey := fmt.Sprintf("%d", i)
 		expected := filepath.Join(testFolder, fmt.Sprintf("%d.dat", i))
-		if fileName, found := loadable[idKey]; found == false {
+		if fileName, found := loadable[idKey]; !found {
 			t.Fatalf("file %s not found", idKey)
 		} else if fileName != expected {
 			t.Fatalf("expected %s but got %s", fileName, expected)
@@ -103,7 +103,7 @@ func TestListPathWithError(t *testing.T) {
 		t.Fatal("expected an error")
 	} else if _, _, err := ListPath("/lulzlulz"); err == nil {
 		t.Fatal("expected an error")
-	} else if canWriteOnRoot() == false {
+	} else if !canWriteOnRoot() {
 		// on docker this check is skipped
 		if _, _, err := ListPath("/root"); err == nil {
 			t.Fatal("expected permission denied")
@@ -124,7 +124,7 @@ func TestLoad(t *testing.T) {
 		var rec pb.Record
 		if err := Load(fileName, &rec); err != nil {
 			t.Fatalf("erorr loading %s: %s", fileName, err)
-		} else if reflect.DeepEqual(rec, testRecord) == false {
+		} else if !reflect.DeepEqual(rec, testRecord) {
 			t.Fatal("records should be the same")
 		}
 	}

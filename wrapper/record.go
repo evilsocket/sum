@@ -71,7 +71,7 @@ func (w Record) Get(index int) float32 {
 func (w Record) Set(index int, value float32) {
 	old := w.record.Data[index]
 	w.record.Data[index] = value
-	if w.flush() == false {
+	if !w.flush() {
 		w.record.Data[index] = old
 	}
 }
@@ -87,7 +87,7 @@ func (w Record) Meta(name string) string {
 func (w Record) SetMeta(name, value string) {
 	old, found := w.record.Meta[name]
 	w.record.Meta[name] = value
-	if w.flush() == false {
+	if !w.flush() {
 		if found {
 			w.record.Meta[name] = old
 		}

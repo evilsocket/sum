@@ -23,7 +23,7 @@ func TestForRecord(t *testing.T) {
 		t.Fatalf("expected record with id %d, %d found", testRecord.Id, wrapped.Id)
 	} else if wrapped.store != nil {
 		t.Fatal("unexpected store pointer")
-	} else if reflect.DeepEqual(*wrapped.record, testRecord) == false {
+	} else if !reflect.DeepEqual(*wrapped.record, testRecord) {
 		t.Fatal("unexpected wrapped record")
 	}
 }
@@ -39,7 +39,7 @@ func BenchmarkForRecord(b *testing.B) {
 
 func TestForRecordWithNil(t *testing.T) {
 	wrapped := ForRecord(nil, nil)
-	if wrapped.IsNull() == false {
+	if !wrapped.IsNull() {
 		t.Fatal("expected null wrapped")
 	}
 }
@@ -49,15 +49,15 @@ func TestIs(t *testing.T) {
 	b := ForRecord(nil, &testRecord)
 	c := ForRecord(nil, nil)
 
-	if a.Is(b) == false {
+	if !a.Is(b) {
 		t.Fatal("records should match")
-	} else if b.Is(a) == false {
+	} else if !b.Is(a) {
 		t.Fatal("records should match")
-	} else if a.Is(c) == true {
+	} else if a.Is(c) {
 		t.Fatal("records should not match")
-	} else if b.Is(c) == true {
+	} else if b.Is(c) {
 		t.Fatal("records should not match")
-	} else if c.Is(b) == true {
+	} else if c.Is(b) {
 		t.Fatal("records should not match")
 	}
 }
@@ -67,7 +67,7 @@ func BenchmarkIs(b *testing.B) {
 	c := ForRecord(nil, &testRecord)
 
 	for i := 0; i < b.N; i++ {
-		if a.Is(c) == false {
+		if !a.Is(c) {
 			b.Fatal("records should match")
 		}
 	}

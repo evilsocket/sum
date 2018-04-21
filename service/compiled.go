@@ -16,14 +16,12 @@ import (
 
 type compiled struct {
 	sync.Mutex
-	name   string
 	vm     *otto.Otto
 	oracle *pb.Oracle
 }
 
 func compileOracle(oracle *pb.Oracle) (*compiled, error) {
 	vm := otto.New()
-
 	_, err := vm.Run(oracle.Code)
 	if err != nil {
 		return nil, err
