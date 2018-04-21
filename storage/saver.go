@@ -7,6 +7,8 @@ import (
 	"github.com/golang/protobuf/proto"
 )
 
+// Flush serializes and saves to file a generic protobuf message.
+// It returns an error if unsuccessful.
 func Flush(m proto.Message, fileName string) error {
 	data, err := proto.Marshal(m)
 	if err != nil {

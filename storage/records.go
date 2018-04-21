@@ -9,6 +9,8 @@ import (
 	pb "github.com/evilsocket/sum/proto"
 )
 
+// Records is a thread safe data structure used to
+// index and manage vectors (records).
 type Records struct {
 	sync.RWMutex
 	dataPath string
@@ -16,6 +18,8 @@ type Records struct {
 	nextId   uint64
 }
 
+// LoadRecords loads and indexes raw protobuf records from
+// the data files found in a given path.
 func LoadRecords(dataPath string) (*Records, error) {
 	dataPath, files, err := ListPath(dataPath)
 	if err != nil {
@@ -47,6 +51,12 @@ func LoadRecords(dataPath string) (*Records, error) {
 	}, nil
 }
 
+func (r *Records) pathFor(record *pb.Record) string {
+	return r.dataPath + fmt.Sprintf("/%d.dat", record.Id)
+}
+
+// ForEach will execute a callback for every record object
+// in this container, passing raw *pb.Record objects to it
 func (r *Records) ForEach(cb func(record *pb.Record)) {
 	r.RLock()
 	defer r.RUnlock()
@@ -55,22 +65,22 @@ func (r *Records) ForEach(cb func(record *pb.Record)) {
 	}
 }
 
+// Size returns the number of records currently loaded.
 func (r *Records) Size() uint64 {
 	r.RLock()
 	defer r.RUnlock()
 	return uint64(len(r.index))
 }
 
-func (r *Records) pathFor(record *pb.Record) string {
-	return r.dataPath + fmt.Sprintf("/%d.dat", record.Id)
-}
-
+// NextId sets the next integer to use as a record idetifier.
 func (r *Records) NextId(next uint64) {
 	r.Lock()
 	defer r.Unlock()
 	r.nextId = next
 }
 
+// Create takes a raw *pb.Record object, idexes that record
+// by its unique identifier and flushed to disk.
 func (r *Records) Create(record *pb.Record) error {
 	r.Lock()
 	defer r.Unlock()
@@ -88,6 +98,8 @@ func (r *Records) Create(record *pb.Record) error {
 	return Flush(record, r.pathFor(record))
 }
 
+// Update takes a raw *pb.Record object and updates the one
+// with the specified id with its contents.
 func (r *Records) Update(record *pb.Record) error {
 	r.Lock()
 	defer r.Unlock()
@@ -108,6 +120,8 @@ func (r *Records) Update(record *pb.Record) error {
 	return Flush(stored, r.pathFor(stored))
 }
 
+// Find returns a *pb.Record object given
+// its identifier, or nil if not found.
 func (r *Records) Find(id uint64) *pb.Record {
 	r.RLock()
 	defer r.RUnlock()
@@ -119,6 +133,9 @@ func (r *Records) Find(id uint64) *pb.Record {
 	return nil
 }
 
+// Delete removes a record from the index given its
+// identifier, it returns the deleted raw *pb.Record
+// object, or nil if not found.
 func (r *Records) Delete(id uint64) *pb.Record {
 	r.Lock()
 	defer r.Unlock()

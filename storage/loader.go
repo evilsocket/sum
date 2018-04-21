@@ -11,9 +11,12 @@ import (
 )
 
 const (
+	// Default file extension for data files.
 	DatFileExt = ".dat"
 )
 
+// ListPath enumerates .dat files in a given folder and returns the
+// same folder as an absolute path and a map of files.
 func ListPath(dataPath string) (string, map[string]string, error) {
 	dataPath, _ = filepath.Abs(dataPath)
 	if info, err := os.Stat(dataPath); err != nil {
@@ -42,6 +45,7 @@ func ListPath(dataPath string) (string, map[string]string, error) {
 	return dataPath, loadable, nil
 }
 
+// Load reads and deserializes a file into a generic protobuf message.
 func Load(fileName string, m proto.Message) error {
 	data, err := ioutil.ReadFile(fileName)
 	if err != nil {

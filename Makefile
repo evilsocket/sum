@@ -20,11 +20,11 @@ benchmark: deps proto/sum.pb.go
 	@go test -run=xxx -bench=. ./...
 
 test: deps proto/sum.pb.go
-	@echo "Running tests ..."
+	@echo "Running tests ...\n"
 	@go test ./... -coverprofile coverage.profile 
 	
 coverage: test
-	@echo "Generating code coverage report to coverage.profile.html ..."
+	@echo "\nGenerating code coverage report to coverage.profile.html ..."
 	@go tool cover -html=coverage.profile -o coverage.profile.html
 
 clients/python/proto/sum_pb2.py:
@@ -56,15 +56,14 @@ clean:
 reset_env: clean
 	@echo "Resetting environment ..."
 	@clear 
-	@make 
 	@sudo rm -rf /var/lib/sumd
 	@sudo mkdir -p /var/lib/sumd/data
 	@sudo mkdir -p /var/lib/sumd/oracles
 
-profile: reset_env
+profile: reset_env server
 	@clear
 	@sudo ./sumd -cpu-profile cpu.profile -mem-profile mem.profile
 
-run: reset_env
+run: reset_env server
 	@clear
 	@sudo ./sumd
