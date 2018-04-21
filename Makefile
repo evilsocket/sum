@@ -33,7 +33,7 @@ clients/php/Sum:
 
 benchmark: server_deps
 	@echo "Running benchmarks ..."
-	@go test -run=xxx -bench=. ./...
+	@go test ./... -v -run=doNotRunTests -bench=.
 
 test: server_deps
 	@echo "Running tests ...\n"
