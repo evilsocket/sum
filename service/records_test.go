@@ -20,7 +20,7 @@ var (
 	}
 )
 
-func TestErrRecordResponse(t *testing.T) {
+func TestServiceErrRecordResponse(t *testing.T) {
 	if r := errRecordResponse("test %d", 123); r.Success {
 		t.Fatal("success should be false")
 	} else if r.Msg != "test 123" {
@@ -30,7 +30,7 @@ func TestErrRecordResponse(t *testing.T) {
 	}
 }
 
-func TestCreateRecord(t *testing.T) {
+func TestServiceCreateRecord(t *testing.T) {
 	setupFolders(t)
 	defer teardown(t)
 
@@ -47,25 +47,7 @@ func TestCreateRecord(t *testing.T) {
 	}
 }
 
-func BenchmarkCreateRecord(b *testing.B) {
-	setupFolders(b)
-	defer teardown(b)
-
-	svc, err := New(testFolder)
-	if err != nil {
-		b.Fatal(err)
-	}
-
-	for i := 0; i < b.N; i++ {
-		if resp, err := svc.CreateRecord(context.TODO(), &testRecord); err != nil {
-			b.Fatal(err)
-		} else if !resp.Success {
-			b.Fatalf("expected success response: %v", resp)
-		}
-	}
-}
-
-func TestCreateRecordNotUniqueId(t *testing.T) {
+func TestServiceCreateRecordNotUniqueId(t *testing.T) {
 	setup(t, true, true)
 	defer teardown(t)
 
@@ -87,7 +69,7 @@ func TestCreateRecordNotUniqueId(t *testing.T) {
 	}
 }
 
-func TestUpdateRecord(t *testing.T) {
+func TestServiceUpdateRecord(t *testing.T) {
 	setup(t, true, true)
 	defer teardown(t)
 
@@ -110,26 +92,7 @@ func TestUpdateRecord(t *testing.T) {
 	}
 }
 
-func BenchmarkUpdateRecord(b *testing.B) {
-	setup(b, true, true)
-	defer teardown(b)
-
-	svc, err := New(testFolder)
-	if err != nil {
-		b.Fatal(err)
-	}
-
-	updatedRecord.Id = 1
-	for i := 0; i < b.N; i++ {
-		if resp, err := svc.UpdateRecord(context.TODO(), &updatedRecord); err != nil {
-			b.Fatal(err)
-		} else if !resp.Success {
-			b.Fatalf("expected success response: %v", resp)
-		}
-	}
-}
-
-func TestUpdateRecordWithInvalidId(t *testing.T) {
+func TestServiceUpdateRecordWithInvalidId(t *testing.T) {
 	setup(t, true, true)
 	defer teardown(t)
 
@@ -150,7 +113,7 @@ func TestUpdateRecordWithInvalidId(t *testing.T) {
 	}
 }
 
-func TestReadRecord(t *testing.T) {
+func TestServiceReadRecord(t *testing.T) {
 	setup(t, true, true)
 	defer teardown(t)
 
@@ -167,25 +130,7 @@ func TestReadRecord(t *testing.T) {
 	}
 }
 
-func BenchmarkReadRecord(b *testing.B) {
-	setup(b, true, true)
-	defer teardown(b)
-
-	svc, err := New(testFolder)
-	if err != nil {
-		b.Fatal(err)
-	}
-
-	for i := 0; i < b.N; i++ {
-		if resp, err := svc.ReadRecord(context.TODO(), &byID); err != nil {
-			b.Fatal(err)
-		} else if !resp.Success {
-			b.Fatalf("expected success response: %v", resp)
-		}
-	}
-}
-
-func TestReadRecordWithInvalidId(t *testing.T) {
+func TestServiceReadRecordWithInvalidId(t *testing.T) {
 	setup(t, true, true)
 	defer teardown(t)
 
@@ -202,7 +147,7 @@ func TestReadRecordWithInvalidId(t *testing.T) {
 	}
 }
 
-func TestDeleteRecord(t *testing.T) {
+func TestServiceDeleteRecord(t *testing.T) {
 	setup(t, true, true)
 	defer teardown(t)
 
@@ -233,32 +178,7 @@ func TestDeleteRecord(t *testing.T) {
 	}
 }
 
-func BenchmarkDeleteRecord(b *testing.B) {
-	var svc *Service
-	var err error
-
-	defer teardown(b)
-	for i := 0; i < b.N; i++ {
-		// this is not entirely ok as once every 5 times
-		// we neeed to recreate and reload records, which
-		// increases the operations being benchmarked
-		id := uint64(i%testRecords) + 1
-		if id == 1 {
-			setup(b, true, true)
-			if svc, err = New(testFolder); err != nil {
-				b.Fatal(err)
-			}
-		}
-
-		if resp, err := svc.DeleteRecord(context.TODO(), &pb.ById{Id: id}); err != nil {
-			b.Fatal(err)
-		} else if !resp.Success {
-			b.Fatalf("expected success response: %v", resp)
-		}
-	}
-}
-
-func TestDeleteRecordWithInvalidId(t *testing.T) {
+func TestServiceDeleteRecordWithInvalidId(t *testing.T) {
 	setup(t, true, true)
 	defer teardown(t)
 

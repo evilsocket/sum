@@ -23,6 +23,7 @@ const (
 )
 
 var (
+	bigString  = "\"" + strings.Repeat("hello world", 1024) + "\""
 	testOracle = pb.Oracle{
 		Id:   666,
 		Name: "findReasonsToLive",
@@ -143,7 +144,7 @@ func teardown(t testing.TB) {
 	}
 }
 
-func TestErrCallResponse(t *testing.T) {
+func TestServiceErrCallResponse(t *testing.T) {
 	if r := errCallResponse("test %d", 123); r.Success {
 		t.Fatal("success should be false")
 	} else if r.Msg != "test 123" {
@@ -153,7 +154,7 @@ func TestErrCallResponse(t *testing.T) {
 	}
 }
 
-func TestNew(t *testing.T) {
+func TestServiceNew(t *testing.T) {
 	setup(t, true, true)
 	defer teardown(t)
 
@@ -176,7 +177,7 @@ func TestNew(t *testing.T) {
 	}
 }
 
-func TestNewWithoutFolders(t *testing.T) {
+func TestServiceNewWithoutFolders(t *testing.T) {
 	defer teardown(t)
 
 	setup(t, false, false)
@@ -194,7 +195,7 @@ func TestNewWithoutFolders(t *testing.T) {
 	}
 }
 
-func TestNewWithBrokenCode(t *testing.T) {
+func TestServiceNewWithBrokenCode(t *testing.T) {
 	bak := testOracle.Code
 	testOracle.Code = "lulz not gonna compile bro"
 	defer func() {
@@ -209,7 +210,7 @@ func TestNewWithBrokenCode(t *testing.T) {
 	}
 }
 
-func TestInfo(t *testing.T) {
+func TestServiceInfo(t *testing.T) {
 	setup(t, true, true)
 	defer teardown(t)
 
@@ -234,7 +235,7 @@ func TestInfo(t *testing.T) {
 	}
 }
 
-func TestRun(t *testing.T) {
+func TestServiceRun(t *testing.T) {
 	setup(t, true, true)
 	defer teardown(t)
 
@@ -257,32 +258,9 @@ func TestRun(t *testing.T) {
 	}
 }
 
-func BenchmarkRun(b *testing.B) {
-	setup(b, true, true)
-	defer teardown(b)
-
-	svc, err := New(testFolder)
-	if err != nil {
-		b.Fatal(err)
-	}
-
-	for i := 0; i < b.N; i++ {
-		if resp, err := svc.Run(context.TODO(), &testCall); err != nil {
-			b.Fatal(err)
-		} else if resp.Data == nil {
-			b.Fatal("expected response data")
-		} else if resp.Data.Payload == nil {
-			b.Fatal("expected data payload")
-		} else if len(resp.Data.Payload) != 1 || resp.Data.Payload[0] != byte('0') {
-			b.Fatalf("unexpected response: %s", resp.Data)
-		}
-	}
-}
-
-func TestRunWithCompression(t *testing.T) {
+func TestServiceRunWithCompression(t *testing.T) {
 	bak := testOracle.Code
-	str := "\"" + strings.Repeat("hello world", 1024) + "\""
-	testOracle.Code = "function findReasonsToLive(){ return " + str + "; }"
+	testOracle.Code = "function findReasonsToLive(){ return " + bigString + "; }"
 	defer func() {
 		testOracle.Code = bak
 	}()
@@ -304,41 +282,12 @@ func TestRunWithCompression(t *testing.T) {
 		t.Fatal("expected compressed data")
 	} else if resp.Data.Payload == nil {
 		t.Fatal("expected data payload")
-	} else if data := decompress(t, resp.Data); data != str {
+	} else if data := decompress(t, resp.Data); data != bigString {
 		t.Fatalf("unexpected response: %s", data)
 	}
 }
 
-func BenchmarkRunWithCompression(b *testing.B) {
-	bak := testOracle.Code
-	str := "\"" + strings.Repeat("hello world", 1024) + "\""
-	testOracle.Code = "function findReasonsToLive(){ return " + str + "; }"
-	defer func() {
-		testOracle.Code = bak
-	}()
-
-	setup(b, true, true)
-	defer teardown(b)
-
-	svc, err := New(testFolder)
-	if err != nil {
-		b.Fatal(err)
-	}
-
-	for i := 0; i < b.N; i++ {
-		if resp, err := svc.Run(context.TODO(), &testCall); err != nil {
-			b.Fatal(err)
-		} else if resp.Data == nil {
-			b.Fatal("expected response data")
-		} else if !resp.Data.Compressed {
-			b.Fatal("expected compressed data")
-		} else if resp.Data.Payload == nil {
-			b.Fatal("expected data payload")
-		}
-	}
-}
-
-func TestRunWithWithInvalidId(t *testing.T) {
+func TestServiceRunWithWithInvalidId(t *testing.T) {
 	setup(t, true, true)
 	defer teardown(t)
 
@@ -360,7 +309,7 @@ func TestRunWithWithInvalidId(t *testing.T) {
 	}
 }
 
-func TestRunWithWithInvalidArgs(t *testing.T) {
+func TestServiceRunWithWithInvalidArgs(t *testing.T) {
 	setup(t, true, true)
 	defer teardown(t)
 
@@ -379,7 +328,7 @@ func TestRunWithWithInvalidArgs(t *testing.T) {
 	}
 }
 
-func TestRunWithContextError(t *testing.T) {
+func TestServiceRunWithContextError(t *testing.T) {
 	bak := testOracle.Code
 	msg := "error while running oracle 1: nope"
 	testOracle.Code = "function findReasonsToLive(){ ctx.Error('nope'); }"

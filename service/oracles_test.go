@@ -24,7 +24,7 @@ var (
 	}
 )
 
-func TestErrOracleResponse(t *testing.T) {
+func TestServiceErrOracleResponse(t *testing.T) {
 	if r := errOracleResponse("test %d", 123); r.Success {
 		t.Fatal("success should be false")
 	} else if r.Msg != "test 123" {
@@ -34,7 +34,7 @@ func TestErrOracleResponse(t *testing.T) {
 	}
 }
 
-func TestCreateOracle(t *testing.T) {
+func TestServiceCreateOracle(t *testing.T) {
 	setupFolders(t)
 	defer teardown(t)
 
@@ -51,25 +51,7 @@ func TestCreateOracle(t *testing.T) {
 	}
 }
 
-func BenchmarkCreateOracle(b *testing.B) {
-	setupFolders(b)
-	defer teardown(b)
-
-	svc, err := New(testFolder)
-	if err != nil {
-		b.Fatal(err)
-	}
-
-	for i := 0; i < b.N; i++ {
-		if resp, err := svc.CreateOracle(context.TODO(), &testOracle); err != nil {
-			b.Fatal(err)
-		} else if !resp.Success {
-			b.Fatalf("expected success response: %v", resp)
-		}
-	}
-}
-
-func TestCreateOracleWithInvalidId(t *testing.T) {
+func TestServiceCreateOracleWithInvalidId(t *testing.T) {
 	setup(t, true, true)
 	defer teardown(t)
 
@@ -88,7 +70,7 @@ func TestCreateOracleWithInvalidId(t *testing.T) {
 	}
 }
 
-func TestCreateBrokenOracle(t *testing.T) {
+func TestServiceCreateBrokenOracle(t *testing.T) {
 	setup(t, true, true)
 	defer teardown(t)
 
@@ -103,7 +85,7 @@ func TestCreateBrokenOracle(t *testing.T) {
 	}
 }
 
-func TestUpdateOracle(t *testing.T) {
+func TestServiceUpdateOracle(t *testing.T) {
 	setup(t, true, true)
 	defer teardown(t)
 
@@ -124,26 +106,7 @@ func TestUpdateOracle(t *testing.T) {
 	}
 }
 
-func BenchmarkUpdateOracle(b *testing.B) {
-	setup(b, true, true)
-	defer teardown(b)
-
-	updatedOracle.Id = 1
-	svc, err := New(testFolder)
-	if err != nil {
-		b.Fatal(err)
-	}
-
-	for i := 0; i < b.N; i++ {
-		if resp, err := svc.UpdateOracle(context.TODO(), &updatedOracle); err != nil {
-			b.Fatal(err)
-		} else if !resp.Success {
-			b.Fatalf("expected success response: %v", resp)
-		}
-	}
-}
-
-func TestUpdateOracleWithInvalidId(t *testing.T) {
+func TestServiceUpdateOracleWithInvalidId(t *testing.T) {
 	setupFolders(t)
 	defer teardown(t)
 
@@ -159,7 +122,7 @@ func TestUpdateOracleWithInvalidId(t *testing.T) {
 	}
 }
 
-func TestUpdateWithBrokenOracle(t *testing.T) {
+func TestServiceUpdateWithBrokenOracle(t *testing.T) {
 	setup(t, true, true)
 	defer teardown(t)
 
@@ -176,7 +139,7 @@ func TestUpdateWithBrokenOracle(t *testing.T) {
 	}
 }
 
-func TestReadOracle(t *testing.T) {
+func TestServiceReadOracle(t *testing.T) {
 	setup(t, true, true)
 	defer teardown(t)
 
@@ -196,26 +159,7 @@ func TestReadOracle(t *testing.T) {
 	}
 }
 
-func BenchmarkReadOracle(b *testing.B) {
-	setup(b, true, true)
-	defer teardown(b)
-
-	svc, err := New(testFolder)
-	if err != nil {
-		b.Fatal(err)
-	}
-
-	for i := 0; i < b.N; i++ {
-		byID.Id = uint64(i%testOracles) + 1
-		if resp, err := svc.ReadOracle(context.TODO(), &byID); err != nil {
-			b.Fatal(err)
-		} else if !resp.Success {
-			b.Fatalf("expected success response: %v", resp)
-		}
-	}
-}
-
-func TestReadOracleWithInvalidId(t *testing.T) {
+func TestServiceReadOracleWithInvalidId(t *testing.T) {
 	setup(t, true, true)
 	defer teardown(t)
 
@@ -232,7 +176,7 @@ func TestReadOracleWithInvalidId(t *testing.T) {
 	}
 }
 
-func TestFindOracle(t *testing.T) {
+func TestServiceFindOracle(t *testing.T) {
 	bak := testOracles
 	testOracles = 1
 	defer func() {
@@ -257,31 +201,7 @@ func TestFindOracle(t *testing.T) {
 	}
 }
 
-func BenchmarkFindOracle(b *testing.B) {
-	bak := testOracles
-	testOracles = 1
-	defer func() {
-		testOracles = bak
-	}()
-
-	setup(b, true, true)
-	defer teardown(b)
-
-	svc, err := New(testFolder)
-	if err != nil {
-		b.Fatal(err)
-	}
-
-	for i := 0; i < b.N; i++ {
-		if resp, err := svc.FindOracle(context.TODO(), &byName); err != nil {
-			b.Fatal(err)
-		} else if !resp.Success {
-			b.Fatalf("expected success response: %v", resp)
-		}
-	}
-}
-
-func TestFindOracleWithInvalidName(t *testing.T) {
+func TestServiceFindOracleWithInvalidName(t *testing.T) {
 	setup(t, true, true)
 	defer teardown(t)
 
@@ -298,7 +218,7 @@ func TestFindOracleWithInvalidName(t *testing.T) {
 	}
 }
 
-func TestDeleteOracle(t *testing.T) {
+func TestServiceDeleteOracle(t *testing.T) {
 	setup(t, true, true)
 	defer teardown(t)
 
@@ -329,32 +249,7 @@ func TestDeleteOracle(t *testing.T) {
 	}
 }
 
-func BenchmarkDeleteOracle(b *testing.B) {
-	var svc *Service
-	var err error
-
-	defer teardown(b)
-	for i := 0; i < b.N; i++ {
-		// this is not entirely ok as once every 5 times
-		// we neeed to recreate and reload oracles, which
-		// increases the operations being benchmarked
-		id := uint64(i%testOracles) + 1
-		if id == 1 {
-			setup(b, true, true)
-			if svc, err = New(testFolder); err != nil {
-				b.Fatal(err)
-			}
-		}
-
-		if resp, err := svc.DeleteOracle(context.TODO(), &pb.ById{Id: id}); err != nil {
-			b.Fatal(err)
-		} else if !resp.Success {
-			b.Fatalf("expected success response: %v", resp)
-		}
-	}
-}
-
-func TestDeleteOracleWithInvalidId(t *testing.T) {
+func TestServiceDeleteOracleWithInvalidId(t *testing.T) {
 	setup(t, true, true)
 	defer teardown(t)
 
