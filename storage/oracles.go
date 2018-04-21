@@ -68,6 +68,12 @@ func (o *Oracles) pathFor(oracle *pb.Oracle) string {
 	return o.dataPath + fmt.Sprintf("/%d.dat", oracle.Id)
 }
 
+func (o *Oracles) NextId(next uint64) {
+	o.Lock()
+	defer o.Unlock()
+	o.nextId = next
+}
+
 func (o *Oracles) Create(oracle *pb.Oracle) error {
 	o.Lock()
 	defer o.Unlock()

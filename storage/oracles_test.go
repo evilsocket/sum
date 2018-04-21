@@ -185,7 +185,7 @@ func TestOraclesCreateNotUniqueId(t *testing.T) {
 	}
 
 	// ok this is kinda cheating, but i want full coverage
-	oracles.nextId = uint64(1)
+	oracles.NextId(1)
 	if err := oracles.Create(&testOracle); err == nil {
 		t.Fatalf("expected error for non unique oracle id")
 	}

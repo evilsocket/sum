@@ -122,7 +122,7 @@ func TestRecordsCreateNotUniqueId(t *testing.T) {
 	}
 
 	// ok this is kinda cheating, but i want full coverage
-	records.nextId = uint64(1)
+	records.NextId(1)
 	if err := records.Create(&testRecord); err == nil {
 		t.Fatalf("expected error for non unique record id")
 	}

@@ -17,9 +17,9 @@ import (
 )
 
 const (
+	testFolder  = "/tmp/sum.service.test"
 	testRecords = 5
 	testOracles = 5
-	testFolder  = "/tmp/sum.service.test"
 )
 
 var (
@@ -148,9 +148,9 @@ func TestNew(t *testing.T) {
 		t.Fatalf("wrong uid: %d", svc.uid)
 	} else if reflect.DeepEqual(svc.argv, os.Args) == false {
 		t.Fatalf("wrong args: %v", svc.argv)
-	} else if svc.NumRecords() != testRecords {
+	} else if svc.NumRecords() != uint64(testRecords) {
 		t.Fatalf("wrong number of records: %d", svc.NumRecords())
-	} else if svc.NumOracles() != testOracles {
+	} else if svc.NumOracles() != uint64(testOracles) {
 		t.Fatalf("wrong number of oracles: %d", svc.NumOracles())
 	}
 }

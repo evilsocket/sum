@@ -65,6 +65,12 @@ func (r *Records) pathFor(record *pb.Record) string {
 	return r.dataPath + fmt.Sprintf("/%d.dat", record.Id)
 }
 
+func (r *Records) NextId(next uint64) {
+	r.Lock()
+	defer r.Unlock()
+	r.nextId = next
+}
+
 func (r *Records) Create(record *pb.Record) error {
 	r.Lock()
 	defer r.Unlock()
