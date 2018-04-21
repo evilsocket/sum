@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	// Default file extension for data files.
+	// DatFileExt holds the default file extension for data files.
 	DatFileExt = ".dat"
 )
 
