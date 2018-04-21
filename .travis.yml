@@ -4,6 +4,9 @@ go:
   - "1.10"
   - tip
 
+notifications:
+  email: false
+
 git:
   depth: 3
 
