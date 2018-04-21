@@ -1,4 +1,4 @@
-all: sumd clients
+all: sumd build_docker clients
 
 server_deps: deps proto/sum.pb.go
 
@@ -6,6 +6,12 @@ clients: clients/python/proto/sum_pb2.py clients/php/Sum
 
 deps:
 	@dep ensure
+
+build_docker:
+	@docker build -t sumd:latest .
+
+run_docker: build_docker
+	@docker run -it -p 50051:50051 sumd:latest
 
 sumd: server_deps
 	@echo "Building sumd binary ..."

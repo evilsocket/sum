@@ -64,6 +64,16 @@ func teardownRecords(t testing.TB) {
 	}
 }
 
+// ugly but better than writing platform specific implementations
+func canWriteOnRoot() bool {
+	testFile := "/root/.sum.w.test"
+	if err := ioutil.WriteFile(testFile, []byte{0x00}, 0755); err == nil {
+		os.Remove(testFile)
+		return true
+	}
+	return false
+}
+
 func TestListPath(t *testing.T) {
 	setupRawRecords(t)
 	defer teardownRecords(t)
@@ -93,8 +103,11 @@ func TestListPathWithError(t *testing.T) {
 		t.Fatal("expected an error")
 	} else if _, _, err := ListPath("/lulzlulz"); err == nil {
 		t.Fatal("expected an error")
-	} else if _, _, err := ListPath("/root"); err == nil {
-		t.Fatal("expected permission denied")
+	} else if canWriteOnRoot() == false {
+		// on docker this check is skipped
+		if _, _, err := ListPath("/root"); err == nil {
+			t.Fatal("expected permission denied")
+		}
 	}
 }
 

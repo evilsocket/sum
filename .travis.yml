@@ -12,12 +12,7 @@ git:
 
 before_install:
   - sudo apt-get -qq update
-  - wget https://github.com/google/protobuf/releases/download/v3.5.1/protoc-3.5.1-linux-x86_64.zip -O /tmp/protoc.zip
-  - unzip -o /tmp/protoc.zip -d /tmp/protoc
-  - export PATH=$PATH:/tmp/protoc/bin/
   - go get -u github.com/golang/dep/...
-  - go get -u google.golang.org/grpc
-  - go get -u github.com/golang/protobuf/protoc-gen-go
 
 install:
   - make deps
