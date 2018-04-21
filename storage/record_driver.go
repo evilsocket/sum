@@ -6,21 +6,29 @@ import (
 	pb "github.com/evilsocket/sum/proto"
 )
 
+// RecordDriver is the specialized implementation of a
+// storage.Driver interface, used to access the internal
+// fields of pb.Record objects in the index.
 type RecordDriver struct {
 }
 
+// Make returns a new pb.Record object.
 func (d RecordDriver) Make() proto.Message {
 	return new(pb.Record)
 }
 
+// GetId returns the unique identifier of the pb.Record object.
 func (d RecordDriver) GetId(m proto.Message) uint64 {
 	return m.(*pb.Record).Id
 }
 
+// SetId sets the unique identifier of the pb.Record object.
 func (d RecordDriver) SetId(m proto.Message, id uint64) {
 	m.(*pb.Record).Id = id
 }
 
+// Copy copies the Meta and Data fields, if filled, from the
+// source object to the destination one.
 func (d RecordDriver) Copy(mdst proto.Message, msrc proto.Message) error {
 	dst := mdst.(*pb.Record)
 	src := msrc.(*pb.Record)
