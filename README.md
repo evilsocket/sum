@@ -1,4 +1,8 @@
-# SUM
+<p align="center">
+  <h1 align="center">SUM</h1>
+  <p align="center">Making linear algebra great (and persistent) again.</p>
+</p>
+
 [![Build](https://img.shields.io/travis/evilsocket/sum/master.svg?style=flat-square)](https://travis-ci.org/evilsocket/sum) 
 [![Go Report Card](https://goreportcard.com/badge/github.com/evilsocket/sum)](https://goreportcard.com/report/github.com/evilsocket/sum) 
 [![Coverage](https://img.shields.io/codecov/c/github/evilsocket/sum/master.svg?style=flat-square)](https://codecov.io/gh/evilsocket/sum)
