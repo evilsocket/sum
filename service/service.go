@@ -23,6 +23,12 @@ const (
 	oraclesFolderName = "oracles"
 )
 
+func errCallResponse(format string, args ...interface{}) *pb.CallResponse {
+	return &pb.CallResponse{Success: false, Msg: fmt.Sprintf(format, args...)}
+}
+
+// Service represents a single instance of the Sum database
+// service.
 type Service struct {
 	started  time.Time
 	pid      uint64
@@ -33,6 +39,8 @@ type Service struct {
 	oracles  *storage.Oracles
 }
 
+// New loads records and oracles from a given path and returns
+// a new instance of the *Service object.
 func New(dataPath string) (*Service, error) {
 	records, err := storage.LoadRecords(filepath.Join(dataPath, dataFolderName))
 	if err != nil {
@@ -55,6 +63,8 @@ func New(dataPath string) (*Service, error) {
 	}, nil
 }
 
+// Info returns a *pb.ServerInfo object with various realtime information
+// about the service and its runtime.
 func (s *Service) Info(ctx context.Context, dummy *pb.Empty) (*pb.ServerInfo, error) {
 	return &pb.ServerInfo{
 		Version: Version,
@@ -67,10 +77,8 @@ func (s *Service) Info(ctx context.Context, dummy *pb.Empty) (*pb.ServerInfo, er
 	}, nil
 }
 
-func errCallResponse(format string, args ...interface{}) *pb.CallResponse {
-	return &pb.CallResponse{Success: false, Msg: fmt.Sprintf(format, args...)}
-}
-
+// Run executes a compiled oracle given its identifier and the arguments
+// in the *pb.Call object.
 func (s *Service) Run(ctx context.Context, call *pb.Call) (*pb.CallResponse, error) {
 	compiled := s.oracles.Find(call.OracleId)
 	if compiled == nil {

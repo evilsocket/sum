@@ -11,10 +11,13 @@ func errRecordResponse(format string, args ...interface{}) *pb.RecordResponse {
 	return &pb.RecordResponse{Success: false, Msg: fmt.Sprintf(format, args...)}
 }
 
+// NumRecords returns the number of records currently loaded by the service.
 func (s *Service) NumRecords() uint64 {
 	return s.records.Size()
 }
 
+// CreateRecord creates and stores a new *pb.Record object. If succesful, the
+// identifier of the record is returned as the response message.
 func (s *Service) CreateRecord(ctx context.Context, record *pb.Record) (*pb.RecordResponse, error) {
 	if err := s.records.Create(record); err != nil {
 		return errRecordResponse("%s", err), nil
@@ -22,6 +25,8 @@ func (s *Service) CreateRecord(ctx context.Context, record *pb.Record) (*pb.Reco
 	return &pb.RecordResponse{Success: true, Msg: fmt.Sprintf("%d", record.Id)}, nil
 }
 
+// UpdateRecord updates the contents of a record with the ones of a raw *pb.Record
+// object given its identifier.
 func (s *Service) UpdateRecord(ctx context.Context, record *pb.Record) (*pb.RecordResponse, error) {
 	if err := s.records.Update(record); err != nil {
 		return errRecordResponse("%s", err), nil
@@ -29,6 +34,7 @@ func (s *Service) UpdateRecord(ctx context.Context, record *pb.Record) (*pb.Reco
 	return &pb.RecordResponse{Success: true}, nil
 }
 
+// ReadRecord returns a raw *pb.Record object given its identifier.
 func (s *Service) ReadRecord(ctx context.Context, query *pb.ById) (*pb.RecordResponse, error) {
 	record := s.records.Find(query.Id)
 	if record == nil {
@@ -37,6 +43,7 @@ func (s *Service) ReadRecord(ctx context.Context, query *pb.ById) (*pb.RecordRes
 	return &pb.RecordResponse{Success: true, Record: record}, nil
 }
 
+// DeleteRecord removes a record from the storage given its identifier.
 func (s *Service) DeleteRecord(ctx context.Context, query *pb.ById) (*pb.RecordResponse, error) {
 	record := s.records.Delete(query.Id)
 	if record == nil {
