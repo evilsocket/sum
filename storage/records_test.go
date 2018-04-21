@@ -203,7 +203,7 @@ func TestRecordsDeleteWithInvalidId(t *testing.T) {
 
 	for i := 0; i < testRecords; i++ {
 		if deleted := records.Delete(uint64(i + 1)); deleted != nil {
-			t.Fatalf("record with id %d was not expected to be found", i)
+			t.Fatalf("record with id %d was not expected to be found", i+1)
 		}
 	}
 }

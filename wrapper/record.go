@@ -31,6 +31,10 @@ func ForRecord(store *storage.Records, record *pb.Record) Record {
 	}
 }
 
+// FIXME: these flush ops should not be executed on every single
+// record updated, they should instead queue and being finalized
+// by the context holder just once, like a sql transaction kind
+// of thing.
 func (w Record) flush() bool {
 	if w.store != nil {
 		if err := w.store.Update(w.record); err != nil {
