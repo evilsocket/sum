@@ -4,7 +4,10 @@ server_deps: deps proto/sum.pb.go
 
 clients: clients/python/proto/sum_pb2.py clients/php/Sum 
 
-deps:
+godep:
+	@go get -u github.com/golang/dep/...
+
+deps: godep
 	@dep ensure
 
 build_docker:

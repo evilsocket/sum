@@ -8,7 +8,6 @@ RUN apk add --no-cache --update git make
 
 WORKDIR $SRC_DIR
 ADD . $SRC_DIR
-RUN go get -u github.com/golang/dep/...
 RUN make sumd
 
 # final stage
