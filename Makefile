@@ -2,6 +2,9 @@ SHELL := bash
 .PHONY: all clients godep golint gomegacheck deps test codecov html_coverage benchmark
 .PHONY: clean reset_env profile run build_docker run_docker pycli phpcli
 
+#
+# Config
+#
 GRPC_PATH=/opt/grpc/bins/opt
 GRPC_PHP_PLUGIN=${GRPC_PATH}/grpc_php_plugin
 GRPC_PROTOC=${GRPC_PATH}/protobuf/protoc
@@ -35,10 +38,6 @@ run: reset_env sumd
 	@./sumd -datapath "${SUMD_DATAPATH}"
 
 clean:
-	@rm -rf proto/*.go
-	@rm -rf clients/python/proto/sum_*.py
-	@rm -rf clients/php/Sum
-	@rm -rf clients/php/GPBMetadata
 	@rm -rf sumd
 	@rm -rf *.profile
 	@rm -rf *.profile.html
