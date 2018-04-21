@@ -44,9 +44,25 @@ benchmark: server_deps
 	@echo "Running benchmarks ..."
 	@go test ./... -v -run=doNotRunTests -bench=.
 
-test: server_deps
-	@echo "Running tests ...\n"
-	@go test ./... -coverprofile=coverage.profile
+# go 1.9 doesn't support test coverage on multiple packages, while
+# go 1.10 does, let's keep it 1.9 compatible in order not to break
+# travis
+service.profile:
+	@go test ./service -coverprofile=service.profile
+
+storage.profile:
+	@go test ./storage -coverprofile=storage.profile
+
+wrapper.profile:
+	@go test ./wrapper -coverprofile=wrapper.profile
+
+coverage.profile: service.profile storage.profile wrapper.profile
+	@echo "mode: set" > coverage.profile
+	@tail -n +2 service.profile >> coverage.profile && rm service.profile
+	@tail -n +2 storage.profile >> coverage.profile && rm storage.profile
+	@tail -n +2 wrapper.profile >> coverage.profile && rm wrapper.profile
+
+test: server_deps coverage.profile 
 
 html_coverage: test
 	@echo "\nGenerating code coverage report to coverage.profile.html ..."

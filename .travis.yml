@@ -13,7 +13,6 @@ git:
 
 before_install:
   - sudo apt-get -qq update
-  - go get -u github.com/golang/dep/...
 
 install:
   - make deps
