@@ -49,7 +49,7 @@ func (c *compiled) RunWithContext(records *storage.Records, args []string) (*wra
 		c.Lock()
 		defer c.Unlock()
 
-		c.vm.Set("records", wrapper.ForRecords(records))
+		c.vm.Set("records", wrapper.WrapRecords(records))
 		c.vm.Set("ctx", ctx)
 
 		ret, err = c.vm.Run(call)

@@ -18,8 +18,8 @@ type Record struct {
 	store  *storage.Records
 }
 
-// ForRecord creates a Record wrapper around a raw *pb.Record object.
-func ForRecord(store *storage.Records, record *pb.Record) Record {
+// WrapRecord creates a Record wrapper around a raw *pb.Record object.
+func WrapRecord(store *storage.Records, record *pb.Record) Record {
 	id := uint64(0)
 	if record != nil {
 		id = record.Id

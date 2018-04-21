@@ -87,7 +87,7 @@ func teardownRecords(t testing.TB) {
 	}
 }
 
-func TestForRecords(t *testing.T) {
+func TestWrapRecords(t *testing.T) {
 	setupRecords(t, false)
 	defer teardownRecords(t)
 
@@ -96,7 +96,7 @@ func TestForRecords(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	wrapped := ForRecords(records)
+	wrapped := WrapRecords(records)
 	if wrapped.records != records {
 		t.Fatal("unexpected records wrapped")
 	}
@@ -111,31 +111,13 @@ func TestFind(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	wrapped := ForRecords(records)
+	wrapped := WrapRecords(records)
 	for i := 0; i < testRecords; i++ {
 		id := uint64(i + 1)
 		if r := wrapped.Find(id); r.IsNull() {
 			t.Fatalf("wrapped record with id %d not found", id)
 		} else if r.ID != id {
 			t.Fatalf("expected record with id %d, found %d", id, r.ID)
-		}
-	}
-}
-
-func BenchmarkFind(b *testing.B) {
-	setupRecords(b, true)
-	defer teardownRecords(b)
-
-	records, err := storage.LoadRecords(testFolder)
-	if err != nil {
-		b.Fatal(err)
-	}
-
-	wrapped := ForRecords(records)
-	for i := 0; i < b.N; i++ {
-		id := uint64(i%testRecords) + 1
-		if r := wrapped.Find(id); r.IsNull() {
-			b.Fatalf("wrapped record with id %d not found", id)
 		}
 	}
 }
@@ -149,7 +131,7 @@ func TestFindWithInvalidId(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	wrapped := ForRecords(records)
+	wrapped := WrapRecords(records)
 	for i := 0; i < testRecords; i++ {
 		id := uint64(i + 1)
 		if r := wrapped.Find(id); !r.IsNull() {
@@ -167,7 +149,7 @@ func TestAll(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	wrapped := ForRecords(records)
+	wrapped := WrapRecords(records)
 	all := wrapped.All()
 	if len(all) != testRecords {
 		t.Fatalf("expected %d wrapped records, got %d", testRecords, len(all))
@@ -187,22 +169,6 @@ func TestAll(t *testing.T) {
 	}
 }
 
-func BenchmarkAll(b *testing.B) {
-	setupRecords(b, true)
-	defer teardownRecords(b)
-
-	records, err := storage.LoadRecords(testFolder)
-	if err != nil {
-		b.Fatal(err)
-	}
-	wrapped := ForRecords(records)
-	for i := 0; i < b.N; i++ {
-		if all := wrapped.All(); len(all) != testRecords {
-			b.Fatalf("expected %d wrapped records, got %d", testRecords, len(all))
-		}
-	}
-}
-
 func TestAllBut(t *testing.T) {
 	setupRecords(t, true)
 	defer teardownRecords(t)
@@ -217,8 +183,8 @@ func TestAllBut(t *testing.T) {
 		t.Fatal("expected record with id 1")
 	}
 
-	wRef := ForRecord(records, reference)
-	allBut := ForRecords(records).AllBut(wRef)
+	wRef := WrapRecord(records, reference)
+	allBut := WrapRecords(records).AllBut(wRef)
 	if len(allBut) != testRecords-1 {
 		t.Fatalf("expected %d wrapped records, got %d", testRecords-1, len(allBut))
 	}
@@ -237,30 +203,6 @@ func TestAllBut(t *testing.T) {
 
 		if !found {
 			t.Fatalf("record %d not wrapped correctly", wRec.ID)
-		}
-	}
-}
-
-func BenchmarkAllBut(b *testing.B) {
-	setupRecords(b, true)
-	defer teardownRecords(b)
-
-	records, err := storage.LoadRecords(testFolder)
-	if err != nil {
-		b.Fatal(err)
-	}
-
-	reference := records.Find(1)
-	if reference == nil {
-		b.Fatal("expected record with id 1")
-	}
-
-	wrapped := ForRecords(records)
-	wRef := ForRecord(records, reference)
-
-	for i := 0; i < b.N; i++ {
-		if allBut := wrapped.AllBut(wRef); len(allBut) != testRecords-1 {
-			b.Fatalf("expected %d wrapped records, got %d", testRecords-1, len(allBut))
 		}
 	}
 }

@@ -14,8 +14,8 @@ type Records struct {
 	records *storage.Records
 }
 
-// ForRecords creates a Records wrapper around a *storage.Records object.
-func ForRecords(records *storage.Records) Records {
+// WrapRecords creates a Records wrapper around a *storage.Records object.
+func WrapRecords(records *storage.Records) Records {
 	return Records{
 		records: records,
 	}
@@ -25,14 +25,14 @@ func ForRecords(records *storage.Records) Records {
 // If not found, the resulting record will result as null
 // (record.IsNull() will be true).
 func (w Records) Find(id uint64) Record {
-	return ForRecord(w.records, w.records.Find(id))
+	return WrapRecord(w.records, w.records.Find(id))
 }
 
 // All returns a wrapped list of records in the current storage.
 func (w Records) All() []Record {
 	wrapped := make([]Record, 0)
 	w.records.ForEach(func(m proto.Message) {
-		wrapped = append(wrapped, ForRecord(w.records, m.(*pb.Record)))
+		wrapped = append(wrapped, WrapRecord(w.records, m.(*pb.Record)))
 	})
 	return wrapped
 }
@@ -44,7 +44,7 @@ func (w Records) AllBut(exclude Record) []Record {
 	w.records.ForEach(func(m proto.Message) {
 		record := m.(*pb.Record)
 		if record.Id != exclude.record.Id {
-			wrapped = append(wrapped, ForRecord(w.records, record))
+			wrapped = append(wrapped, WrapRecord(w.records, record))
 		}
 	})
 	return wrapped
