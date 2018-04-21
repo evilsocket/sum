@@ -39,7 +39,7 @@ func (c *compiled) Oracle() *pb.Oracle {
 	return c.oracle
 }
 
-func (c *compiled) RunWithContext(records *storage.Records, args []string) (*wrapper.Context, error, []byte) {
+func (c *compiled) RunWithContext(records *storage.Records, args []string) (*wrapper.Context, []byte, error) {
 	var ret otto.Value
 	var err error
 
@@ -58,13 +58,13 @@ func (c *compiled) RunWithContext(records *storage.Records, args []string) (*wra
 	}()
 
 	if err != nil {
-		return ctx, err, nil
+		return ctx, nil, err
 	} else if ctx.IsError() {
-		return ctx, errors.New(ctx.Message()), nil
+		return ctx, nil, errors.New(ctx.Message())
 	}
 
 	obj, _ := ret.Export()
 	raw, _ := json.Marshal(obj)
 
-	return ctx, nil, raw
+	return ctx, raw, nil
 }

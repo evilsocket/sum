@@ -109,7 +109,10 @@ func (s *Service) Run(ctx context.Context, call *pb.Call) (*pb.CallResponse, err
 		return errCallResponse("oracle %d not found.", call.OracleId), nil
 	}
 
-	_, err, raw := compiled.RunWithContext(s.records, call.Args)
+	// TODO: here the returned context could be used to queue and
+	// finalize any write operations the oracle generated during
+	// execution, making it transactional.
+	_, raw, err := compiled.RunWithContext(s.records, call.Args)
 	if err != nil {
 		return errCallResponse("error while running oracle %d: %s", call.OracleId, err), nil
 	}
