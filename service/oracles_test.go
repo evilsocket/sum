@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	pb "github.com/evilsocket/sum/proto"
+	"github.com/evilsocket/sum/storage"
 )
 
 var (
@@ -67,6 +68,25 @@ func BenchmarkCreateOracle(b *testing.B) {
 	}
 }
 
+func TestCreateOracleWithInvalidId(t *testing.T) {
+	setup(t, true, true)
+	defer teardown(t)
+
+	svc, err := New(testFolder)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	svc.oracles.NextId(1)
+	if resp, err := svc.CreateOracle(nil, &testOracle); err != nil {
+		t.Fatal(err)
+	} else if resp.Success == true {
+		t.Fatalf("expected error response: %v", resp)
+	} else if resp.Msg != storage.ErrInvalidId.Error() {
+		t.Fatalf("unexpected response message: %s", resp.Msg)
+	}
+}
+
 func TestCreateBrokenOracle(t *testing.T) {
 	setup(t, true, true)
 	defer teardown(t)
@@ -119,6 +139,22 @@ func BenchmarkUpdateOracle(b *testing.B) {
 		} else if resp.Success == false {
 			b.Fatalf("expected success response: %v", resp)
 		}
+	}
+}
+
+func TestUpdateOracleWithInvalidId(t *testing.T) {
+	setupFolders(t)
+	defer teardown(t)
+
+	updatedOracle.Id = 1
+	if svc, err := New(testFolder); err != nil {
+		t.Fatal(err)
+	} else if resp, err := svc.UpdateOracle(nil, &updatedOracle); err != nil {
+		t.Fatal(err)
+	} else if resp.Success == true {
+		t.Fatalf("expected error response: %v", resp)
+	} else if resp.Msg != storage.ErrRecordNotFound.Error() {
+		t.Fatalf("unexpected response message: %s", resp.Msg)
 	}
 }
 

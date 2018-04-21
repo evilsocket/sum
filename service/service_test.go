@@ -193,6 +193,21 @@ func TestNewWithoutFolders(t *testing.T) {
 	}
 }
 
+func TestNewWithBrokenCode(t *testing.T) {
+	bak := testOracle.Code
+	testOracle.Code = "lulz not gonna compile bro"
+	defer func() {
+		testOracle.Code = bak
+	}()
+
+	setup(t, true, true)
+	defer teardown(t)
+
+	if _, err := New(testFolder); err == nil {
+		t.Fatal("expected error due to invalid oracle code")
+	}
+}
+
 func TestInfo(t *testing.T) {
 	setup(t, true, true)
 	defer teardown(t)
