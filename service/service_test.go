@@ -19,7 +19,6 @@ import (
 const (
 	testFolder  = "/tmp/sum.service.test"
 	testRecords = 5
-	testOracles = 5
 )
 
 var (

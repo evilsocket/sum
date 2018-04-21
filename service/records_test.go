@@ -19,7 +19,7 @@ var (
 	}
 )
 
-func TestErrRecordesponse(t *testing.T) {
+func TestErrRecordResponse(t *testing.T) {
 	if r := errRecordResponse("test %d", 123); r.Success == true {
 		t.Fatal("success should be false")
 	} else if r.Msg != "test 123" {
@@ -223,7 +223,7 @@ func TestDeleteRecord(t *testing.T) {
 		}
 	}
 
-	if svc.records.Size() != 0 {
+	if svc.NumRecords() != 0 {
 		t.Fatalf("expected empty records storage, found %d instead", svc.NumRecords())
 	} else if doublecheck, err := New(testFolder); err != nil {
 		t.Fatal(err)
