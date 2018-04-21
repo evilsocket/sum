@@ -1,5 +1,5 @@
 /*
-Package wrapper provides the functionalities for the objects being passed to and
-referenced from a storage.CompiledOracle object during evaluation.
+Package wrapper provides the functionalities for the objects being passed to oracles
+during evaluation.
 */
 package wrapper
