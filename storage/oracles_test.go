@@ -164,6 +164,42 @@ func TestOraclesFindWithInvalidId(t *testing.T) {
 	}
 }
 
+func TestOraclesUpdate(t *testing.T) {
+	setupOracles(t, true, false, false)
+	defer teardownOracles(t)
+
+	oracles, err := LoadOracles(testFolder)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	updatedOracle.Id = 4
+	if err := oracles.Update(&updatedOracle); err != nil {
+		t.Fatal(err)
+	} else if oracle := oracles.Find(updatedOracle.Id); oracle == nil {
+		t.Fatalf("expected oracle with id %d", updatedOracle.Id)
+	} else if reflect.DeepEqual(*oracle, updatedOracle) == false {
+		t.Fatal("oracles should match")
+	}
+}
+
+func BenchmarkOraclesUpdate(b *testing.B) {
+	setupOracles(b, true, false, false)
+	defer teardownOracles(b)
+
+	oracles, err := LoadOracles(testFolder)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	for i := 0; i < b.N; i++ {
+		updatedOracle.Id = uint64(i%testOracles) + 1
+		if err := oracles.Update(&updatedOracle); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
 func TestOraclesDelete(t *testing.T) {
 	setupOracles(t, true, false, false)
 	defer teardownOracles(t)
