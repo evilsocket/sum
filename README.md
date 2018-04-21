@@ -75,3 +75,4 @@ create a few vectors on the server, define an oracle, call it for every vector a
 
 * https://github.com/dgryski/go-perfbook
 * https://medium.com/@felipedutratine/how-to-organize-the-go-struct-in-order-to-save-memory-c78afcf59ec2
+* https://github.com/gonum/gonum
