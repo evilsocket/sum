@@ -1,7 +1,10 @@
 package wrapper
 
 import (
+	"math/rand"
 	"testing"
+
+	pb "github.com/evilsocket/sum/proto"
 )
 
 func BenchmarkWrapRecord(b *testing.B) {
@@ -75,6 +78,35 @@ func BenchmarkWrappedRecordDot(b *testing.B) {
 			b.Fatalf("dot product should be %f, got %f", shouldBe, dot)
 		}
 	}
+}
+
+func wrappedRecordDotN(b *testing.B, N int) {
+	a := pb.Record{Data: make([]float32, N)}
+	c := pb.Record{Data: make([]float32, N)}
+	for i := 0; i < N; i++ {
+		a.Data[i] = rand.Float32()
+		c.Data[i] = rand.Float32()
+	}
+
+	wa := WrapRecord(nil, &a)
+	wc := WrapRecord(nil, &c)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = wa.Dot(wc)
+	}
+}
+
+func BenchmarkWrappedRecordDot10(b *testing.B) {
+	wrappedRecordDotN(b, 10)
+}
+
+func BenchmarkWrappedRecordDot100(b *testing.B) {
+	wrappedRecordDotN(b, 100)
+}
+
+func BenchmarkWrappedRecordDot1024(b *testing.B) {
+	wrappedRecordDotN(b, 1024)
 }
 
 func BenchmarkWrappedRecordMagnitude(b *testing.B) {
