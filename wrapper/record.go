@@ -60,11 +60,7 @@ func (w Record) Set(index int, value float32) {
 }
 
 func (w Record) Meta(name string) string {
-	if v, found := w.record.Meta[name]; found == true {
-		return v
-	} else {
-		return ""
-	}
+	return w.record.Meta[name]
 }
 
 func (w Record) SetMeta(name, value string) {
