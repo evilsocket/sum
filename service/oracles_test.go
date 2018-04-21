@@ -78,12 +78,12 @@ func TestCreateOracleWithInvalidId(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	svc.oracles.NextId(1)
+	svc.oracles.NextID(1)
 	if resp, err := svc.CreateOracle(context.TODO(), &testOracle); err != nil {
 		t.Fatal(err)
 	} else if resp.Success {
 		t.Fatalf("expected error response: %v", resp)
-	} else if resp.Msg != storage.ErrInvalidId.Error() {
+	} else if resp.Msg != storage.ErrInvalidID.Error() {
 		t.Fatalf("unexpected response message: %s", resp.Msg)
 	}
 }
@@ -180,10 +180,10 @@ func TestReadOracle(t *testing.T) {
 	setup(t, true, true)
 	defer teardown(t)
 
-	byId.Id = 1
+	byID.Id = 1
 	if svc, err := New(testFolder); err != nil {
 		t.Fatal(err)
-	} else if resp, err := svc.ReadOracle(context.TODO(), &byId); err != nil {
+	} else if resp, err := svc.ReadOracle(context.TODO(), &byID); err != nil {
 		t.Fatal(err)
 	} else if !resp.Success {
 		t.Fatalf("expected success response: %v", resp)
@@ -191,7 +191,7 @@ func TestReadOracle(t *testing.T) {
 		t.Fatal("expected oracles list")
 	} else if len(resp.Oracles) != 1 {
 		t.Fatalf("unexpected oracles list size: %d", len(resp.Oracles))
-	} else if testOracle.Id = byId.Id; !reflect.DeepEqual(*resp.Oracles[0], testOracle) {
+	} else if testOracle.Id = byID.Id; !reflect.DeepEqual(*resp.Oracles[0], testOracle) {
 		t.Fatalf("oracle does not match: %v", resp.Oracles[0])
 	}
 }
@@ -206,8 +206,8 @@ func BenchmarkReadOracle(b *testing.B) {
 	}
 
 	for i := 0; i < b.N; i++ {
-		byId.Id = uint64(i%testOracles) + 1
-		if resp, err := svc.ReadOracle(context.TODO(), &byId); err != nil {
+		byID.Id = uint64(i%testOracles) + 1
+		if resp, err := svc.ReadOracle(context.TODO(), &byID); err != nil {
 			b.Fatal(err)
 		} else if !resp.Success {
 			b.Fatalf("expected success response: %v", resp)
@@ -252,7 +252,7 @@ func TestFindOracle(t *testing.T) {
 		t.Fatal("expected oracles list")
 	} else if len(resp.Oracles) != testOracles {
 		t.Fatalf("unexpected oracles list size: %v", resp.Oracles)
-	} else if testOracle.Id = byId.Id; !reflect.DeepEqual(*resp.Oracles[0], testOracle) {
+	} else if testOracle.Id = byID.Id; !reflect.DeepEqual(*resp.Oracles[0], testOracle) {
 		t.Fatalf("oracle does not match: %v", resp.Oracles[0])
 	}
 }

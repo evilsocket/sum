@@ -13,10 +13,10 @@ import (
 
 var (
 
-	// ErrInvalidId is returned when the system detects a collision of
+	// ErrInvalidID is returned when the system detects a collision of
 	// identifiers, usually due to multiple Sum instances running on the
 	// same data path.
-	ErrInvalidId = errors.New("identifier is not unique")
+	ErrInvalidID = errors.New("identifier is not unique")
 	// ErrRecordNotFound is the 404 of Sum, it is returned when the storage
 	// manager can't find an object mapped to the queried identifier.
 	ErrRecordNotFound = errors.New("record not found")
@@ -31,18 +31,18 @@ type Index struct {
 	sync.RWMutex
 	dataPath string
 	index    map[uint64]proto.Message
-	nextId   uint64
+	nextID   uint64
 	driver   Driver
 }
 
 // NOTE: pathSep is added if needed when the index object is created,
 // this spares us a third string concatenation or worse a Sprintf call.
-func (i *Index) pathForId(id uint64) string {
+func (i *Index) pathForID(id uint64) string {
 	return i.dataPath + strconv.FormatUint(id, 10) + DatFileExt
 }
 
 func (i *Index) pathFor(record proto.Message) string {
-	return i.pathForId(i.driver.GetId(record))
+	return i.pathForID(i.driver.GetID(record))
 }
 
 // WithDriver creates a new Index object with the specified storage.Driver
@@ -55,7 +55,7 @@ func WithDriver(dataPath string, driver Driver) *Index {
 	return &Index{
 		dataPath: dataPath,
 		index:    make(map[uint64]proto.Message),
-		nextId:   1,
+		nextID:   1,
 		driver:   driver,
 	}
 }
@@ -72,7 +72,7 @@ func (i *Index) Load() error {
 	}
 
 	i.dataPath = absPath + pathSep
-	i.nextId = 1
+	i.nextID = 1
 	if nfiles := len(files); nfiles > 0 {
 		log.Printf("loading %d data files from %s ...", len(files), i.dataPath)
 		for _, fileName := range files {
@@ -80,10 +80,10 @@ func (i *Index) Load() error {
 			if err := Load(fileName, record); err != nil {
 				return err
 			}
-			recId := i.driver.GetId(record)
-			i.index[recId] = record
-			if recId > i.nextId {
-				i.nextId = recId + 1
+			recID := i.driver.GetID(record)
+			i.index[recID] = record
+			if recID > i.nextID {
+				i.nextID = recID + 1
 			}
 		}
 	}
@@ -108,14 +108,14 @@ func (i *Index) Size() uint64 {
 	return uint64(len(i.index))
 }
 
-// NextId sets the value for the integer identifier to use
+// NextID sets the value for the integer identifier to use
 // every future record. NOTE: This method is just for internal
 // use and the only reason why it's exposed is because of unit
 // tests, do not use.
-func (i *Index) NextId(next uint64) {
+func (i *Index) NextID(next uint64) {
 	i.Lock()
 	defer i.Unlock()
-	i.nextId = next
+	i.nextID = next
 }
 
 // Create stores the profobuf message in the index, setting its
@@ -127,16 +127,16 @@ func (i *Index) Create(record proto.Message) error {
 
 	// make sure the id is unique and that we
 	// are able to create the data file
-	recId := i.nextId
-	i.driver.SetId(record, recId)
-	if _, found := i.index[recId]; found {
-		return ErrInvalidId
-	} else if err := Flush(record, i.pathForId(recId)); err != nil {
+	recID := i.nextID
+	i.driver.SetID(record, recID)
+	if _, found := i.index[recID]; found {
+		return ErrInvalidID
+	} else if err := Flush(record, i.pathForID(recID)); err != nil {
 		return err
 	}
 
-	i.nextId++
-	i.index[recId] = record
+	i.nextID++
+	i.index[recID] = record
 
 	return nil
 }
@@ -148,14 +148,14 @@ func (i *Index) Update(record proto.Message) error {
 	i.Lock()
 	defer i.Unlock()
 
-	recId := i.driver.GetId(record)
-	stored, found := i.index[recId]
+	recID := i.driver.GetID(record)
+	stored, found := i.index[recID]
 	if !found {
 		return ErrRecordNotFound
 	} else if err := i.driver.Copy(stored, record); err != nil {
 		return err
 	}
-	return Flush(stored, i.pathForId(recId))
+	return Flush(stored, i.pathForID(recID))
 }
 
 // Find returns the instance of a stored object given its identifier,
@@ -185,7 +185,7 @@ func (i *Index) Delete(id uint64) proto.Message {
 
 	delete(i.index, id)
 
-	os.Remove(i.pathForId(id))
+	os.Remove(i.pathForID(id))
 
 	return record
 }

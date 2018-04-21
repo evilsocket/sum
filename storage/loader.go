@@ -22,7 +22,7 @@ func ListPath(dataPath string) (string, map[string]string, error) {
 	if info, err := os.Stat(dataPath); err != nil {
 		return "", nil, err
 	} else if !info.IsDir() {
-		return "", nil, fmt.Errorf("%s is not a folder.", dataPath)
+		return "", nil, fmt.Errorf("%s is not a folder", dataPath)
 	}
 
 	files, err := ioutil.ReadDir(dataPath)
@@ -49,12 +49,12 @@ func ListPath(dataPath string) (string, map[string]string, error) {
 func Load(fileName string, m proto.Message) error {
 	data, err := ioutil.ReadFile(fileName)
 	if err != nil {
-		return fmt.Errorf("Error while reading %s: %s", fileName, err)
+		return fmt.Errorf("error while reading %s: %s", fileName, err)
 	}
 
 	err = proto.Unmarshal(data, m)
 	if err != nil {
-		return fmt.Errorf("Error while deserializing %s: %s", fileName, err)
+		return fmt.Errorf("error while deserializing %s: %s", fileName, err)
 	}
 	return nil
 }

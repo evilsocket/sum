@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	byId          = pb.ById{Id: 1}
+	byID          = pb.ById{Id: 1}
 	updatedRecord = pb.Record{
 		Id:   555,
 		Data: []float32{1, 2, 3, 4, 5, 6, 7, 8, 9, 666},
@@ -75,14 +75,14 @@ func TestCreateRecordNotUniqueId(t *testing.T) {
 	}
 
 	// ok this is kinda cheating, but i want full coverage
-	svc.records.NextId(1)
+	svc.records.NextID(1)
 	if resp, err := svc.CreateRecord(context.TODO(), &testRecord); err != nil {
 		t.Fatal(err)
 	} else if resp.Success {
 		t.Fatalf("expected error response: %v", resp)
 	} else if resp.Record != nil {
 		t.Fatalf("unexpected record pointer: %v", resp.Record)
-	} else if resp.Msg != storage.ErrInvalidId.Error() {
+	} else if resp.Msg != storage.ErrInvalidID.Error() {
 		t.Fatalf("unexpected response message: %s", resp.Msg)
 	}
 }
@@ -156,13 +156,13 @@ func TestReadRecord(t *testing.T) {
 
 	if svc, err := New(testFolder); err != nil {
 		t.Fatal(err)
-	} else if resp, err := svc.ReadRecord(context.TODO(), &byId); err != nil {
+	} else if resp, err := svc.ReadRecord(context.TODO(), &byID); err != nil {
 		t.Fatal(err)
 	} else if !resp.Success {
 		t.Fatalf("expected success response: %v", resp)
 	} else if resp.Record == nil {
 		t.Fatal("expected record pointer")
-	} else if testRecord.Id = byId.Id; !reflect.DeepEqual(*resp.Record, testRecord) {
+	} else if testRecord.Id = byID.Id; !reflect.DeepEqual(*resp.Record, testRecord) {
 		t.Fatalf("unexpected record: %v", resp.Record)
 	}
 }
@@ -177,7 +177,7 @@ func BenchmarkReadRecord(b *testing.B) {
 	}
 
 	for i := 0; i < b.N; i++ {
-		if resp, err := svc.ReadRecord(context.TODO(), &byId); err != nil {
+		if resp, err := svc.ReadRecord(context.TODO(), &byID); err != nil {
 			b.Fatal(err)
 		} else if !resp.Success {
 			b.Fatalf("expected success response: %v", resp)

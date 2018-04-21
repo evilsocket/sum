@@ -76,7 +76,7 @@ func TestIndexLoadWithNoFolder(t *testing.T) {
 
 func TestIndexPathForId(t *testing.T) {
 	i := setupIndex("/foo")
-	if path := i.pathForId(1234); path != "/foo/1234.dat" {
+	if path := i.pathForID(1234); path != "/foo/1234.dat" {
 		t.Fatalf("unpexpected path: %s", path)
 	}
 }
@@ -84,7 +84,7 @@ func TestIndexPathForId(t *testing.T) {
 func BenchmarkIndexPathForId(b *testing.B) {
 	i := setupIndex("/foo")
 	for n := 0; n < b.N; n++ {
-		_ = i.pathForId(uint64(n%666) + 1)
+		_ = i.pathForID(uint64(n%666) + 1)
 	}
 }
 
@@ -204,8 +204,8 @@ func TestIndexCreateRecordWithInvalidId(t *testing.T) {
 		t.Fatalf("expected %d records, got %d", testRecords, i.Size())
 	}
 
-	i.NextId(1)
-	if err := i.Create(&testRecord); err != ErrInvalidId {
+	i.NextID(1)
+	if err := i.Create(&testRecord); err != ErrInvalidID {
 		t.Fatalf("expected invalid id error, got %v", err)
 	}
 }

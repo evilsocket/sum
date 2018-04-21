@@ -116,8 +116,8 @@ func TestFind(t *testing.T) {
 		id := uint64(i + 1)
 		if r := wrapped.Find(id); r.IsNull() {
 			t.Fatalf("wrapped record with id %d not found", id)
-		} else if r.Id != id {
-			t.Fatalf("expected record with id %d, found %d", id, r.Id)
+		} else if r.ID != id {
+			t.Fatalf("expected record with id %d, found %d", id, r.ID)
 		}
 	}
 }
@@ -182,7 +182,7 @@ func TestAll(t *testing.T) {
 		})
 
 		if !found {
-			t.Fatalf("record %d not wrapped correctly", wRec.Id)
+			t.Fatalf("record %d not wrapped correctly", wRec.ID)
 		}
 	}
 }
@@ -224,8 +224,8 @@ func TestAllBut(t *testing.T) {
 	}
 
 	for _, wRec := range allBut {
-		if wRec.Id == reference.Id {
-			t.Fatalf("record %d was not supposed to be selected", wRec.Id)
+		if wRec.ID == reference.Id {
+			t.Fatalf("record %d was not supposed to be selected", wRec.ID)
 		}
 
 		found := false
@@ -236,7 +236,7 @@ func TestAllBut(t *testing.T) {
 		})
 
 		if !found {
-			t.Fatalf("record %d not wrapped correctly", wRec.Id)
+			t.Fatalf("record %d not wrapped correctly", wRec.ID)
 		}
 	}
 }

@@ -17,13 +17,13 @@ func (d OracleDriver) Make() proto.Message {
 	return new(pb.Oracle)
 }
 
-// GetId returns the unique identifier of the pb.Oracle object.
-func (d OracleDriver) GetId(m proto.Message) uint64 {
+// GetID returns the unique identifier of the pb.Oracle object.
+func (d OracleDriver) GetID(m proto.Message) uint64 {
 	return m.(*pb.Oracle).Id
 }
 
-// SetId sets the unique identifier of the pb.Oracle object.
-func (d OracleDriver) SetId(m proto.Message, id uint64) {
+// SetID sets the unique identifier of the pb.Oracle object.
+func (d OracleDriver) SetID(m proto.Message, id uint64) {
 	m.(*pb.Oracle).Id = id
 }
 

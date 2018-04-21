@@ -29,13 +29,11 @@ clean:
 	@rm -rf *.profile.html
 
 reset_env: clean
-	@clear 
 	@sudo rm -rf /var/lib/sumd
 	@sudo mkdir -p /var/lib/sumd/data
 	@sudo mkdir -p /var/lib/sumd/oracles
 
 run: reset_env sumd
-	@clear
 	@sudo ./sumd
 
 #
@@ -47,22 +45,22 @@ golint:
 gomegacheck:
 	@go get honnef.co/go/tools/cmd/megacheck
 
-# go 1.9 doesn't support test coverage on multiple packages, while
-# go 1.10 does, let's keep it 1.9 compatible in order not to break
+# Go 1.9 doesn't support test coverage on multiple packages, while
+# Go 1.10 does, let's keep it 1.9 compatible in order not to break
 # travis
+define testPackage
+	@go vet ./$(1)
+	@golint -set_exit_status ./$(1)
+	@megacheck ./$(1)
+	@go test -v ./$(1) -coverprofile=$(1).profile
+	@tail -n +2 $(1).profile >> coverage.profile && rm $(1).profile
+endef
+
 test: server_deps gomegacheck golint
-	@go vet ./...
-	@golint -set_exit_status $(go list ./...)
-	@go test ./service -coverprofile=service.profile
-	@megacheck ./service
-	@go test ./storage -coverprofile=storage.profile
-	@megacheck ./storage
-	@go test ./wrapper -coverprofile=wrapper.profile
-	@megacheck ./wrapper
 	@echo "mode: set" > coverage.profile
-	@tail -n +2 service.profile >> coverage.profile && rm service.profile
-	@tail -n +2 storage.profile >> coverage.profile && rm storage.profile
-	@tail -n +2 wrapper.profile >> coverage.profile && rm wrapper.profile
+	$(call testPackage,service)
+	$(call testPackage,storage)
+	$(call testPackage,wrapper)
 	
 codecov: test
 	@echo $(curl -s https://codecov.io/bash)
@@ -71,7 +69,6 @@ html_coverage: test
 	@go tool cover -html=coverage.profile -o coverage.profile.html
 
 profile: reset_env sumd
-	@clear
 	@sudo ./sumd -cpu-profile cpu.profile -mem-profile mem.profile
 
 benchmark: server_deps
@@ -90,7 +87,6 @@ run_docker: docker
 # Client code generation related stuff.
 #
 pycli:
-	@echo "Generating Python protocol files ..."
 	@python -m grpc_tools.protoc \
 		-Iproto \
 		--python_out=clients/python/proto \
@@ -98,7 +94,6 @@ pycli:
 		proto/sum.proto
 
 phpcli:
-	@echo "Generating PHP protocol files ..."
 	@/opt/grpc/bins/opt/protobuf/protoc -I. --proto_path=proto \
 		--php_out=clients/php \
 		--grpc_out=clients/php \

@@ -19,8 +19,8 @@ func assertPanic(t *testing.T, msg string, f func()) {
 
 func TestForRecord(t *testing.T) {
 	wrapped := ForRecord(nil, &testRecord)
-	if wrapped.Id != testRecord.Id {
-		t.Fatalf("expected record with id %d, %d found", testRecord.Id, wrapped.Id)
+	if wrapped.ID != testRecord.Id {
+		t.Fatalf("expected record with id %d, %d found", testRecord.Id, wrapped.ID)
 	} else if wrapped.store != nil {
 		t.Fatal("unexpected store pointer")
 	} else if !reflect.DeepEqual(*wrapped.record, testRecord) {
@@ -31,8 +31,8 @@ func TestForRecord(t *testing.T) {
 func BenchmarkForRecord(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		wrapped := ForRecord(nil, &testRecord)
-		if wrapped.Id != testRecord.Id {
-			b.Fatalf("expected record with id %d, %d found", testRecord.Id, wrapped.Id)
+		if wrapped.ID != testRecord.Id {
+			b.Fatalf("expected record with id %d, %d found", testRecord.Id, wrapped.ID)
 		}
 	}
 }

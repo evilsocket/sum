@@ -25,7 +25,7 @@ func BenchmarkRecordDriverMake(b *testing.B) {
 	}
 }
 
-func TestRecordDriverGetId(t *testing.T) {
+func TestRecordDriverGetID(t *testing.T) {
 	d := RecordDriver{}
 	m := d.Make()
 	if m == nil {
@@ -34,12 +34,12 @@ func TestRecordDriverGetId(t *testing.T) {
 
 	r := m.(*pb.Record)
 	r.Id = 666
-	if id := d.GetId(m); id != r.Id {
+	if id := d.GetID(m); id != r.Id {
 		t.Fatalf("expected id %d, got %d", r.Id, id)
 	}
 }
 
-func BenchmarkRecordDriverGetId(b *testing.B) {
+func BenchmarkRecordDriverGetID(b *testing.B) {
 	d := RecordDriver{}
 	m := d.Make()
 	if m == nil {
@@ -49,26 +49,26 @@ func BenchmarkRecordDriverGetId(b *testing.B) {
 	r := m.(*pb.Record)
 	for i := 0; i < b.N; i++ {
 		r.Id = uint64(i%666) + 1
-		if id := d.GetId(m); id != r.Id {
+		if id := d.GetID(m); id != r.Id {
 			b.Fatalf("expected id %d, got %d", r.Id, id)
 		}
 	}
 }
 
-func TestRecordDriverSetId(t *testing.T) {
+func TestRecordDriverSetID(t *testing.T) {
 	d := RecordDriver{}
 	m := d.Make()
 	if m == nil {
 		t.Fatal("unexpected nil message")
 	}
 
-	d.SetId(m, 666)
+	d.SetID(m, 666)
 	if r := m.(*pb.Record); r.Id != 666 {
 		t.Fatalf("expected id %d, got %d", 666, r.Id)
 	}
 }
 
-func BenchmarkRecordDriverSetId(b *testing.B) {
+func BenchmarkRecordDriverSetID(b *testing.B) {
 	d := RecordDriver{}
 	m := d.Make()
 	if m == nil {
@@ -78,7 +78,7 @@ func BenchmarkRecordDriverSetId(b *testing.B) {
 	r := m.(*pb.Record)
 	for i := 0; i < b.N; i++ {
 		id := uint64(i%666) + 1
-		d.SetId(m, id)
+		d.SetID(m, id)
 		if r.Id != id {
 			b.Fatalf("expected id %d, got %d", id, r.Id)
 		}

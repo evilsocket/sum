@@ -12,8 +12,8 @@ import (
 // to allow access to specific records to oracles during
 // execution.
 type Record struct {
-	// Id can be used to read the record identifier.
-	Id     uint64
+	// ID can be used to read the record identifier.
+	ID     uint64
 	record *pb.Record
 	store  *storage.Records
 }
@@ -25,7 +25,7 @@ func ForRecord(store *storage.Records, record *pb.Record) Record {
 		id = record.Id
 	}
 	return Record{
-		Id:     id,
+		ID:     id,
 		record: record,
 		store:  store,
 	}
@@ -38,7 +38,7 @@ func ForRecord(store *storage.Records, record *pb.Record) Record {
 func (w Record) flush() bool {
 	if w.store != nil {
 		if err := w.store.Update(w.record); err != nil {
-			log.Printf("error while fushing record %d after an update: %s", w.record.Id, err)
+			log.Printf("error while fushing record %d after an update: %s", w.ID, err)
 			return false
 		}
 	}
@@ -57,7 +57,7 @@ func (w Record) Is(b Record) bool {
 	if w.record == nil || b.record == nil {
 		return false
 	}
-	return w.record.Id == b.record.Id
+	return w.ID == b.ID
 }
 
 // Get returns the index-th elements of the *pb.Record contained

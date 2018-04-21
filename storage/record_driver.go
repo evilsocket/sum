@@ -17,13 +17,13 @@ func (d RecordDriver) Make() proto.Message {
 	return new(pb.Record)
 }
 
-// GetId returns the unique identifier of the pb.Record object.
-func (d RecordDriver) GetId(m proto.Message) uint64 {
+// GetID returns the unique identifier of the pb.Record object.
+func (d RecordDriver) GetID(m proto.Message) uint64 {
 	return m.(*pb.Record).Id
 }
 
-// SetId sets the unique identifier of the pb.Record object.
-func (d RecordDriver) SetId(m proto.Message, id uint64) {
+// SetID sets the unique identifier of the pb.Record object.
+func (d RecordDriver) SetID(m proto.Message, id uint64) {
 	m.(*pb.Record).Id = id
 }
 
