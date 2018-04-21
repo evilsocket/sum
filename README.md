@@ -4,7 +4,8 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/evilsocket/sum)](https://goreportcard.com/report/github.com/evilsocket/sum) 
 [![Coverage](https://img.shields.io/codecov/c/github/evilsocket/sum/master.svg?style=flat-square)](https://codecov.io/gh/evilsocket/sum)
 [![GoDoc](https://godoc.org/github.com/evilsocket/sum?status.svg)](https://godoc.org/github.com/evilsocket/sum) 
-[![Release](https://img.shields.io/github/release/evilsocket/sum.svg?style=flat-square)](https://github.com/evilsocket/sum/releases/latest)
+[![Release](https://img.shields.io/github/release/evilsocket/sum.svg?style=flat-square)](https://github.com/evilsocket/sum/releases/latest) 
+[![License](https://img.shields.io/badge/license-GPL3-brightgreen.svg?style=flat-square)](/LICENSE)
 
 If you work with machine learning you probably find yourself having around a bunch of huge CSV files that maybe you 
 keep using to train your models, or you run PCA on them, or you perform any sort of analysis. If this is the case, you 
@@ -58,10 +59,6 @@ To have a better idea of how this works, take a look at [the example python code
 create a few vectors on the server, define an oracle, call it for every vector and print the similarities the server returned.
 
 **This is work in progress, do not use until v1.0.0 will be released.**
-
-## License
-
-`sum` is made with ♥  by [Simone 'evilsocket' Margaritelli](https://github.com/evilsocket) and it's released under the GPL 3 license.
 
 ## Useful links
 
