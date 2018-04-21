@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	testError = errors.New("test error")
+	errTest = errors.New("test error")
 )
 
 func setupIndex(folder string) *Index {
@@ -272,7 +272,7 @@ type faulty struct {
 }
 
 func (d faulty) Copy(mdst proto.Message, msrc proto.Message) error {
-	return testError
+	return errTest
 }
 
 func TestIndexUpdateRecordWithCopyError(t *testing.T) {
@@ -285,7 +285,7 @@ func TestIndexUpdateRecordWithCopyError(t *testing.T) {
 		t.Fatal(err)
 	} else if i.Size() != testRecords {
 		t.Fatalf("expected %d records, got %d", testRecords, i.Size())
-	} else if err := i.Update(&updatedRecord); err != testError {
+	} else if err := i.Update(&updatedRecord); err != errTest {
 		t.Fatalf("expected the test error, got %v", err)
 	}
 }
