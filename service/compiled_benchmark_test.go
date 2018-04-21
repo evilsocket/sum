@@ -2,9 +2,11 @@ package service
 
 import (
 	"bytes"
+	"math/rand"
 	"testing"
 
 	pb "github.com/evilsocket/sum/proto"
+	"github.com/evilsocket/sum/storage"
 )
 
 const (
@@ -33,6 +35,23 @@ const (
 
 	  return memo[num] = fibonacci(num - 1, memo) + fibonacci(num - 2, memo);
 	}`
+
+	findSimilar = `function findSimilar(id, threshold) {
+		var v = records.Find(id);
+		if( v.IsNull() == true ) {
+			return ctx.Error("Vector " + id + " not found.");
+		}
+
+		var results = {};
+		records.AllBut(v).forEach(function(record){
+			var similarity = v.Cosine(record);
+			if( similarity >= threshold ) {
+			   results[record.Id] = similarity
+			}
+		});
+
+		return results;
+	}`
 )
 
 func BenchmarkCompileOracle(b *testing.B) {
@@ -43,7 +62,7 @@ func BenchmarkCompileOracle(b *testing.B) {
 	}
 }
 
-func benchVM(b *testing.B, fname, code string, args []string, expected string) {
+func benchVM(b *testing.B, fname, code string, args []string, expected string, records *storage.Records) {
 	oracle := pb.Oracle{
 		Name: fname,
 		Code: code,
@@ -58,8 +77,9 @@ func benchVM(b *testing.B, fname, code string, args []string, expected string) {
 		exp = []byte(expected)
 	}
 
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		if ctx, ret, err := compiled.RunWithContext(nil, args); err != nil {
+		if ctx, ret, err := compiled.RunWithContext(records, args); err != nil {
 			b.Fatal(err)
 		} else if ctx.IsError() {
 			b.Fatal(ctx.Message())
@@ -69,22 +89,74 @@ func benchVM(b *testing.B, fname, code string, args []string, expected string) {
 	}
 }
 
-func BenchmarkRunDummyWithContext(b *testing.B) {
-	benchVM(b, "dummy", "function dummy(){}", nil, "")
+func BenchmarkRunDummy(b *testing.B) {
+	benchVM(b, "dummy", "function dummy(){}", nil, "", nil)
 }
 
-func BenchmarkRunAddWithContext(b *testing.B) {
-	benchVM(b, "add", "function add(a, b){ return a + b; }", []string{"12", "34"}, "46")
+func BenchmarkRunAdd(b *testing.B) {
+	benchVM(b, "add", "function add(a, b){ return a + b; }", []string{"12", "34"}, "46", nil)
 }
 
-func BenchmarkRunIterativeFibonacciWithContext(b *testing.B) {
-	benchVM(b, "fibonacci", fiboIter, []string{"25"}, "121393")
+func BenchmarkRunIterativeFibonacci(b *testing.B) {
+	benchVM(b, "fibonacci", fiboIter, []string{"25"}, "121393", nil)
 }
 
-func BenchmarkRunRecursiveFibonacciWithContext(b *testing.B) {
-	benchVM(b, "fibonacci", fiboRecu, []string{"25"}, "121393")
+func BenchmarkRunRecursiveFibonacci(b *testing.B) {
+	benchVM(b, "fibonacci", fiboRecu, []string{"25"}, "121393", nil)
 }
 
-func BenchmarkRunMemoFibonacciWithContext(b *testing.B) {
-	benchVM(b, "fibonacci", fiboMemo, []string{"25"}, "121393")
+func BenchmarkRunMemoFibonacci(b *testing.B) {
+	benchVM(b, "fibonacci", fiboMemo, []string{"25"}, "121393", nil)
+}
+
+func runFindSimilar(b *testing.B, rows int, cols int) {
+	setupFolders(b)
+	defer teardown(b)
+
+	records, err := storage.LoadRecords(testFolder)
+	if err != nil {
+		b.Fatal(err)
+	}
+	for i := 0; i < rows; i++ {
+		record := pb.Record{
+			Data: make([]float32, cols),
+		}
+		for j := 0; j < cols; j++ {
+			record.Data[j] = rand.Float32()
+		}
+
+		if err := records.Create(&record); err != nil {
+			b.Fatal(err)
+		}
+	}
+
+	benchVM(b, "findSimilar", findSimilar, []string{"1"}, "", records)
+}
+
+func BenchmarkRunFindSimilar10x100(b *testing.B) {
+	runFindSimilar(b, 10, 100)
+}
+
+func BenchmarkRunFindSimilar10x500(b *testing.B) {
+	runFindSimilar(b, 10, 500)
+}
+
+func BenchmarkRunFindSimilar10x1000(b *testing.B) {
+	runFindSimilar(b, 10, 1000)
+}
+
+func BenchmarkRunFindSimilar100x10(b *testing.B) {
+	runFindSimilar(b, 100, 10)
+}
+
+func BenchmarkRunFindSimilar200x10(b *testing.B) {
+	runFindSimilar(b, 200, 10)
+}
+
+func BenchmarkRunFindSimilar100x1(b *testing.B) {
+	runFindSimilar(b, 100, 1)
+}
+
+func BenchmarkRunFindSimilar10000x50(b *testing.B) {
+	runFindSimilar(b, 10000, 50)
 }
