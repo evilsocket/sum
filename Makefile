@@ -1,3 +1,4 @@
+SHELL := bash
 .PHONY: all clients godep golint gomegacheck deps test codecov html_coverage benchmark
 .PHONY: clean reset_env profile run build_docker run_docker pycli phpcli
 
@@ -6,6 +7,8 @@ GRPC_PHP_PLUGIN=${GRPC_PATH}/grpc_php_plugin
 GRPC_PROTOC=${GRPC_PATH}/protobuf/protoc
 
 SUMD_DATAPATH=/tmp/sumd
+
+PACKAGES=storage wrapper service
 
 #
 # Main actions
@@ -58,19 +61,15 @@ gomegacheck:
 # Go 1.9 doesn't support test coverage on multiple packages, while
 # Go 1.10 does, let's keep it 1.9 compatible in order not to break
 # travis
-define testPackage
-	@go vet ./$(1)
-	@golint -set_exit_status ./$(1)
-	@megacheck ./$(1)
-	@go test -v -race ./$(1) -coverprofile=$(1).profile
-	@tail -n +2 $(1).profile >> coverage.profile && rm $(1).profile
-endef
-
 test: server_deps gomegacheck golint
 	@echo "mode: set" > coverage.profile
-	$(call testPackage,service)
-	$(call testPackage,storage)
-	$(call testPackage,wrapper)
+	@for pkg in $(PACKAGES); do \
+		go vet ./$$pkg ; \
+		golint -set_exit_status ./$$pkg ; \
+		megacheck ./$$pkg ; \
+		go test -race ./$$pkg -coverprofile=$$pkg.profile ; \
+		tail -n +2 $$pkg.profile >> coverage.profile && rm $$pkg.profile ; \
+	done
 	
 codecov: test
 	@echo $(curl -s https://codecov.io/bash)
