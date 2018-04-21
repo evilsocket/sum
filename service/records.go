@@ -16,7 +16,7 @@ func (s *Service) NumRecords() uint64 {
 	return s.records.Size()
 }
 
-// CreateRecord creates and stores a new *pb.Record object. If succesful, the
+// CreateRecord creates and stores a new *pb.Record object. If successful, the
 // identifier of the record is returned as the response message.
 func (s *Service) CreateRecord(ctx context.Context, record *pb.Record) (*pb.RecordResponse, error) {
 	if err := s.records.Create(record); err != nil {

@@ -16,7 +16,7 @@ func (s *Service) NumOracles() uint64 {
 	return s.oracles.Size()
 }
 
-// CreateOracle compiles and stores a raw *pb.Oracle object. If succesful, the
+// CreateOracle compiles and stores a raw *pb.Oracle object. If successful, the
 // identifier of the newly created oracle is returned as the response message.
 func (s *Service) CreateOracle(ctx context.Context, oracle *pb.Oracle) (*pb.OracleResponse, error) {
 	if err := s.oracles.Create(oracle); err != nil {
