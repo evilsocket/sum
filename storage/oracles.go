@@ -4,8 +4,8 @@ import (
 	pb "github.com/evilsocket/sum/proto"
 )
 
-// Oracles is a thread safe data structure used to
-// index and manage oracles.
+// Oracles is specialized version of a storage.Index
+// used to map, store and persist pb.Oracle objects.
 type Oracles struct {
 	*Index
 }
