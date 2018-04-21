@@ -5,7 +5,6 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"time"
@@ -84,39 +83,34 @@ func (s *Service) Run(ctx context.Context, call *pb.Call) (*pb.CallResponse, err
 	vm.Set("records", s.wrecords)
 	vm.Set("ctx", callCtx)
 
-	var j []byte
-
-	if ret, err := compiled.Run(call.Args); err != nil {
-		return errCallResponse("Error while running oracle %s: %s", call.OracleId, err), nil
+	ret, err := compiled.Run(call.Args)
+	if err != nil {
+		return errCallResponse("Error while running oracle %d: %s", call.OracleId, err), nil
 	} else if callCtx.IsError() {
-		return errCallResponse("Error while running oracle %s: %s", call.OracleId, callCtx.Message()), nil
-	} else if obj, err := ret.Export(); err != nil {
-		return errCallResponse("Error while serializing return value of oracle %s: %s", call.OracleId, err), nil
-	} else if j, err = json.Marshal(obj); err != nil {
-		return errCallResponse("Error while marshaling return value of oracle %s: %s", call.OracleId, err), nil
+		return errCallResponse("Error while running oracle %d: %s", call.OracleId, callCtx.Message()), nil
 	}
 
-	data := &pb.Data{
-		Compressed: false,
-		Payload:    j,
-	}
+	obj, _ := ret.Export()
+	raw, _ := json.Marshal(obj)
+	size := len(raw)
+	compressed := false
 
-	jsonSize := len(j)
-	if jsonSize > gzipResponseSize {
+	if size > gzipResponseSize {
 		var buf bytes.Buffer
 		if w, err := gzip.NewWriterLevel(&buf, gzip.BestCompression); err == nil {
-			w.Write(j)
+			w.Write(raw)
 			w.Close()
 
-			data.Compressed = true
-			data.Payload = buf.Bytes()
-		} else {
-			log.Printf("compression failed: %s", err)
+			compressed = true
+			raw = buf.Bytes()
 		}
 	}
 
 	return &pb.CallResponse{
 		Success: true,
-		Data:    data,
+		Data: &pb.Data{
+			Compressed: compressed,
+			Payload:    raw,
+		},
 	}, nil
 }

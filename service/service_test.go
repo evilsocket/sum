@@ -1,11 +1,14 @@
 package service
 
 import (
+	"bytes"
+	"compress/gzip"
 	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -53,6 +56,21 @@ func unlink(dir string) error {
 		}
 	}
 	return nil
+}
+
+func decompress(t testing.TB, d *pb.Data) string {
+	data := d.Payload
+	if d.Compressed == true {
+		r, err := gzip.NewReader(bytes.NewBuffer(data))
+		if err != nil {
+			t.Fatalf("error while decompressing response payload: %s", err)
+		}
+		defer r.Close()
+		if data, err = ioutil.ReadAll(r); err != nil {
+			t.Fatalf("error while decompressing response payload: %s", err)
+		}
+	}
+	return string(data)
 }
 
 func setup(t testing.TB, withRecords bool, withOracles bool) {
@@ -225,19 +243,126 @@ func BenchmarkRun(b *testing.B) {
 	}
 }
 
-func TestRunWithWithInvalidId(t *testing.T) {
+func TestRunWithCompression(t *testing.T) {
+	bak := testOracle.Code
+	str := "\"" + strings.Repeat("hello world", 1024) + "\""
+	testOracle.Code = "function findReasonsToLive(){ return " + str + "; }"
+	defer func() {
+		testOracle.Code = bak
+	}()
+
 	setup(t, true, true)
 	defer teardown(t)
 
 	if svc, err := New(testFolder); err != nil {
 		t.Fatal(err)
-	} else if resp, err := svc.Run(nil, &pb.Call{OracleId: 12345}); err != nil {
+	} else if resp, err := svc.Run(nil, &testCall); err != nil {
+		t.Fatal(err)
+	} else if resp.Success == false {
+		t.Fatalf("expected success response: %v", resp)
+	} else if resp.Msg != "" {
+		t.Fatalf("expected empty message: %s", resp.Msg)
+	} else if resp.Data == nil {
+		t.Fatal("expected response data")
+	} else if resp.Data.Compressed == false {
+		t.Fatal("expected compressed data")
+	} else if resp.Data.Payload == nil {
+		t.Fatal("expected data payload")
+	} else if data := decompress(t, resp.Data); data != str {
+		t.Fatalf("unexpected response: %s", data)
+	}
+}
+
+func BenchmarkRunWithCompression(b *testing.B) {
+	bak := testOracle.Code
+	str := "\"" + strings.Repeat("hello world", 1024) + "\""
+	testOracle.Code = "function findReasonsToLive(){ return " + str + "; }"
+	defer func() {
+		testOracle.Code = bak
+	}()
+
+	setup(b, true, true)
+	defer teardown(b)
+
+	svc, err := New(testFolder)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	for i := 0; i < b.N; i++ {
+		if resp, err := svc.Run(nil, &testCall); err != nil {
+			b.Fatal(err)
+		} else if resp.Data == nil {
+			b.Fatal("expected response data")
+		} else if resp.Data.Compressed == false {
+			b.Fatal("expected compressed data")
+		} else if resp.Data.Payload == nil {
+			b.Fatal("expected data payload")
+		}
+	}
+}
+
+func TestRunWithWithInvalidId(t *testing.T) {
+	setup(t, true, true)
+	defer teardown(t)
+
+	call := pb.Call{OracleId: 12345}
+	msg := "Oracle 12345 not found."
+
+	if svc, err := New(testFolder); err != nil {
+		t.Fatal(err)
+	} else if resp, err := svc.Run(nil, &call); err != nil {
 		t.Fatal(err)
 	} else if resp == nil {
 		t.Fatal("expected error response")
 	} else if resp.Success == true {
 		t.Fatal("expected error response")
-	} else if resp.Msg != "Oracle 12345 not found." {
+	} else if resp.Msg != msg {
+		t.Fatalf("unexpected response message: %s", resp.Msg)
+	} else if resp.Data != nil {
+		t.Fatalf("unexpected response data: %v", resp.Data)
+	}
+}
+
+func TestRunWithWithInvalidArgs(t *testing.T) {
+	setup(t, true, true)
+	defer teardown(t)
+
+	call := pb.Call{OracleId: 1, Args: []string{"wut,"}}
+
+	if svc, err := New(testFolder); err != nil {
+		t.Fatal(err)
+	} else if resp, err := svc.Run(nil, &call); err != nil {
+		t.Fatal(err)
+	} else if resp == nil {
+		t.Fatal("expected error response")
+	} else if resp.Success == true {
+		t.Fatal("expected error response")
+	} else if resp.Data != nil {
+		t.Fatalf("unexpected response data: %v", resp.Data)
+	}
+}
+
+func TestRunWithContextError(t *testing.T) {
+	bak := testOracle.Code
+	msg := "Error while running oracle 1: nope"
+	testOracle.Code = "function findReasonsToLive(){ ctx.Error('nope'); }"
+	defer func() {
+		testOracle.Code = bak
+	}()
+
+	setup(t, true, true)
+	defer teardown(t)
+
+	if svc, err := New(testFolder); err != nil {
+		t.Fatal(err)
+	} else if resp, err := svc.Run(nil, &testCall); err != nil {
+		t.Fatal(err)
+	} else if resp == nil {
+		t.Fatal("expected error response")
+	} else if resp.Success == true {
+		t.Fatal("expected error response")
+	} else if resp.Msg != msg {
 		t.Fatalf("unexpected response message: %s", resp.Msg)
 	} else if resp.Data != nil {
 		t.Fatalf("unexpected response data: %v", resp.Data)
