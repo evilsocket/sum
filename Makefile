@@ -75,7 +75,7 @@ profile: reset_env sumd
 	@sudo ./sumd -cpu-profile cpu.profile -mem-profile mem.profile
 
 benchmark: server_deps
-	@go test ./... -v -run=doNotRunTests -bench=.
+	@go test ./... -v -run=doNotRunTests -bench=. -benchmem
 
 #
 # Docker stuff
