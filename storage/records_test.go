@@ -137,6 +137,42 @@ func TestRecordsFindWithInvalidId(t *testing.T) {
 	}
 }
 
+func TestRecordsUpdate(t *testing.T) {
+	setupRecords(t, true, false)
+	defer teardownRecords(t)
+
+	records, err := LoadRecords(testFolder)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	updatedRecord.Id = 4
+	if err := records.Update(&updatedRecord); err != nil {
+		t.Fatal(err)
+	} else if record := records.Find(updatedRecord.Id); record == nil {
+		t.Fatalf("expected record with id %d", updatedRecord.Id)
+	} else if reflect.DeepEqual(*record, updatedRecord) == false {
+		t.Fatal("records should match")
+	}
+}
+
+func BenchmarkRecordsUpdate(b *testing.B) {
+	setupRecords(b, true, false)
+	defer teardownRecords(b)
+
+	records, err := LoadRecords(testFolder)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	for i := 0; i < b.N; i++ {
+		updatedRecord.Id = uint64(i%testRecords) + 1
+		if err := records.Update(&updatedRecord); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
 func TestRecordsDelete(t *testing.T) {
 	setupRecords(t, true, false)
 	defer teardownRecords(t)
