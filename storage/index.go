@@ -12,14 +12,21 @@ import (
 )
 
 var (
-	ErrInvalidId      = errors.New("identifier is not unique")
+
+	// ErrInvalidId is returned when the system detects a collision of
+	// identifiers, usually due to multiple Sum instances running on the
+	// same data path.
+	ErrInvalidId = errors.New("identifier is not unique")
+	// ErrRecordNotFound is the 404 of Sum, it is returned when the storage
+	// manager can't find an object mapped to the queried identifier.
 	ErrRecordNotFound = errors.New("record not found")
 
 	pathSep = string(os.PathSeparator)
 )
 
-// Index is a generic thread safe data structure used to
-// map objects to unique integer identifiers.
+// Index is a generic data structure used to map any types of protobuf
+// encoded messages to unique integer identifiers and persist them on
+// disk transparently.
 type Index struct {
 	sync.RWMutex
 	dataPath string
@@ -28,6 +35,19 @@ type Index struct {
 	driver   Driver
 }
 
+// NOTE: pathSep is added if needed when the index object is created,
+// this spares us a third string concatenation or worse a Sprintf call.
+func (i *Index) pathForId(id uint64) string {
+	return i.dataPath + strconv.FormatUint(id, 10) + DatFileExt
+}
+
+func (i *Index) pathFor(record proto.Message) string {
+	return i.pathForId(i.driver.GetId(record))
+}
+
+// WithDriver creates a new Index object with the specified storage.Driver
+// used to handle the specifics of the protobuf messages being handled
+// but this instance of the index.
 func WithDriver(dataPath string, driver Driver) *Index {
 	if strings.HasSuffix(dataPath, pathSep) == false {
 		dataPath += pathSep
@@ -40,6 +60,8 @@ func WithDriver(dataPath string, driver Driver) *Index {
 	}
 }
 
+// Load enumerates files in the data folder while deserializing them
+// and mapping them into the index by their identifiers.
 func (i *Index) Load() error {
 	i.Lock()
 	defer i.Unlock()
@@ -69,14 +91,8 @@ func (i *Index) Load() error {
 	return nil
 }
 
-func (i *Index) pathForId(id uint64) string {
-	return i.dataPath + strconv.FormatUint(id, 10) + DatFileExt
-}
-
-func (i *Index) pathFor(record proto.Message) string {
-	return i.pathForId(i.driver.GetId(record))
-}
-
+// ForEach executes a callback passing as argument every
+// element of the index.
 func (i *Index) ForEach(cb func(record proto.Message)) {
 	i.RLock()
 	defer i.RUnlock()
@@ -85,18 +101,26 @@ func (i *Index) ForEach(cb func(record proto.Message)) {
 	}
 }
 
+// Size returns the number of elements stored in this index.
 func (i *Index) Size() uint64 {
 	i.RLock()
 	defer i.RUnlock()
 	return uint64(len(i.index))
 }
 
+// NextId sets the value for the integer identifier to use
+// every future record. NOTE: This method is just for internal
+// use and the only reason why it's exposed is because of unit
+// tests, do not use.
 func (i *Index) NextId(next uint64) {
 	i.Lock()
 	defer i.Unlock()
 	i.nextId = next
 }
 
+// Create stores the profobuf message in the index, setting its
+// identifier to a new, unique value. Once created the object
+// will be used in memory and persisted on disk.
 func (i *Index) Create(record proto.Message) error {
 	i.Lock()
 	defer i.Unlock()
@@ -117,6 +141,9 @@ func (i *Index) Create(record proto.Message) error {
 	return nil
 }
 
+// Update changes the contents of a stored object given a protobuf
+// message with its identifier and the new values to use. This operation
+// will flush the record on disk.
 func (i *Index) Update(record proto.Message) error {
 	i.Lock()
 	defer i.Unlock()
@@ -131,6 +158,8 @@ func (i *Index) Update(record proto.Message) error {
 	return Flush(stored, i.pathForId(recId))
 }
 
+// Find returns the instance of a stored object given its identifier,
+// or nil if the object can not be found.
 func (i *Index) Find(id uint64) proto.Message {
 	i.RLock()
 	defer i.RUnlock()
@@ -142,6 +171,9 @@ func (i *Index) Find(id uint64) proto.Message {
 	return nil
 }
 
+// Delete removes a stored object from the index given its identifier,
+// it will return the removed object itself if found, or nil.
+// This operation will also remove the object data file from disk.
 func (i *Index) Delete(id uint64) proto.Message {
 	i.Lock()
 	defer i.Unlock()
