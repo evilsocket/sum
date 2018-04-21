@@ -8,7 +8,7 @@ var (
 	testErrorMessage = "foobar"
 )
 
-func TestContext(t *testing.T) {
+func TestWrapperContext(t *testing.T) {
 	ctx := NewContext()
 	if ctx == nil {
 		t.Fatal("expectd valid context")

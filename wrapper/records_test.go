@@ -102,7 +102,7 @@ func TestWrapRecords(t *testing.T) {
 	}
 }
 
-func TestFind(t *testing.T) {
+func TestWrappedRecordsFind(t *testing.T) {
 	setupRecords(t, true)
 	defer teardownRecords(t)
 
@@ -122,7 +122,7 @@ func TestFind(t *testing.T) {
 	}
 }
 
-func TestFindWithInvalidId(t *testing.T) {
+func TestWrappedRecordsFindWithInvalidId(t *testing.T) {
 	setupRecords(t, false)
 	defer teardownRecords(t)
 
@@ -140,7 +140,7 @@ func TestFindWithInvalidId(t *testing.T) {
 	}
 }
 
-func TestAll(t *testing.T) {
+func TestWrappedRecordsAll(t *testing.T) {
 	setupRecords(t, true)
 	defer teardownRecords(t)
 
@@ -169,7 +169,7 @@ func TestAll(t *testing.T) {
 	}
 }
 
-func TestAllBut(t *testing.T) {
+func TestWrappedRecordsAllBut(t *testing.T) {
 	setupRecords(t, true)
 	defer teardownRecords(t)
 

@@ -1,7 +1,16 @@
 .PHONY: all clients godep golint gomegacheck deps test codecov html_coverage benchmark
 .PHONY: clean reset_env profile run build_docker run_docker pycli phpcli
 
-all: sumd clients
+GRPC_PATH=/opt/grpc/bins/opt
+GRPC_PHP_PLUGIN=${GRPC_PATH}/grpc_php_plugin
+GRPC_PROTOC=${GRPC_PATH}/protobuf/protoc
+
+SUMD_DATAPATH=/tmp/sumd
+
+#
+# Main actions
+#
+all: sumd clients test codecov benchmark docker
 
 server_deps: deps proto/sum.pb.go
 
@@ -14,10 +23,13 @@ deps: godep golint gomegacheck
 	@dep ensure
 
 proto/sum.pb.go:
-	@/opt/grpc/bins/opt/protobuf/protoc -I. --go_out=plugins=grpc:. proto/sum.proto
+	@${GRPC_PROTOC} -I. --go_out=plugins=grpc:. proto/sum.proto
 
 sumd: server_deps
 	@go build -o sumd .
+
+run: reset_env sumd
+	@./sumd -datapath "${SUMD_DATAPATH}"
 
 clean:
 	@rm -rf proto/*.go
@@ -27,14 +39,12 @@ clean:
 	@rm -rf sumd
 	@rm -rf *.profile
 	@rm -rf *.profile.html
+	@rm -rf "${SUMD_DATAPATH}"
 
 reset_env: clean
-	@sudo rm -rf /var/lib/sumd
-	@sudo mkdir -p /var/lib/sumd/data
-	@sudo mkdir -p /var/lib/sumd/oracles
-
-run: reset_env sumd
-	@sudo ./sumd
+	@mkdir -p "${SUMD_DATAPATH}"
+	@mkdir -p "${SUMD_DATAPATH}/data"
+	@mkdir -p "${SUMD_DATAPATH}/oracles"
 
 #
 # Testing and benchmarking
@@ -69,7 +79,7 @@ html_coverage: test
 	@go tool cover -html=coverage.profile -o coverage.profile.html
 
 profile: reset_env sumd
-	@sudo ./sumd -cpu-profile cpu.profile -mem-profile mem.profile
+	@./sumd -datapath "${SUMD_DATAPATH}" -cpu-profile cpu.profile -mem-profile mem.profile
 
 benchmark: server_deps
 	@go test ./... -v -run=doNotRunTests -bench=. -benchmem
@@ -94,8 +104,8 @@ pycli:
 		proto/sum.proto
 
 phpcli:
-	@/opt/grpc/bins/opt/protobuf/protoc -I. --proto_path=proto \
+	@${GRPC_PROTOC} -I. --proto_path=proto \
 		--php_out=clients/php \
 		--grpc_out=clients/php \
-		--plugin=protoc-gen-grpc=/opt/grpc/bins/opt/grpc_php_plugin \
+		--plugin=protoc-gen-grpc=${GRPC_PHP_PLUGIN} \
 		proto/sum.proto
