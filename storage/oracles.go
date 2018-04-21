@@ -2,8 +2,6 @@ package storage
 
 import (
 	pb "github.com/evilsocket/sum/proto"
-
-	"github.com/golang/protobuf/proto"
 )
 
 // Oracles is a thread safe data structure used to
@@ -16,19 +14,8 @@ type Oracles struct {
 // the data files found in a given path.
 func LoadOracles(dataPath string) (*Oracles, error) {
 	o := &Oracles{
-		Index: NewIndex(dataPath),
+		Index: WithDriver(dataPath, OracleDriver{}),
 	}
-
-	o.Maker(func() proto.Message { return new(pb.Oracle) })
-	o.Hasher(func(m proto.Message) uint64 { return m.(*pb.Oracle).Id })
-	o.Marker(func(m proto.Message, mark uint64) { m.(*pb.Oracle).Id = mark })
-	o.Copier(func(mold proto.Message, mnew proto.Message) error {
-		old := mold.(*pb.Oracle)
-		new := mnew.(*pb.Oracle)
-		old.Name = new.Name
-		old.Code = new.Code
-		return nil
-	})
 
 	if err := o.Load(); err != nil {
 		return nil, err

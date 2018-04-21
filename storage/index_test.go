@@ -11,27 +11,16 @@ import (
 	"github.com/golang/protobuf/proto"
 )
 
+var (
+	testError = errors.New("test error")
+)
+
 func setupIndex(folder string) *Index {
-	i := NewIndex(folder)
-	i.Maker(func() proto.Message { return new(pb.Record) })
-	i.Hasher(func(m proto.Message) uint64 { return m.(*pb.Record).Id })
-	i.Marker(func(m proto.Message, mark uint64) { m.(*pb.Record).Id = mark })
-	i.Copier(func(mold proto.Message, mnew proto.Message) error {
-		old := mold.(*pb.Record)
-		new := mnew.(*pb.Record)
-		if new.Meta != nil {
-			old.Meta = new.Meta
-		}
-		if new.Data != nil {
-			old.Data = new.Data
-		}
-		return nil
-	})
-	return i
+	return WithDriver(folder, RecordDriver{})
 }
 
-func TestNewIndex(t *testing.T) {
-	if i := NewIndex("12345"); i.Size() != 0 {
+func TestNewIndexWithRecordDriver(t *testing.T) {
+	if i := setupIndex("12345"); i.Size() != 0 {
 		t.Fatalf("unexpected index size %d", i.Size())
 	}
 }
@@ -278,24 +267,25 @@ func TestIndexUpdateRecordWithInvalidId(t *testing.T) {
 	}
 }
 
+type faulty struct {
+	RecordDriver
+}
+
+func (d faulty) Copy(mdst proto.Message, msrc proto.Message) error {
+	return testError
+}
+
 func TestIndexUpdateRecordWithCopyError(t *testing.T) {
 	setupRecords(t, true, false)
 	defer teardownRecords(t)
 
-	i := setupIndex(testFolder)
+	updatedRecord.Id = 1
+	i := WithDriver(testFolder, faulty{})
 	if err := i.Load(); err != nil {
 		t.Fatal(err)
 	} else if i.Size() != testRecords {
 		t.Fatalf("expected %d records, got %d", testRecords, i.Size())
-	}
-
-	testError := errors.New("test error")
-	i.Copier(func(mold proto.Message, mnew proto.Message) error {
-		return testError
-	})
-
-	updatedRecord.Id = 4
-	if err := i.Update(&updatedRecord); err != testError {
+	} else if err := i.Update(&updatedRecord); err != testError {
 		t.Fatalf("expected the test error, got %v", err)
 	}
 }
