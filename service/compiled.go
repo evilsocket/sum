@@ -43,9 +43,10 @@ func (c *compiled) RunWithContext(records *storage.Records, args []string) (*wra
 	var ret otto.Value
 	var err error
 
-	ctx := wrapper.NewContext()
+	// FIXME: this should be built as a small AST tree in order to
+	// avoid parsing.
 	call := fmt.Sprintf("%s(%s)", c.oracle.Name, strings.Join(args, ", "))
-
+	ctx := wrapper.NewContext()
 	func() {
 		c.Lock()
 		defer c.Unlock()
