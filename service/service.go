@@ -33,13 +33,13 @@ func errCallResponse(format string, args ...interface{}) *pb.CallResponse {
 type Service struct {
 	sync.RWMutex
 
-	started  time.Time
-	pid      uint64
-	uid      uint64
-	argv     []string
-	records  *storage.Records
-	oracles  *storage.Oracles
-	compiled map[uint64]*compiled
+	started time.Time
+	pid     uint64
+	uid     uint64
+	argv    []string
+	records *storage.Records
+	oracles *storage.Oracles
+	cache   *compiledCache
 }
 
 // New loads records and oracles from a given path and returns
@@ -55,7 +55,7 @@ func New(dataPath string) (*Service, error) {
 		return nil, err
 	}
 
-	precompiled := make(map[uint64]*compiled)
+	cache := newCache()
 	if oracles.Size() > 0 {
 		log.Printf("precompiling %d oracles ...", oracles.Size())
 		err := error(nil)
@@ -66,7 +66,7 @@ func New(dataPath string) (*Service, error) {
 				if c, err = compileOracle(oracle); err != nil {
 					err = fmt.Errorf("error while compiling oracle %d: %s", oracle.Id, err)
 				} else {
-					precompiled[oracle.Id] = c
+					cache.Add(oracle.Id, c)
 				}
 			}
 		})
@@ -77,13 +77,13 @@ func New(dataPath string) (*Service, error) {
 	}
 
 	return &Service{
-		started:  time.Now(),
-		pid:      uint64(os.Getpid()),
-		uid:      uint64(os.Getuid()),
-		argv:     os.Args,
-		records:  records,
-		oracles:  oracles,
-		compiled: precompiled,
+		started: time.Now(),
+		pid:     uint64(os.Getpid()),
+		uid:     uint64(os.Getuid()),
+		argv:    os.Args,
+		records: records,
+		oracles: oracles,
+		cache:   cache,
 	}, nil
 }
 
@@ -104,7 +104,7 @@ func (s *Service) Info(ctx context.Context, dummy *pb.Empty) (*pb.ServerInfo, er
 // Run executes a compiled oracle given its identifier and the arguments
 // in the *pb.Call object.
 func (s *Service) Run(ctx context.Context, call *pb.Call) (*pb.CallResponse, error) {
-	compiled := s.getCompiled(call.OracleId)
+	compiled := s.cache.Get(call.OracleId)
 	if compiled == nil {
 		return errCallResponse("oracle %d not found.", call.OracleId), nil
 	}

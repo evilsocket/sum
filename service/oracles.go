@@ -13,24 +13,6 @@ func errOracleResponse(format string, args ...interface{}) *pb.OracleResponse {
 	return &pb.OracleResponse{Success: false, Msg: fmt.Sprintf(format, args...)}
 }
 
-func (s *Service) getCompiled(id uint64) *compiled {
-	s.RLock()
-	defer s.RUnlock()
-	return s.compiled[id]
-}
-
-func (s *Service) addCompiled(id uint64, c *compiled) {
-	s.Lock()
-	defer s.Unlock()
-	s.compiled[id] = c
-}
-
-func (s *Service) delCompiled(id uint64) {
-	s.Lock()
-	defer s.Unlock()
-	delete(s.compiled, id)
-}
-
 // NumOracles returns the number of oracles currently loaded by the service.
 func (s *Service) NumOracles() uint64 {
 	return s.oracles.Size()
@@ -44,7 +26,7 @@ func (s *Service) CreateOracle(ctx context.Context, oracle *pb.Oracle) (*pb.Orac
 	} else if err := s.oracles.Create(oracle); err != nil {
 		return errOracleResponse("%s", err), nil
 	} else {
-		s.addCompiled(oracle.Id, compiled)
+		s.cache.Add(oracle.Id, compiled)
 	}
 	return &pb.OracleResponse{Success: true, Msg: fmt.Sprintf("%d", oracle.Id)}, nil
 }
@@ -57,7 +39,7 @@ func (s *Service) UpdateOracle(ctx context.Context, oracle *pb.Oracle) (*pb.Orac
 	} else if err := s.oracles.Update(oracle); err != nil {
 		return errOracleResponse("%s", err), nil
 	} else {
-		s.addCompiled(oracle.Id, compiled)
+		s.cache.Add(oracle.Id, compiled)
 	}
 	return &pb.OracleResponse{Success: true}, nil
 }
@@ -88,6 +70,6 @@ func (s *Service) DeleteOracle(ctx context.Context, query *pb.ById) (*pb.OracleR
 	if oracle := s.oracles.Delete(query.Id); oracle == nil {
 		return errOracleResponse("Oracle %d not found.", query.Id), nil
 	}
-	s.delCompiled(query.Id)
+	s.cache.Del(query.Id)
 	return &pb.OracleResponse{Success: true}, nil
 }
