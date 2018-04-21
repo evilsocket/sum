@@ -2,6 +2,7 @@ language: go
 sudo: false
 go:
   - "1.10"
+  - tip
 
 git:
   depth: 3
@@ -20,3 +21,6 @@ install:
 
 script:
   - make test
+
+after_success:
+  - make codecov

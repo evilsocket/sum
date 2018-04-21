@@ -37,13 +37,15 @@ benchmark: server_deps
 
 test: server_deps
 	@echo "Running tests ...\n"
-	@go test ./... -v
-	
-coverage: server_deps
-	@echo "Running tests with coverage profile ...\n"
-	@go test ./... -coverprofile coverage.profile 
+	@go test ./... -v -coverprofile=coverage.profile -covermode=atomic
+
+html_coverage: test
 	@echo "\nGenerating code coverage report to coverage.profile.html ..."
 	@go tool cover -html=coverage.profile -o coverage.profile.html
+	
+codecov: test
+	@echo "Uploading code coverage profile to codecov.io ..."
+	@echo $(curl -s https://codecov.io/bash)
 
 clean:
 	@echo "Cleaning ..."
