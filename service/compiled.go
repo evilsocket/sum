@@ -3,6 +3,7 @@ package service
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"sync"
 
 	pb "github.com/evilsocket/sum/proto"
@@ -17,46 +18,64 @@ type compiled struct {
 	vm     *otto.Otto
 	oracle *pb.Oracle
 	call   *otto.Script
+	argc   int
 	args   []string
 }
 
-func (c *compiled) Oracle() *pb.Oracle {
-	return c.oracle
+func (c *compiled) Is(o pb.Oracle) bool {
+	return c.oracle.Id == o.Id
 }
 
-func (c *compiled) RunWithContext(records *storage.Records, args []string) (*wrapper.Context, []byte, error) {
-	var ret otto.Value
-	var err error
+func (c *compiled) Run(records *storage.Records, args []string) (ctx *wrapper.Context, raw []byte, err error) {
+	ret, err := func() (otto.Value, error) {
+		var anyValue interface{}
+		// prepare the context that the oracle will be able to use
+		// to signal errors and other specific states or events
+		ctx = wrapper.NewContext()
 
-	ctx := wrapper.NewContext()
-	func() {
+		// define the arguments taking into account
+		// that some of them might be optional
+		for len(args) < c.argc {
+			args = append(args, "null")
+		}
+		// lock the VM ... yeah, GIL is a bitch :/
 		c.Lock()
 		defer c.Unlock()
-
 		// define context and globals
 		c.vm.Set("records", wrapper.WrapRecords(records))
 		c.vm.Set("ctx", ctx)
-
 		// define the arguments
-		for argIdx, argName := range args {
-			c.vm.Set(argName, args[argIdx])
+		for argIdx := 0; argIdx < c.argc; argIdx++ {
+			// unmarshal a typed value from the string value of
+			// the argument otherwise vm.Set will define everything
+			// as a string
+			argRaw := args[argIdx]
+			if err = json.Unmarshal([]byte(argRaw), &anyValue); err != nil {
+				// NOTE: this error condition is not covered by tests
+				// because I couldn't find a way to trigger it giving
+				// that the args list is made of simple strings.
+				return otto.NullValue(), fmt.Errorf("could not unmarshal value '%s': %s", argRaw, err)
+			}
+			c.vm.Set(c.args[argIdx], anyValue)
 		}
-
-		// evaluate the precompiled function call
-		ret, err = c.vm.Run(c.call)
+		// evaluate the function call
+		return c.vm.Run(c.call)
 	}()
 
 	if err != nil {
+		// do not marshal return value if there's an error
 		return ctx, nil, err
 	} else if ctx.IsError() {
+		// same goes for errors triggered within the oracle
 		return ctx, nil, errors.New(ctx.Message())
+	} else if obj, err := ret.Export(); err != nil {
+		// or if we can't export its return value
+		// NOTE: this error condition is not covered by tests
+		// because I couldn't find a way to trigger it
+		return ctx, nil, err
+	} else if raw, err = json.Marshal(obj); err != nil {
+		// or if we can't marshal it to a raw buffer for transport
+		return ctx, nil, err
 	}
-
-	// TODO: find a more efficient way to transparently
-	// encode oracles return values as I suspect this is
-	// not the optimal approach ... ?
-	obj, _ := ret.Export()
-	raw, _ := json.Marshal(obj)
-
 	return ctx, raw, nil
 }

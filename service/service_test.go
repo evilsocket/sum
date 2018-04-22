@@ -328,6 +328,89 @@ func TestServiceRunWithWithInvalidArgs(t *testing.T) {
 	}
 }
 
+func TestServiceRunWithWithMissingArgs(t *testing.T) {
+	bak := testOracle.Code
+	testOracle.Code = `function testMissing(arg){ return (arg || 666); }`
+	defer func() {
+		testOracle.Code = bak
+	}()
+
+	setup(t, true, true)
+	defer teardown(t)
+
+	call := pb.Call{OracleId: 1, Args: []string{}}
+
+	if svc, err := New(testFolder); err != nil {
+		t.Fatal(err)
+	} else if resp, err := svc.Run(context.TODO(), &call); err != nil {
+		t.Fatal(err)
+	} else if resp == nil {
+		t.Fatal("expected response")
+	} else if !resp.Success {
+		t.Fatalf("expected success response, got %v", resp)
+	} else if resp.Msg != "" {
+		t.Fatalf("expected empty message: %s", resp.Msg)
+	} else if resp.Data == nil {
+		t.Fatal("expected response data")
+	} else if resp.Data.Compressed {
+		t.Fatal("expected uncompressed data")
+	} else if resp.Data.Payload == nil {
+		t.Fatal("expected data payload")
+	} else if len(resp.Data.Payload) != 3 || string(resp.Data.Payload) != "666" {
+		t.Fatalf("unexpected response: %s", resp.Data)
+	}
+}
+
+func TestServiceRunWithUnexportableReturn(t *testing.T) {
+	bak := testOracle.Code
+	msg := "error while running oracle 1: json: unsupported value: +Inf"
+	testOracle.Code = "function test(){ return 666 / 0; }"
+	defer func() {
+		testOracle.Code = bak
+	}()
+	setup(t, true, true)
+	defer teardown(t)
+
+	if svc, err := New(testFolder); err != nil {
+		t.Fatal(err)
+	} else if resp, err := svc.Run(context.TODO(), &testCall); err != nil {
+		t.Fatal(err)
+	} else if resp == nil {
+		t.Fatal("expected error response")
+	} else if resp.Success {
+		t.Fatal("expected error response")
+	} else if resp.Msg != msg {
+		t.Fatalf("unexpected response message: %s", resp.Msg)
+	} else if resp.Data != nil {
+		t.Fatalf("unexpected response data: %v", resp.Data)
+	}
+}
+
+func TestServiceRunWithRuntimeError(t *testing.T) {
+	bak := testOracle.Code
+	msg := "error while running oracle 1: ReferenceError: 'im_not_defined' is not defined"
+	testOracle.Code = "function test(){ return im_not_defined }"
+	defer func() {
+		testOracle.Code = bak
+	}()
+	setup(t, true, true)
+	defer teardown(t)
+
+	if svc, err := New(testFolder); err != nil {
+		t.Fatal(err)
+	} else if resp, err := svc.Run(context.TODO(), &testCall); err != nil {
+		t.Fatal(err)
+	} else if resp == nil {
+		t.Fatal("expected error response")
+	} else if resp.Success {
+		t.Fatal("expected error response")
+	} else if resp.Msg != msg {
+		t.Fatalf("unexpected response message: %s", resp.Msg)
+	} else if resp.Data != nil {
+		t.Fatalf("unexpected response data: %v", resp.Data)
+	}
+}
+
 func TestServiceRunWithContextError(t *testing.T) {
 	bak := testOracle.Code
 	msg := "error while running oracle 1: nope"

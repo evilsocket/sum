@@ -10,6 +10,10 @@ import (
 )
 
 const (
+	dummyFunc = `function dummy(){}`
+
+	simpleAdd = `function add(a, b){ return a + b; }`
+
 	fiboIter = `function fibonacci(num){
 	  var a = 1, b = 0, temp;
 	  while (num >= 0){
@@ -79,7 +83,7 @@ func benchVM(b *testing.B, fname, code string, args []string, expected string, r
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		if ctx, ret, err := compiled.RunWithContext(records, args); err != nil {
+		if ctx, ret, err := compiled.Run(records, args); err != nil {
 			b.Fatal(err)
 		} else if ctx.IsError() {
 			b.Fatal(ctx.Message())
@@ -90,11 +94,11 @@ func benchVM(b *testing.B, fname, code string, args []string, expected string, r
 }
 
 func BenchmarkRunDummy(b *testing.B) {
-	benchVM(b, "dummy", "function dummy(){}", nil, "", nil)
+	benchVM(b, "dummy", dummyFunc, nil, "", nil)
 }
 
 func BenchmarkRunAdd(b *testing.B) {
-	benchVM(b, "add", "function add(a, b){ return a + b; }", []string{"12", "34"}, "46", nil)
+	benchVM(b, "add", simpleAdd, []string{"12", "34"}, "46", nil)
 }
 
 func BenchmarkRunIterativeFibonacci(b *testing.B) {
@@ -130,7 +134,7 @@ func runFindSimilar(b *testing.B, rows int, cols int) {
 		}
 	}
 
-	benchVM(b, "findSimilar", findSimilar, []string{"1"}, "", records)
+	benchVM(b, "findSimilar", findSimilar, []string{"1", "0.9"}, "", records)
 }
 
 func BenchmarkRunFindSimilar10x100(b *testing.B) {

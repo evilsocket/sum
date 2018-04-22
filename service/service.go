@@ -19,9 +19,10 @@ import (
 
 const (
 	// responses bigger than 2K will be gzipped
-	gzipResponseSize  = 2048
-	dataFolderName    = "data"
-	oraclesFolderName = "oracles"
+	gzipResponseSize     = 2048
+	gzipCompressionLevel = gzip.BestCompression
+	dataFolderName       = "data"
+	oraclesFolderName    = "oracles"
 )
 
 func errCallResponse(format string, args ...interface{}) *pb.CallResponse {
@@ -98,6 +99,25 @@ func (s *Service) Info(ctx context.Context, dummy *pb.Empty) (*pb.ServerInfo, er
 	}, nil
 }
 
+func buildPayload(raw []byte) *pb.Data {
+	data := pb.Data{
+		Compressed: false,
+		Payload:    raw,
+	}
+	// compress the payload if needed
+	if len(raw) > gzipResponseSize {
+		var buf bytes.Buffer
+		if compress, err := gzip.NewWriterLevel(&buf, gzipCompressionLevel); err == nil {
+			compress.Write(raw)
+			compress.Close()
+
+			data.Compressed = true
+			data.Payload = buf.Bytes()
+		}
+	}
+	return &data
+}
+
 // Run executes a compiled oracle given its identifier and the arguments
 // in the *pb.Call object.
 func (s *Service) Run(ctx context.Context, call *pb.Call) (*pb.CallResponse, error) {
@@ -105,34 +125,16 @@ func (s *Service) Run(ctx context.Context, call *pb.Call) (*pb.CallResponse, err
 	if compiled == nil {
 		return errCallResponse("oracle %d not found.", call.OracleId), nil
 	}
-
-	// TODO: here the returned context could be used to queue and
-	// finalize any write operations the oracle generated during
-	// execution, making it transactional.
-	_, raw, err := compiled.RunWithContext(s.records, call.Args)
+	// TODO: here the returned context could be used to finalize
+	// any write operation that the oracle generated during execution,
+	// making it transactional.
+	_, raw, err := compiled.Run(s.records, call.Args)
 	if err != nil {
 		return errCallResponse("error while running oracle %d: %s", call.OracleId, err), nil
 	}
 
-	size := len(raw)
-	compressed := false
-
-	if size > gzipResponseSize {
-		var buf bytes.Buffer
-		if w, err := gzip.NewWriterLevel(&buf, gzip.BestCompression); err == nil {
-			w.Write(raw)
-			w.Close()
-
-			compressed = true
-			raw = buf.Bytes()
-		}
-	}
-
 	return &pb.CallResponse{
 		Success: true,
-		Data: &pb.Data{
-			Compressed: compressed,
-			Payload:    raw,
-		},
+		Data:    buildPayload(raw),
 	}, nil
 }

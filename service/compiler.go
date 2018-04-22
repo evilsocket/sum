@@ -21,12 +21,13 @@ func validate(oracle *pb.Oracle) (call string, args []string, err error) {
 	// first try to parse the oracle and validate that
 	// it starts with a function declaration
 	program, err := parser.ParseFile(nil, "", oracle.Code, 0)
+	ok := true
 	if err != nil {
 		return "", nil, err
 	} else if program.DeclarationList == nil || len(program.DeclarationList) < 1 {
 		return "", nil, errNoDeclarations
-	} else if prototype = program.DeclarationList[0].(*ast.FunctionDeclaration); prototype == nil {
-		return "", nil, fmt.Errorf("expected function declaration, found %v", program.DeclarationList[0])
+	} else if prototype, ok = program.DeclarationList[0].(*ast.FunctionDeclaration); !ok {
+		return "", nil, fmt.Errorf("expected function declaration, found %T", program.DeclarationList[0])
 	}
 
 	// use the function declaration in order to build  the function call
@@ -57,16 +58,14 @@ func compile(oracle *pb.Oracle) (*compiled, error) {
 	}
 
 	// use the vm to precompile the function call
-	call, err := vm.Compile("", callString)
-	if err != nil {
-		return nil, fmt.Errorf("error while precompiling call '%s': %s", callString, err)
-	}
+	call, _ := vm.Compile("", callString)
 
 	// done ^_^
 	return &compiled{
 		oracle: oracle,
 		vm:     vm,
 		args:   args,
+		argc:   len(args),
 		call:   call,
 	}, nil
 }
