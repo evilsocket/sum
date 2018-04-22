@@ -13,7 +13,7 @@ function findSimilar(id, threshold) {
     records.AllBut(v).forEach(function(record){
         var similarity = v.Cosine(record);
         if( similarity >= threshold ) {
-           results[record.Id] = similarity
+           results[record.ID] = similarity
         }
     });
 
