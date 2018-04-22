@@ -62,13 +62,13 @@ func (w Record) Is(b Record) bool {
 
 // Get returns the index-th elements of the *pb.Record contained
 // by this wrapper.
-func (w Record) Get(index int) float32 {
+func (w Record) Get(index int) float64 {
 	return w.record.Data[index]
 }
 
 // Set sets the index-th elements of the *pb.Record contained
 // by this wrapper to a new value.
-func (w Record) Set(index int, value float32) {
+func (w Record) Set(index int, value float64) {
 	old := w.record.Data[index]
 	w.record.Data[index] = value
 	if !w.flush() {

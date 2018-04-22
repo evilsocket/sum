@@ -22,7 +22,7 @@ service SumService {
 
 message Record {
     uint64 id = 1;
-    repeated float data = 2;
+    repeated double data = 2;
     map<string, string> meta = 3;
 }
 

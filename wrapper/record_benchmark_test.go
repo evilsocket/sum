@@ -67,7 +67,7 @@ func BenchmarkWrappedRecordSetMeta(b *testing.B) {
 }
 
 func BenchmarkWrappedRecordDot(b *testing.B) {
-	testRecord.Data = []float32{3, 6, 9}
+	testRecord.Data = []float64{3, 6, 9}
 	shouldBe := 126.0
 
 	a := WrapRecord(nil, &testRecord)
@@ -81,11 +81,11 @@ func BenchmarkWrappedRecordDot(b *testing.B) {
 }
 
 func wrappedRecordDotN(b *testing.B, N int) {
-	a := pb.Record{Data: make([]float32, N)}
-	c := pb.Record{Data: make([]float32, N)}
+	a := pb.Record{Data: make([]float64, N)}
+	c := pb.Record{Data: make([]float64, N)}
 	for i := 0; i < N; i++ {
-		a.Data[i] = rand.Float32()
-		c.Data[i] = rand.Float32()
+		a.Data[i] = rand.Float64()
+		c.Data[i] = rand.Float64()
 	}
 
 	wa := WrapRecord(nil, &a)
@@ -110,7 +110,7 @@ func BenchmarkWrappedRecordDot1024(b *testing.B) {
 }
 
 func BenchmarkWrappedRecordMagnitude(b *testing.B) {
-	testRecord.Data = []float32{0, 0, 2}
+	testRecord.Data = []float64{0, 0, 2}
 	shouldBe := 2.0
 	a := WrapRecord(nil, &testRecord)
 
@@ -122,7 +122,7 @@ func BenchmarkWrappedRecordMagnitude(b *testing.B) {
 }
 
 func BenchmarkWrappedRecordCosine(b *testing.B) {
-	testRecord.Data = []float32{3, 6, 9}
+	testRecord.Data = []float64{3, 6, 9}
 	a := WrapRecord(nil, &testRecord)
 	c := WrapRecord(nil, &testRecord)
 

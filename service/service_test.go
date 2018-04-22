@@ -31,7 +31,7 @@ var (
 	}
 	testRecord = pb.Record{
 		Id:   666,
-		Data: []float32{0.6, 0.6, 0.6},
+		Data: []float64{0.6, 0.6, 0.6},
 		Meta: map[string]string{"666": "666"},
 	}
 	testCall = pb.Call{

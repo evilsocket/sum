@@ -119,10 +119,10 @@ func runFindSimilar(b *testing.B, rows int, cols int) {
 	}
 	for i := 0; i < rows; i++ {
 		record := pb.Record{
-			Data: make([]float32, cols),
+			Data: make([]float64, cols),
 		}
 		for j := 0; j < cols; j++ {
-			record.Data[j] = rand.Float32()
+			record.Data[j] = rand.Float64()
 		}
 
 		if err := records.Create(&record); err != nil {

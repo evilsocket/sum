@@ -13,7 +13,7 @@ var (
 	byID          = pb.ById{Id: 1}
 	updatedRecord = pb.Record{
 		Id:   555,
-		Data: []float32{1, 2, 3, 4, 5, 6, 7, 8, 9, 666},
+		Data: []float64{1, 2, 3, 4, 5, 6, 7, 8, 9, 666},
 		Meta: map[string]string{
 			"idk": "idk",
 		},
