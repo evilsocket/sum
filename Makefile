@@ -82,6 +82,9 @@ profile: reset_env sumd
 benchmark: server_deps
 	@go test ./... -v -run=doNotRunTests -bench=. -benchmem
 
+follow:
+	@pidstat --human -l -u -p `pidof sumd` 1
+
 #
 # Docker stuff
 #
