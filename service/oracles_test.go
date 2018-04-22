@@ -17,21 +17,6 @@ var (
 		Name: "brokenOracle",
 		Code: "lulz i won't compile =)",
 	}
-	brokenRunOracle = pb.Oracle{
-		Id:   123,
-		Name: "brokenRunOracle",
-		Code: "function imok(){} imnot = not_defined + 1;",
-	}
-	emptyOracle = pb.Oracle{
-		Id:   123,
-		Name: "emptyOracle",
-		Code: "",
-	}
-	noFunctionsOracle = pb.Oracle{
-		Id:   123,
-		Name: "noFunctionsDeclaredHere",
-		Code: "var lulz = 123;",
-	}
 	updatedOracle = pb.Oracle{
 		Id:   666,
 		Name: "myNameHasBeenUpdated",
