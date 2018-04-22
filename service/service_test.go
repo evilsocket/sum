@@ -313,6 +313,8 @@ func TestServiceRunWithWithInvalidArgs(t *testing.T) {
 	setup(t, true, true)
 	defer teardown(t)
 
+	// since the call is precompiled, it doesn't matter
+	// what arguments we pass to it
 	call := pb.Call{OracleId: 1, Args: []string{"wut,"}}
 
 	if svc, err := New(testFolder); err != nil {
@@ -320,11 +322,9 @@ func TestServiceRunWithWithInvalidArgs(t *testing.T) {
 	} else if resp, err := svc.Run(context.TODO(), &call); err != nil {
 		t.Fatal(err)
 	} else if resp == nil {
-		t.Fatal("expected error response")
-	} else if resp.Success {
-		t.Fatal("expected error response")
-	} else if resp.Data != nil {
-		t.Fatalf("unexpected response data: %v", resp.Data)
+		t.Fatal("expected response")
+	} else if !resp.Success {
+		t.Fatalf("expected success response, got %v", resp)
 	}
 }
 

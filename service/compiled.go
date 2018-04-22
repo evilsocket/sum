@@ -3,8 +3,6 @@ package service
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
-	"strings"
 	"sync"
 
 	pb "github.com/evilsocket/sum/proto"
@@ -18,6 +16,8 @@ type compiled struct {
 	sync.Mutex
 	vm     *otto.Otto
 	oracle *pb.Oracle
+	call   *otto.Script
+	args   []string
 }
 
 func (c *compiled) Oracle() *pb.Oracle {
@@ -28,18 +28,22 @@ func (c *compiled) RunWithContext(records *storage.Records, args []string) (*wra
 	var ret otto.Value
 	var err error
 
-	// FIXME: this should be built as a small AST tree in order to
-	// avoid parsing.
-	call := fmt.Sprintf("%s(%s)", c.oracle.Name, strings.Join(args, ", "))
 	ctx := wrapper.NewContext()
 	func() {
 		c.Lock()
 		defer c.Unlock()
 
+		// define context and globals
 		c.vm.Set("records", wrapper.WrapRecords(records))
 		c.vm.Set("ctx", ctx)
 
-		ret, err = c.vm.Run(call)
+		// define the arguments
+		for argIdx, argName := range args {
+			c.vm.Set(argName, args[argIdx])
+		}
+
+		// evaluate the precompiled function call
+		ret, err = c.vm.Run(c.call)
 	}()
 
 	if err != nil {
@@ -48,6 +52,9 @@ func (c *compiled) RunWithContext(records *storage.Records, args []string) (*wra
 		return ctx, nil, errors.New(ctx.Message())
 	}
 
+	// TODO: find a more efficient way to transparently
+	// encode oracles return values as I suspect this is
+	// not the optimal approach ... ?
 	obj, _ := ret.Export()
 	raw, _ := json.Marshal(obj)
 
