@@ -126,9 +126,7 @@ func (s *Service) Run(ctx context.Context, call *pb.Call) (*pb.CallResponse, err
 	if compiled == nil {
 		return errCallResponse("oracle %d not found.", call.OracleId), nil
 	}
-	// TODO: here the returned context could be used to finalize
-	// any write operation that the oracle generated during execution,
-	// making it transactional.
+
 	_, raw, err := compiled.Run(s.records, call.Args)
 	if err != nil {
 		return errCallResponse("error while running oracle %d: %s", call.OracleId, err), nil
