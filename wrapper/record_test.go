@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	pb "github.com/evilsocket/sum/proto"
-	"github.com/evilsocket/sum/storage"
 )
 
 func assertPanic(t *testing.T, msg string, f func()) {
@@ -68,60 +67,6 @@ func TestWrappedRecordGetWithInvalidIndex(t *testing.T) {
 	})
 }
 
-func TestWrappedRecordSet(t *testing.T) {
-	r := WrapRecord(nil, &testRecord)
-	for idx, v := range testRecord.Data {
-		new := v * 3.14
-		r.Set(idx, new)
-		if r.Get(idx) != new {
-			t.Fatalf("expected new value %f at index %d, got %f", new, idx, r.Get(idx))
-		}
-	}
-}
-
-func TestWrappedRecordSetWithInvalidIndex(t *testing.T) {
-	assertPanic(t, "access to an invalid index should panic", func() {
-		WrapRecord(nil, &testRecord).Set(666, 3.14)
-	})
-}
-
-func TestWrappedRecordSetWithStore(t *testing.T) {
-	setupRecords(t, true)
-	defer teardownRecords(t)
-
-	records, err := storage.LoadRecords(testFolder)
-	if err != nil {
-		t.Fatal(err)
-	}
-	stored := records.Find(1)
-	r := WrapRecord(records, stored)
-	for idx, v := range testRecord.Data {
-		new := v * 3.14
-		r.Set(idx, new)
-		if r.Get(idx) != new {
-			t.Fatalf("expected new value %f at index %d, got %f", new, idx, r.Get(idx))
-		}
-	}
-}
-
-func TestWrappedRecordSetWithStoreAndInvalidId(t *testing.T) {
-	setupRecords(t, false)
-	defer teardownRecords(t)
-
-	records, err := storage.LoadRecords(testFolder)
-	if err != nil {
-		t.Fatal(err)
-	}
-	r := WrapRecord(records, &testRecord)
-	for idx, v := range testRecord.Data {
-		new := v * 3.14
-		r.Set(idx, new)
-		if r.Get(idx) == new {
-			t.Fatal("expected old value to be unchanged")
-		}
-	}
-}
-
 func TestWrappedRecordMeta(t *testing.T) {
 	r := WrapRecord(nil, &testRecord)
 	for k, v := range testRecord.Meta {
@@ -135,34 +80,6 @@ func TestWrappedRecordMetaWithInvalidKey(t *testing.T) {
 	r := WrapRecord(nil, &testRecord)
 	if got := r.Meta("i do not exist"); got != "" {
 		t.Fatalf("expecting empty value, got '%s'", got)
-	}
-}
-
-func TestWrappedRecordSetMeta(t *testing.T) {
-	r := WrapRecord(nil, &testRecord)
-	k := "new"
-	v := "meta value"
-	r.SetMeta(k, v)
-	if got := r.Meta(k); got != v {
-		t.Fatalf("expecting '%s' for meta '%s', got '%s'", v, k, got)
-	}
-}
-
-func TestWrappedRecordSetMetaWithInvalidId(t *testing.T) {
-	setupRecords(t, false)
-	defer teardownRecords(t)
-
-	records, err := storage.LoadRecords(testFolder)
-	if err != nil {
-		t.Fatal(err)
-	}
-	r := WrapRecord(records, &testRecord)
-	for k, v := range testRecord.Meta {
-		newValue := v + " changed"
-		r.SetMeta(k, newValue)
-		if got := r.Meta(k); got == newValue {
-			t.Fatal("expecting old meta value to be unchanged")
-		}
 	}
 }
 

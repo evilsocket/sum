@@ -1,7 +1,6 @@
 package wrapper
 
 import (
-	"log"
 	"math"
 
 	pb "github.com/evilsocket/sum/proto"
@@ -10,7 +9,8 @@ import (
 
 // Record is the wrapper for a single *pb.Record object used
 // to allow access to specific records to oracles during
-// execution.
+// execution. Every oracle will have this read-only view of
+// the dataset while being evaulated.
 type Record struct {
 	// ID can be used to read the record identifier.
 	ID     uint64
@@ -29,20 +29,6 @@ func WrapRecord(store *storage.Records, record *pb.Record) Record {
 		record: record,
 		store:  store,
 	}
-}
-
-// FIXME: these flush ops should not be executed on every single
-// record updated, they should instead queue and being finalized
-// by the context holder just once, like a sql transaction kind
-// of thing.
-func (w Record) flush() bool {
-	if w.store != nil {
-		if err := w.store.Update(w.record); err != nil {
-			log.Printf("error while fushing record %d after an update: %s", w.ID, err)
-			return false
-		}
-	}
-	return true
 }
 
 // IsNull returns true if the record wrapped by this object is nil.
@@ -66,32 +52,10 @@ func (w Record) Get(index int) float64 {
 	return w.record.Data[index]
 }
 
-// Set sets the index-th elements of the *pb.Record contained
-// by this wrapper to a new value.
-func (w Record) Set(index int, value float64) {
-	old := w.record.Data[index]
-	w.record.Data[index] = value
-	if !w.flush() {
-		w.record.Data[index] = old
-	}
-}
-
 // Meta returns the value of a record meta data given its name
 // or an empty string if not found.
 func (w Record) Meta(name string) string {
 	return w.record.Meta[name]
-}
-
-// SetMeta changes or creates the value of a record meta data
-// given its name.
-func (w Record) SetMeta(name, value string) {
-	old, found := w.record.Meta[name]
-	w.record.Meta[name] = value
-	if !w.flush() {
-		if found {
-			w.record.Meta[name] = old
-		}
-	}
 }
 
 // Dot performs the dot product between a vector and another.

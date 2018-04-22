@@ -39,30 +39,12 @@ func BenchmarkWrappedRecordGet(b *testing.B) {
 	}
 }
 
-func BenchmarkWrappedRecordSet(b *testing.B) {
-	r := WrapRecord(nil, &testRecord)
-	max := len(testRecord.Data)
-
-	for i := 0; i < b.N; i++ {
-		r.Set(i%max, 3.14)
-	}
-}
-
 func BenchmarkWrappedRecordMeta(b *testing.B) {
 	r := WrapRecord(nil, &testRecord)
 	for i := 0; i < b.N; i++ {
 		if got := r.Meta("foo"); got != "bar" {
 			b.Fatalf("expecting '%s' for meta '%s', got '%s'", "bar", "foot", got)
 		}
-	}
-}
-
-func BenchmarkWrappedRecordSetMeta(b *testing.B) {
-	r := WrapRecord(nil, &testRecord)
-	k := "new"
-	v := "meta value"
-	for i := 0; i < b.N; i++ {
-		r.SetMeta(k, v)
 	}
 }
 
