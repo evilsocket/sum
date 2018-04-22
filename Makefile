@@ -71,7 +71,7 @@ test: server_deps gomegacheck golint
 	done
 	
 codecov: test
-	@echo $(curl -s https://codecov.io/bash)
+	@bash <(curl -s https://codecov.io/bash)
 
 html_coverage: test
 	@go tool cover -html=coverage.profile -o coverage.profile.html
