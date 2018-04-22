@@ -47,7 +47,7 @@ func BenchmarkIndexForEach(b *testing.B) {
 	}
 
 	for n := 0; n < b.N; n++ {
-		i.ForEach(func(m proto.Message) {})
+		i.ForEach(func(m proto.Message) error { return nil })
 	}
 }
 

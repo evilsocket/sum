@@ -92,13 +92,17 @@ func (i *Index) Load() error {
 }
 
 // ForEach executes a callback passing as argument every
-// element of the index.
-func (i *Index) ForEach(cb func(record proto.Message)) {
+// element of the index, it interrupts the loop if the
+// callback returns an error, the same error will be returned.
+func (i *Index) ForEach(cb func(record proto.Message) error) error {
 	i.RLock()
 	defer i.RUnlock()
 	for _, record := range i.index {
-		cb(record)
+		if err := cb(record); err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
 // Size returns the number of elements stored in this index.

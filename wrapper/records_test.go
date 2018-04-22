@@ -1,6 +1,7 @@
 package wrapper
 
 import (
+	"errors"
 	"io/ioutil"
 	"log"
 	"os"
@@ -20,6 +21,7 @@ const (
 )
 
 var (
+	errFound   = errors.New("record found")
 	testRecord = pb.Record{
 		Id:   666,
 		Data: []float64{3, 6, 9},
@@ -156,14 +158,13 @@ func TestWrappedRecordsAll(t *testing.T) {
 	}
 
 	for _, wRec := range all {
-		found := false
-		records.ForEach(func(m proto.Message) {
+		err := records.ForEach(func(m proto.Message) error {
 			if reflect.DeepEqual(m.(*pb.Record), wRec.record) {
-				found = true
+				return errFound
 			}
+			return nil
 		})
-
-		if !found {
+		if err != errFound {
 			t.Fatalf("record %d not wrapped correctly", wRec.ID)
 		}
 	}
@@ -193,15 +194,13 @@ func TestWrappedRecordsAllBut(t *testing.T) {
 		if wRec.ID == reference.Id {
 			t.Fatalf("record %d was not supposed to be selected", wRec.ID)
 		}
-
-		found := false
-		records.ForEach(func(m proto.Message) {
+		err := records.ForEach(func(m proto.Message) error {
 			if reflect.DeepEqual(m.(*pb.Record), wRec.record) {
-				found = true
+				return errFound
 			}
+			return nil
 		})
-
-		if !found {
+		if err != errFound {
 			t.Fatalf("record %d not wrapped correctly", wRec.ID)
 		}
 	}

@@ -21,7 +21,7 @@ func (s *Service) NumOracles() uint64 {
 // CreateOracle compiles and stores a raw *pb.Oracle object. If successful, the
 // identifier of the newly created oracle is returned as the response message.
 func (s *Service) CreateOracle(ctx context.Context, oracle *pb.Oracle) (*pb.OracleResponse, error) {
-	if compiled, err := compileOracle(oracle); err != nil {
+	if compiled, err := compile(oracle); err != nil {
 		return errOracleResponse("%s", err), nil
 	} else if err := s.oracles.Create(oracle); err != nil {
 		return errOracleResponse("%s", err), nil
@@ -34,7 +34,7 @@ func (s *Service) CreateOracle(ctx context.Context, oracle *pb.Oracle) (*pb.Orac
 // UpdateOracle updates the contents of an oracle with the ones of a raw *pb.Oracle
 // object given its identifier.
 func (s *Service) UpdateOracle(ctx context.Context, oracle *pb.Oracle) (*pb.OracleResponse, error) {
-	if compiled, err := compileOracle(oracle); err != nil {
+	if compiled, err := compile(oracle); err != nil {
 		return errOracleResponse("%s", err), nil
 	} else if err := s.oracles.Update(oracle); err != nil {
 		return errOracleResponse("%s", err), nil
@@ -57,10 +57,11 @@ func (s *Service) ReadOracle(ctx context.Context, query *pb.ById) (*pb.OracleRes
 // the provided name.
 func (s *Service) FindOracle(ctx context.Context, query *pb.ByName) (*pb.OracleResponse, error) {
 	oracles := make([]*pb.Oracle, 0)
-	s.oracles.ForEach(func(m proto.Message) {
+	s.oracles.ForEach(func(m proto.Message) error {
 		if oracle := m.(*pb.Oracle); oracle.Name == query.Name {
 			oracles = append(oracles, oracle)
 		}
+		return nil
 	})
 	return &pb.OracleResponse{Success: true, Oracles: oracles}, nil
 }

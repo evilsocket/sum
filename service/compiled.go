@@ -20,19 +20,6 @@ type compiled struct {
 	oracle *pb.Oracle
 }
 
-func compileOracle(oracle *pb.Oracle) (*compiled, error) {
-	vm := otto.New()
-	_, err := vm.Run(oracle.Code)
-	if err != nil {
-		return nil, err
-	}
-
-	return &compiled{
-		oracle: oracle,
-		vm:     vm,
-	}, nil
-}
-
 func (c *compiled) Oracle() *pb.Oracle {
 	return c.oracle
 }

@@ -91,12 +91,13 @@ func TestLoadOracles(t *testing.T) {
 		t.Fatalf("expected %d oracles, %d found", testOracles, oracles.Size())
 	}
 
-	oracles.ForEach(func(m proto.Message) {
+	oracles.ForEach(func(m proto.Message) error {
 		oracle := m.(*pb.Oracle)
 		// id was updated while saving the oracle
 		if oracle.Id = testOracle.Id; !reflect.DeepEqual(*oracle, testOracle) {
 			t.Fatalf("oracles should be the same here")
 		}
+		return nil
 	})
 }
 

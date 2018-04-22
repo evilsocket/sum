@@ -88,13 +88,30 @@ func TestIndexForEach(t *testing.T) {
 		t.Fatalf("expected %d records, got %d", testRecords, i.Size())
 	}
 
-	i.ForEach(func(m proto.Message) {
+	i.ForEach(func(m proto.Message) error {
 		record := m.(*pb.Record)
 		testRecord.Id = record.Id
 		if !reflect.DeepEqual(*record, testRecord) {
 			t.Fatal("records should match")
 		}
+		return nil
 	})
+}
+
+func TestIndexForEachShouldStopLoop(t *testing.T) {
+	setupRecords(t, true, false)
+	defer teardownRecords(t)
+
+	i := setupIndex(testFolder)
+	if err := i.Load(); err != nil {
+		t.Fatal(err)
+	} else if i.Size() != testRecords {
+		t.Fatalf("expected %d records, got %d", testRecords, i.Size())
+	}
+
+	if err := i.ForEach(func(m proto.Message) error { return errTest }); err != errTest {
+		t.Fatalf("expected %v, got %v", errTest, err)
+	}
 }
 
 func TestIndexCreateRecord(t *testing.T) {

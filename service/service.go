@@ -55,36 +55,33 @@ func New(dataPath string) (*Service, error) {
 		return nil, err
 	}
 
-	cache := newCache()
-	if oracles.Size() > 0 {
-		log.Printf("precompiling %d oracles ...", oracles.Size())
-		err := error(nil)
-		c := (*compiled)(nil)
-		oracles.ForEach(func(m proto.Message) {
-			if err == nil {
-				oracle := m.(*pb.Oracle)
-				if c, err = compileOracle(oracle); err != nil {
-					err = fmt.Errorf("error while compiling oracle %d: %s", oracle.Id, err)
-				} else {
-					cache.Add(oracle.Id, c)
-				}
-			}
-		})
-
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return &Service{
+	svc := Service{
 		started: time.Now(),
 		pid:     uint64(os.Getpid()),
 		uid:     uint64(os.Getuid()),
 		argv:    os.Args,
 		records: records,
 		oracles: oracles,
-		cache:   cache,
-	}, nil
+		cache:   newCache(),
+	}
+
+	if oracles.Size() > 0 {
+		log.Printf("precompiling %d oracles ...", oracles.Size())
+		err := oracles.ForEach(func(m proto.Message) error {
+			oracle := m.(*pb.Oracle)
+			compiled, err := compile(oracle)
+			if err != nil {
+				return fmt.Errorf("error while compiling oracle %d: %s", oracle.Id, err)
+			}
+			svc.cache.Add(oracle.Id, compiled)
+			return nil
+		})
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return &svc, nil
 }
 
 // Info returns a *pb.ServerInfo object with various realtime information

@@ -54,9 +54,9 @@ const (
 	}`
 )
 
-func BenchmarkCompileOracle(b *testing.B) {
+func BenchmarkCompile(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		if _, err := compileOracle(&testOracle); err != nil {
+		if _, err := compile(&testOracle); err != nil {
 			b.Fatal(err)
 		}
 	}
@@ -67,7 +67,7 @@ func benchVM(b *testing.B, fname, code string, args []string, expected string, r
 		Name: fname,
 		Code: code,
 	}
-	compiled, err := compileOracle(&oracle)
+	compiled, err := compile(&oracle)
 	if err != nil {
 		b.Fatal(err)
 	}

@@ -31,8 +31,9 @@ func (w Records) Find(id uint64) Record {
 // All returns a wrapped list of records in the current storage.
 func (w Records) All() []Record {
 	wrapped := make([]Record, 0)
-	w.records.ForEach(func(m proto.Message) {
+	w.records.ForEach(func(m proto.Message) error {
 		wrapped = append(wrapped, WrapRecord(w.records, m.(*pb.Record)))
+		return nil
 	})
 	return wrapped
 }
@@ -41,11 +42,12 @@ func (w Records) All() []Record {
 // but the one specified.
 func (w Records) AllBut(exclude Record) []Record {
 	wrapped := make([]Record, 0)
-	w.records.ForEach(func(m proto.Message) {
+	w.records.ForEach(func(m proto.Message) error {
 		record := m.(*pb.Record)
 		if record.Id != exclude.record.Id {
 			wrapped = append(wrapped, WrapRecord(w.records, record))
 		}
+		return nil
 	})
 	return wrapped
 }

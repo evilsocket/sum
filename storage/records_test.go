@@ -64,12 +64,13 @@ func TestLoadRecords(t *testing.T) {
 		t.Fatalf("expected %d records, %d found in %s", testRecords, records.Size(), testFolder)
 	}
 
-	records.ForEach(func(m proto.Message) {
+	records.ForEach(func(m proto.Message) error {
 		r := m.(*pb.Record)
 		// id was updated while saving the record
 		if r.Id = testRecord.Id; !reflect.DeepEqual(*r, testRecord) {
 			t.Fatalf("records should be the same here")
 		}
+		return nil
 	})
 }
 

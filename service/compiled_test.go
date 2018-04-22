@@ -4,8 +4,8 @@ import (
 	"testing"
 )
 
-func TestCompileOracle(t *testing.T) {
-	if compiled, err := compileOracle(&testOracle); err != nil {
+func TestServiceCompile(t *testing.T) {
+	if compiled, err := compile(&testOracle); err != nil {
 		t.Fatal(err)
 	} else if compiled == nil {
 		t.Fatal("expected compiled oracle")
@@ -14,8 +14,8 @@ func TestCompileOracle(t *testing.T) {
 	}
 }
 
-func TestCompileOracleWithError(t *testing.T) {
-	if compiled, err := compileOracle(&brokenOracle); err == nil {
+func TestServiceCompileWithError(t *testing.T) {
+	if compiled, err := compile(&brokenOracle); err == nil {
 		t.Fatal("expected compilation error")
 	} else if compiled != nil {
 		t.Fatal("expected no compiled oracle")
