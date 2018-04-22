@@ -61,12 +61,12 @@ gomegacheck:
 # Go 1.10 does, let's keep it 1.9 compatible in order not to break
 # travis
 test: server_deps gomegacheck golint
-	@echo "mode: set" > coverage.profile
+	@echo "mode: atomic" > coverage.profile
 	@for pkg in $(PACKAGES); do \
 		go vet ./$$pkg ; \
 		golint -set_exit_status ./$$pkg ; \
 		megacheck ./$$pkg ; \
-		go test -race ./$$pkg -coverprofile=$$pkg.profile ; \
+		go test -race ./$$pkg -coverprofile=$$pkg.profile -covermode=atomic; \
 		tail -n +2 $$pkg.profile >> coverage.profile && rm $$pkg.profile ; \
 	done
 	

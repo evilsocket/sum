@@ -108,11 +108,12 @@ func buildPayload(raw []byte) *pb.Data {
 	if len(raw) > gzipResponseSize {
 		var buf bytes.Buffer
 		if compress, err := gzip.NewWriterLevel(&buf, gzipCompressionLevel); err == nil {
-			compress.Write(raw)
+			wrote, err := compress.Write(raw)
 			compress.Close()
-
-			data.Compressed = true
-			data.Payload = buf.Bytes()
+			if wrote > 0 && err == nil {
+				data.Compressed = true
+				data.Payload = buf.Bytes()
+			}
 		}
 	}
 	return &data
