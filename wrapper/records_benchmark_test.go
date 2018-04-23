@@ -68,22 +68,3 @@ func BenchmarkWrappedRecordsLoopWithAllBut(b *testing.B) {
 		}
 	}
 }
-
-func BenchmarkWrappedRecordsLoopWithForEach(b *testing.B) {
-	setupRecords(b, true)
-	defer teardownRecords(b)
-
-	records, err := storage.LoadRecords(testFolder)
-	if err != nil {
-		b.Fatal(err)
-	}
-	wrapped := WrapRecords(records)
-
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		justIncMe := 0
-		wrapped.ForEach(func(r Record) {
-			justIncMe += 1
-		})
-	}
-}

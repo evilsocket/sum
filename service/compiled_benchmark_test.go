@@ -66,6 +66,21 @@ func BenchmarkCompile(b *testing.B) {
 	}
 }
 
+func BenchmarkCompiledIs(b *testing.B) {
+	oracle := pb.Oracle{Name: "simple", Code: "function simple(){ return 0; }"}
+	compiled, err := compile(&oracle)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		if !compiled.Is(oracle) {
+			b.Fatal("compiled object does not match source oracle")
+		}
+	}
+}
+
 func benchVM(b *testing.B, fname, code string, args []string, expected string, records *storage.Records) {
 	oracle := pb.Oracle{
 		Name: fname,
