@@ -12,7 +12,8 @@ import (
 )
 
 var (
-	errTest = errors.New("test error")
+	errFound = errors.New("record found")
+	errTest  = errors.New("test error")
 )
 
 func setupIndex(folder string) *Index {
@@ -111,6 +112,36 @@ func TestIndexForEachShouldStopLoop(t *testing.T) {
 
 	if err := i.ForEach(func(m proto.Message) error { return errTest }); err != errTest {
 		t.Fatalf("expected %v, got %v", errTest, err)
+	}
+}
+
+func TestIndexObjects(t *testing.T) {
+	setupRecords(t, true, false)
+	defer teardownRecords(t)
+
+	i := setupIndex(testFolder)
+	if err := i.Load(); err != nil {
+		t.Fatal(err)
+	}
+
+	asSlice := i.Objects()
+	inSlice := len(asSlice)
+	if inSlice != testRecords {
+		t.Fatalf("expected %d records, got %d", testRecords, inSlice)
+	} else if inSlice != i.Size() {
+		t.Fatalf("expected %d records, got %d", i.Size(), inSlice)
+	}
+
+	for _, objInSlice := range asSlice {
+		err := i.ForEach(func(m proto.Message) error {
+			if reflect.DeepEqual(m, objInSlice) {
+				return errFound
+			}
+			return nil
+		})
+		if err != errFound {
+			t.Fatal("object in slice not found in index")
+		}
 	}
 }
 
@@ -269,7 +300,7 @@ func TestIndexDeleteRecord(t *testing.T) {
 			t.Fatalf("record with id %d not found", id)
 		} else if deleted := m.(*pb.Record); deleted.Id != id {
 			t.Fatalf("should have deleted record with id %d, id is %d instead", id, deleted.Id)
-		} else if i.Size() != uint64(testRecords)-id {
+		} else if i.Size() != testRecords-int(id) {
 			t.Fatalf("inconsistent index size of %d", i.Size())
 		} else if _, err := os.Stat(i.pathFor(deleted)); err == nil {
 			t.Fatalf("record %d data file was not deleted", deleted.Id)

@@ -16,6 +16,8 @@ func BenchmarkWrappedRecordsFind(b *testing.B) {
 	}
 
 	wrapped := WrapRecords(records)
+
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		id := uint64(i%testRecords) + 1
 		if r := wrapped.Find(id); r.IsNull() {
@@ -24,7 +26,7 @@ func BenchmarkWrappedRecordsFind(b *testing.B) {
 	}
 }
 
-func BenchmarkWrappedRecordsAll(b *testing.B) {
+func BenchmarkWrappedRecordsLoopWithAll(b *testing.B) {
 	setupRecords(b, true)
 	defer teardownRecords(b)
 
@@ -33,6 +35,8 @@ func BenchmarkWrappedRecordsAll(b *testing.B) {
 		b.Fatal(err)
 	}
 	wrapped := WrapRecords(records)
+
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		if all := wrapped.All(); len(all) != testRecords {
 			b.Fatalf("expected %d wrapped records, got %d", testRecords, len(all))
@@ -40,7 +44,7 @@ func BenchmarkWrappedRecordsAll(b *testing.B) {
 	}
 }
 
-func BenchmarkWrappedRecordsAllBut(b *testing.B) {
+func BenchmarkWrappedRecordsLoopWithAllBut(b *testing.B) {
 	setupRecords(b, true)
 	defer teardownRecords(b)
 
@@ -57,9 +61,29 @@ func BenchmarkWrappedRecordsAllBut(b *testing.B) {
 	wrapped := WrapRecords(records)
 	wRef := WrapRecord(reference)
 
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		if allBut := wrapped.AllBut(wRef); len(allBut) != testRecords-1 {
 			b.Fatalf("expected %d wrapped records, got %d", testRecords-1, len(allBut))
 		}
+	}
+}
+
+func BenchmarkWrappedRecordsLoopWithForEach(b *testing.B) {
+	setupRecords(b, true)
+	defer teardownRecords(b)
+
+	records, err := storage.LoadRecords(testFolder)
+	if err != nil {
+		b.Fatal(err)
+	}
+	wrapped := WrapRecords(records)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		justIncMe := 0
+		wrapped.ForEach(func(r Record) {
+			justIncMe += 1
+		})
 	}
 }

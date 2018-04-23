@@ -155,7 +155,7 @@ func TestRecordsDelete(t *testing.T) {
 			t.Fatalf("record with id %d not found", id)
 		} else if deleted.Id != id {
 			t.Fatalf("should have deleted record with id %d, id is %d instead", id, deleted.Id)
-		} else if records.Size() != uint64(testRecords)-id {
+		} else if records.Size() != testRecords-int(id) {
 			t.Fatalf("inconsistent records storage size of %d", records.Size())
 		} else if _, err := os.Stat(records.pathFor(deleted)); err == nil {
 			t.Fatalf("record %d data file was not deleted", deleted.Id)

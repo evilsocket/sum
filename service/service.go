@@ -94,8 +94,8 @@ func (s *Service) Info(ctx context.Context, dummy *pb.Empty) (*pb.ServerInfo, er
 		Pid:     s.pid,
 		Uid:     s.uid,
 		Argv:    s.argv,
-		Records: s.records.Size(),
-		Oracles: s.oracles.Size(),
+		Records: uint64(s.records.Size()),
+		Oracles: uint64(s.oracles.Size()),
 	}, nil
 }
 

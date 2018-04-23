@@ -164,7 +164,7 @@ func TestServiceDeleteRecord(t *testing.T) {
 			t.Fatalf("expected success response: %v", resp)
 		} else if resp.Record != nil {
 			t.Fatalf("unexpected record pointer: %v", resp.Record)
-		} else if svc.NumRecords() != uint64(testRecords)-id {
+		} else if svc.NumRecords() != testRecords-int(id) {
 			t.Fatalf("inconsistent records storage size of %d", svc.NumRecords())
 		}
 	}

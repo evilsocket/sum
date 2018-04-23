@@ -170,9 +170,9 @@ func TestServiceNew(t *testing.T) {
 		t.Fatalf("wrong uid: %d", svc.uid)
 	} else if !reflect.DeepEqual(svc.argv, os.Args) {
 		t.Fatalf("wrong args: %v", svc.argv)
-	} else if svc.NumRecords() != uint64(testRecords) {
+	} else if svc.NumRecords() != testRecords {
 		t.Fatalf("wrong number of records: %d", svc.NumRecords())
-	} else if svc.NumOracles() != uint64(testOracles) {
+	} else if svc.NumOracles() != testOracles {
 		t.Fatalf("wrong number of oracles: %d", svc.NumOracles())
 	}
 }
@@ -228,9 +228,9 @@ func TestServiceInfo(t *testing.T) {
 		t.Fatalf("wrong uid: %d", info.Uid)
 	} else if !reflect.DeepEqual(svc.argv, info.Argv) {
 		t.Fatalf("wrong args: %v", info.Argv)
-	} else if svc.NumRecords() != info.Records {
+	} else if svc.NumRecords() != int(info.Records) {
 		t.Fatalf("wrong number of records: %d", info.Records)
-	} else if svc.NumOracles() != info.Oracles {
+	} else if svc.NumOracles() != int(info.Oracles) {
 		t.Fatalf("wrong number of oracles: %d", info.Oracles)
 	}
 }

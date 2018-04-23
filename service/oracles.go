@@ -14,7 +14,7 @@ func errOracleResponse(format string, args ...interface{}) *pb.OracleResponse {
 }
 
 // NumOracles returns the number of oracles currently loaded by the service.
-func (s *Service) NumOracles() uint64 {
+func (s *Service) NumOracles() int {
 	return s.oracles.Size()
 }
 

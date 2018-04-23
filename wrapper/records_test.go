@@ -205,3 +205,36 @@ func TestWrappedRecordsAllBut(t *testing.T) {
 		}
 	}
 }
+
+func TestWrappedRecordsForEach(t *testing.T) {
+	setupRecords(t, true)
+	defer teardownRecords(t)
+
+	records, err := storage.LoadRecords(testFolder)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	count := 0
+	wrapped := WrapRecords(records)
+	all := wrapped.All()
+
+	wrapped.ForEach(func(a Record) {
+		count += 1
+		for _, wRec := range all {
+			err := records.ForEach(func(m proto.Message) error {
+				if reflect.DeepEqual(m.(*pb.Record), wRec.record) {
+					return errFound
+				}
+				return nil
+			})
+			if err != errFound {
+				t.Fatalf("record %d not wrapped correctly", wRec.ID)
+			}
+		}
+	})
+
+	if count != testRecords {
+		t.Fatalf("counter expectd to be %d, it is %d instead", testRecords, count)
+	}
+}

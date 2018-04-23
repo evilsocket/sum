@@ -52,7 +52,7 @@ func (w Records) AllBut(exclude Record) []Record {
 	return wrapped
 }
 
-func (w Records) ForEach(cb func(r Record) error) {
+func (w Records) ForEach(cb func(r Record)) {
 	w.records.ForEach(func(m proto.Message) error {
 		cb(WrapRecord(m.(*pb.Record)))
 		return nil

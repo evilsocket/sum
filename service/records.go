@@ -12,7 +12,7 @@ func errRecordResponse(format string, args ...interface{}) *pb.RecordResponse {
 }
 
 // NumRecords returns the number of records currently loaded by the service.
-func (s *Service) NumRecords() uint64 {
+func (s *Service) NumRecords() int {
 	return s.records.Size()
 }
 

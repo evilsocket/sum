@@ -105,11 +105,27 @@ func (i *Index) ForEach(cb func(record proto.Message) error) error {
 	return nil
 }
 
-// Size returns the number of elements stored in this index.
-func (i *Index) Size() uint64 {
+// Objects return a list of proto.Message objects stored in this
+// index.
+func (i *Index) Objects() []proto.Message {
 	i.RLock()
 	defer i.RUnlock()
-	return uint64(len(i.index))
+
+	numObjects := len(i.index)
+	asSlice := make([]proto.Message, numObjects)
+	idx := 0
+	for _, record := range i.index {
+		asSlice[idx] = record
+		idx++
+	}
+	return asSlice
+}
+
+// Size returns the number of elements stored in this index.
+func (i *Index) Size() int {
+	i.RLock()
+	defer i.RUnlock()
+	return len(i.index)
 }
 
 // NextID sets the value for the integer identifier to use

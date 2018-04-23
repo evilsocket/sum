@@ -182,7 +182,7 @@ func TestOraclesDelete(t *testing.T) {
 			t.Fatalf("oracle with id %d not found", id)
 		} else if deleted.Id != id {
 			t.Fatalf("should have deleted oracle with id %d, id is %d instead", id, deleted.Id)
-		} else if oracles.Size() != uint64(testOracles)-id {
+		} else if oracles.Size() != testOracles-int(id) {
 			t.Fatalf("inconsistent oracles storage size of %d", oracles.Size())
 		} else if _, err := os.Stat(oracles.pathFor(deleted)); err == nil {
 			t.Fatalf("oracle %d data file was not deleted", deleted.Id)

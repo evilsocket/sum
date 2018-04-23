@@ -235,7 +235,7 @@ func TestServiceDeleteOracle(t *testing.T) {
 			t.Fatalf("expected success response: %v", resp)
 		} else if resp.Oracles != nil {
 			t.Fatalf("unexpected oracles list: %v", resp.Oracles)
-		} else if svc.NumOracles() != uint64(testOracles)-id {
+		} else if svc.NumOracles() != testOracles-int(id) {
 			t.Fatalf("inconsistent oracles storage size of %d", svc.NumOracles())
 		}
 	}
