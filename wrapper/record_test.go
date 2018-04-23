@@ -17,27 +17,25 @@ func assertPanic(t *testing.T, msg string, f func()) {
 }
 
 func TestWrapRecord(t *testing.T) {
-	wrapped := WrapRecord(nil, &testRecord)
+	wrapped := WrapRecord(&testRecord)
 	if wrapped.ID != testRecord.Id {
 		t.Fatalf("expected record with id %d, %d found", testRecord.Id, wrapped.ID)
-	} else if wrapped.store != nil {
-		t.Fatal("unexpected store pointer")
 	} else if !reflect.DeepEqual(*wrapped.record, testRecord) {
 		t.Fatal("unexpected wrapped record")
 	}
 }
 
 func TestWrapRecordWithNil(t *testing.T) {
-	wrapped := WrapRecord(nil, nil)
+	wrapped := WrapRecord(nil)
 	if !wrapped.IsNull() {
 		t.Fatal("expected null wrapped")
 	}
 }
 
 func TestWrappedRecordIs(t *testing.T) {
-	a := WrapRecord(nil, &testRecord)
-	b := WrapRecord(nil, &testRecord)
-	c := WrapRecord(nil, nil)
+	a := WrapRecord(&testRecord)
+	b := WrapRecord(&testRecord)
+	c := WrapRecord(nil)
 
 	if !a.Is(b) {
 		t.Fatal("records should match")
@@ -53,7 +51,7 @@ func TestWrappedRecordIs(t *testing.T) {
 }
 
 func TestWrappedRecordGet(t *testing.T) {
-	r := WrapRecord(nil, &testRecord)
+	r := WrapRecord(&testRecord)
 	for idx, v := range testRecord.Data {
 		if r.Get(idx) != v {
 			t.Fatalf("expected value %f at index %d, got %f", v, idx, r.Get(idx))
@@ -63,12 +61,12 @@ func TestWrappedRecordGet(t *testing.T) {
 
 func TestWrappedRecordGetWithInvalidIndex(t *testing.T) {
 	assertPanic(t, "access to an invalid index should panic", func() {
-		WrapRecord(nil, &testRecord).Get(666)
+		WrapRecord(&testRecord).Get(666)
 	})
 }
 
 func TestWrappedRecordMeta(t *testing.T) {
-	r := WrapRecord(nil, &testRecord)
+	r := WrapRecord(&testRecord)
 	for k, v := range testRecord.Meta {
 		if got := r.Meta(k); got != v {
 			t.Fatalf("expecting '%s' for meta '%s', got '%s'", v, k, got)
@@ -77,7 +75,7 @@ func TestWrappedRecordMeta(t *testing.T) {
 }
 
 func TestWrappedRecordMetaWithInvalidKey(t *testing.T) {
-	r := WrapRecord(nil, &testRecord)
+	r := WrapRecord(&testRecord)
 	if got := r.Meta("i do not exist"); got != "" {
 		t.Fatalf("expecting empty value, got '%s'", got)
 	}
@@ -87,8 +85,8 @@ func TestWrappedRecordDot(t *testing.T) {
 	testRecord.Data = []float64{3, 6, 9}
 	shouldBe := 126.0
 
-	a := WrapRecord(nil, &testRecord)
-	b := WrapRecord(nil, &testRecord)
+	a := WrapRecord(&testRecord)
+	b := WrapRecord(&testRecord)
 
 	if dot := a.Dot(b); dot != shouldBe {
 		t.Fatalf("dot product should be %f, got %f", shouldBe, dot)
@@ -97,28 +95,28 @@ func TestWrappedRecordDot(t *testing.T) {
 
 func TestWrappedRecordDotWithNull(t *testing.T) {
 	assertPanic(t, "dot product should panic with null wrapped record", func() {
-		WrapRecord(nil, nil).Dot(WrapRecord(nil, nil))
+		WrapRecord(nil).Dot(WrapRecord(nil))
 	})
 
 	assertPanic(t, "dot product should panic with null wrapped record", func() {
-		WrapRecord(nil, &testRecord).Dot(WrapRecord(nil, nil))
+		WrapRecord(&testRecord).Dot(WrapRecord(nil))
 	})
 
 	assertPanic(t, "dot product should panic with null wrapped record", func() {
-		WrapRecord(nil, nil).Dot(WrapRecord(nil, &testRecord))
+		WrapRecord(nil).Dot(WrapRecord(&testRecord))
 	})
 }
 
 func TestWrappedRecordDotWithIncompatibleSizes(t *testing.T) {
 	assertPanic(t, "dot product should panic with vectors of different sizes", func() {
-		WrapRecord(nil, &testRecord).Dot(WrapRecord(nil, &testShorterRecord))
+		WrapRecord(&testRecord).Dot(WrapRecord(&testShorterRecord))
 	})
 }
 
 func TestWrappedRecordMagnitude(t *testing.T) {
 	testRecord.Data = []float64{0, 0, 2}
 	shouldBe := 2.0
-	a := WrapRecord(nil, &testRecord)
+	a := WrapRecord(&testRecord)
 	if mag := a.Magnitude(); mag != shouldBe {
 		t.Fatalf("magnitude should be %f, got %f", shouldBe, mag)
 	}
@@ -126,13 +124,13 @@ func TestWrappedRecordMagnitude(t *testing.T) {
 
 func TestWrappedRecordMagnitudeWithNull(t *testing.T) {
 	assertPanic(t, "magnitude product should panic with null wrapped record", func() {
-		_ = WrapRecord(nil, nil).Magnitude()
+		_ = WrapRecord(nil).Magnitude()
 	})
 }
 
 func TestWrappedRecordCosine(t *testing.T) {
-	a := WrapRecord(nil, &pb.Record{Data: []float64{3, 6, 9}})
-	b := WrapRecord(nil, &pb.Record{Data: []float64{0, 0, 0}})
+	a := WrapRecord(&pb.Record{Data: []float64{3, 6, 9}})
+	b := WrapRecord(&pb.Record{Data: []float64{0, 0, 0}})
 	if cos := a.Cosine(b); cos != 0.0 {
 		t.Fatalf("cosine similarity should be %f, got %f", 0.0, cos)
 	}
@@ -145,20 +143,20 @@ func TestWrappedRecordCosine(t *testing.T) {
 
 func TestWrappedRecordCosineWithNull(t *testing.T) {
 	assertPanic(t, "cosine similarity should panic with null wrapped record", func() {
-		WrapRecord(nil, nil).Cosine(WrapRecord(nil, nil))
+		WrapRecord(nil).Cosine(WrapRecord(nil))
 	})
 
 	assertPanic(t, "cosine similarity should panic with null wrapped record", func() {
-		WrapRecord(nil, &testRecord).Cosine(WrapRecord(nil, nil))
+		WrapRecord(&testRecord).Cosine(WrapRecord(nil))
 	})
 
 	assertPanic(t, "cosine similarity should panic with null wrapped record", func() {
-		WrapRecord(nil, nil).Cosine(WrapRecord(nil, &testRecord))
+		WrapRecord(nil).Cosine(WrapRecord(&testRecord))
 	})
 }
 
 func TestWrappedRecordCosineWithIncompatibleSizes(t *testing.T) {
 	assertPanic(t, "cosine similarity should panic with vectors of different sizes", func() {
-		WrapRecord(nil, &testRecord).Cosine(WrapRecord(nil, &testShorterRecord))
+		WrapRecord(&testRecord).Cosine(WrapRecord(&testShorterRecord))
 	})
 }

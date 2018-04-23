@@ -184,7 +184,7 @@ func TestWrappedRecordsAllBut(t *testing.T) {
 		t.Fatal("expected record with id 1")
 	}
 
-	wRef := WrapRecord(records, reference)
+	wRef := WrapRecord(reference)
 	allBut := WrapRecords(records).AllBut(wRef)
 	if len(allBut) != testRecords-1 {
 		t.Fatalf("expected %d wrapped records, got %d", testRecords-1, len(allBut))

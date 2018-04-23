@@ -55,7 +55,7 @@ func BenchmarkWrappedRecordsAllBut(b *testing.B) {
 	}
 
 	wrapped := WrapRecords(records)
-	wRef := WrapRecord(records, reference)
+	wRef := WrapRecord(reference)
 
 	for i := 0; i < b.N; i++ {
 		if allBut := wrapped.AllBut(wRef); len(allBut) != testRecords-1 {

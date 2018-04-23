@@ -25,14 +25,14 @@ func WrapRecords(records *storage.Records) Records {
 // If not found, the resulting record will result as null
 // (record.IsNull() will be true).
 func (w Records) Find(id uint64) Record {
-	return WrapRecord(w.records, w.records.Find(id))
+	return WrapRecord(w.records.Find(id))
 }
 
 // All returns a wrapped list of records in the current storage.
 func (w Records) All() []Record {
 	wrapped := make([]Record, 0)
 	w.records.ForEach(func(m proto.Message) error {
-		wrapped = append(wrapped, WrapRecord(w.records, m.(*pb.Record)))
+		wrapped = append(wrapped, WrapRecord(m.(*pb.Record)))
 		return nil
 	})
 	return wrapped
@@ -45,9 +45,16 @@ func (w Records) AllBut(exclude Record) []Record {
 	w.records.ForEach(func(m proto.Message) error {
 		record := m.(*pb.Record)
 		if record.Id != exclude.record.Id {
-			wrapped = append(wrapped, WrapRecord(w.records, record))
+			wrapped = append(wrapped, WrapRecord(record))
 		}
 		return nil
 	})
 	return wrapped
+}
+
+func (w Records) ForEach(cb func(r Record) error) {
+	w.records.ForEach(func(m proto.Message) error {
+		cb(WrapRecord(m.(*pb.Record)))
+		return nil
+	})
 }

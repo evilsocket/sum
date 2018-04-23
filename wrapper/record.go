@@ -4,7 +4,6 @@ import (
 	"math"
 
 	pb "github.com/evilsocket/sum/proto"
-	"github.com/evilsocket/sum/storage"
 )
 
 // Record is the wrapper for a single *pb.Record object used
@@ -15,11 +14,10 @@ type Record struct {
 	// ID can be used to read the record identifier.
 	ID     uint64
 	record *pb.Record
-	store  *storage.Records
 }
 
 // WrapRecord creates a Record wrapper around a raw *pb.Record object.
-func WrapRecord(store *storage.Records, record *pb.Record) Record {
+func WrapRecord(record *pb.Record) Record {
 	id := uint64(0)
 	if record != nil {
 		id = record.Id
@@ -27,7 +25,6 @@ func WrapRecord(store *storage.Records, record *pb.Record) Record {
 	return Record{
 		ID:     id,
 		record: record,
-		store:  store,
 	}
 }
 

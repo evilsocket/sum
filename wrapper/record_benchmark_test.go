@@ -9,7 +9,7 @@ import (
 
 func BenchmarkWrapRecord(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		wrapped := WrapRecord(nil, &testRecord)
+		wrapped := WrapRecord(&testRecord)
 		if wrapped.ID != testRecord.Id {
 			b.Fatalf("expected record with id %d, %d found", testRecord.Id, wrapped.ID)
 		}
@@ -17,8 +17,8 @@ func BenchmarkWrapRecord(b *testing.B) {
 }
 
 func BenchmarkWrappedRecordIs(b *testing.B) {
-	a := WrapRecord(nil, &testRecord)
-	c := WrapRecord(nil, &testRecord)
+	a := WrapRecord(&testRecord)
+	c := WrapRecord(&testRecord)
 
 	for i := 0; i < b.N; i++ {
 		if !a.Is(c) {
@@ -28,7 +28,7 @@ func BenchmarkWrappedRecordIs(b *testing.B) {
 }
 
 func BenchmarkWrappedRecordGet(b *testing.B) {
-	r := WrapRecord(nil, &testRecord)
+	r := WrapRecord(&testRecord)
 	idx := 0
 	v := testRecord.Data[idx]
 
@@ -40,7 +40,7 @@ func BenchmarkWrappedRecordGet(b *testing.B) {
 }
 
 func BenchmarkWrappedRecordMeta(b *testing.B) {
-	r := WrapRecord(nil, &testRecord)
+	r := WrapRecord(&testRecord)
 	for i := 0; i < b.N; i++ {
 		if got := r.Meta("foo"); got != "bar" {
 			b.Fatalf("expecting '%s' for meta '%s', got '%s'", "bar", "foot", got)
@@ -52,8 +52,8 @@ func BenchmarkWrappedRecordDot(b *testing.B) {
 	testRecord.Data = []float64{3, 6, 9}
 	shouldBe := 126.0
 
-	a := WrapRecord(nil, &testRecord)
-	c := WrapRecord(nil, &testRecord)
+	a := WrapRecord(&testRecord)
+	c := WrapRecord(&testRecord)
 
 	for i := 0; i < b.N; i++ {
 		if dot := a.Dot(c); dot != shouldBe {
@@ -70,8 +70,8 @@ func wrappedRecordDotN(b *testing.B, N int) {
 		c.Data[i] = rand.Float64()
 	}
 
-	wa := WrapRecord(nil, &a)
-	wc := WrapRecord(nil, &c)
+	wa := WrapRecord(&a)
+	wc := WrapRecord(&c)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -94,7 +94,7 @@ func BenchmarkWrappedRecordDot1024(b *testing.B) {
 func BenchmarkWrappedRecordMagnitude(b *testing.B) {
 	testRecord.Data = []float64{0, 0, 2}
 	shouldBe := 2.0
-	a := WrapRecord(nil, &testRecord)
+	a := WrapRecord(&testRecord)
 
 	for i := 0; i < b.N; i++ {
 		if mag := a.Magnitude(); mag != shouldBe {
@@ -105,8 +105,8 @@ func BenchmarkWrappedRecordMagnitude(b *testing.B) {
 
 func BenchmarkWrappedRecordCosine(b *testing.B) {
 	testRecord.Data = []float64{3, 6, 9}
-	a := WrapRecord(nil, &testRecord)
-	c := WrapRecord(nil, &testRecord)
+	a := WrapRecord(&testRecord)
+	c := WrapRecord(&testRecord)
 
 	for i := 0; i < b.N; i++ {
 		if cos := a.Cosine(c); cos != 1.0 {
