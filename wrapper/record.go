@@ -18,14 +18,11 @@ type Record struct {
 
 // WrapRecord creates a Record wrapper around a raw *pb.Record object.
 func WrapRecord(record *pb.Record) Record {
-	id := uint64(0)
+	w := Record{record: record}
 	if record != nil {
-		id = record.Id
+		w.ID = record.Id
 	}
-	return Record{
-		ID:     id,
-		record: record,
-	}
+	return w
 }
 
 // IsNull returns true if the record wrapped by this object is nil.
