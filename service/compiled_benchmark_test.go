@@ -47,12 +47,15 @@ const (
 		}
 
 		var results = {};
-		records.AllBut(v).forEach(function(record){
+		var all = records.AllBut(v)
+		var num = all.length;    
+		for( var i = 0; i < num; ++i ) {
+			var record = all[i];
 			var similarity = v.Cosine(record);
 			if( similarity >= threshold ) {
 			   results[record.Id] = similarity
 			}
-		});
+		}
 
 		return results;
 	}`
