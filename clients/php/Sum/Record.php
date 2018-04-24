@@ -18,7 +18,7 @@ class Record extends \Google\Protobuf\Internal\Message
      */
     private $id = 0;
     /**
-     * Generated from protobuf field <code>repeated float data = 2;</code>
+     * Generated from protobuf field <code>repeated double data = 2;</code>
      */
     private $data;
     /**
@@ -54,7 +54,7 @@ class Record extends \Google\Protobuf\Internal\Message
     }
 
     /**
-     * Generated from protobuf field <code>repeated float data = 2;</code>
+     * Generated from protobuf field <code>repeated double data = 2;</code>
      * @return \Google\Protobuf\Internal\RepeatedField
      */
     public function getData()
@@ -63,13 +63,13 @@ class Record extends \Google\Protobuf\Internal\Message
     }
 
     /**
-     * Generated from protobuf field <code>repeated float data = 2;</code>
+     * Generated from protobuf field <code>repeated double data = 2;</code>
      * @param float[]|\Google\Protobuf\Internal\RepeatedField $var
      * @return $this
      */
     public function setData($var)
     {
-        $arr = GPBUtil::checkRepeatedField($var, \Google\Protobuf\Internal\GPBType::FLOAT);
+        $arr = GPBUtil::checkRepeatedField($var, \Google\Protobuf\Internal\GPBType::DOUBLE);
         $this->data = $arr;
 
         return $this;
