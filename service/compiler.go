@@ -50,20 +50,17 @@ func compile(oracle *pb.Oracle) (*compiled, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	// create the vm and define the oracle function
 	vm := otto.New()
 	if _, err := vm.Run(oracle.Code); err != nil {
 		return nil, err
 	}
-
 	// use the vm to precompile the function call
 	call, _ := vm.Compile("", callString)
-
 	// done ^_^
 	return &compiled{
 		oracle: oracle,
-		vm:     vm,
+		pool:   CreateExecutionPool(vm),
 		args:   args,
 		argc:   len(args),
 		call:   call,

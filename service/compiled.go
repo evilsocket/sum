@@ -15,7 +15,7 @@ import (
 
 type compiled struct {
 	sync.Mutex
-	vm     *otto.Otto
+	pool   *ExecutionPool
 	oracle *pb.Oracle
 	call   *otto.Script
 	argc   int
@@ -32,18 +32,20 @@ func (c *compiled) Run(records *storage.Records, args []string) (ctx *wrapper.Co
 		// prepare the context that the oracle will be able to use
 		// to signal errors and other specific states or events
 		ctx = wrapper.NewContext()
-
 		// define the arguments taking into account
 		// that some of them might be optional
 		for len(args) < c.argc {
 			args = append(args, "null")
 		}
-		// lock the VM ... yeah, GIL is a bitch :/
-		c.Lock()
-		defer c.Unlock()
+		// in order to avoid locking the global vm and make this
+		// basically single thread, we create a separate clone
+		// for each evaluation.
+		// NOTE: this will block until a vm is available from the pool.
+		vm := c.pool.Get()
+		defer vm.Release()
 		// define context and globals
-		c.vm.Set("records", wrapper.WrapRecords(records))
-		c.vm.Set("ctx", ctx)
+		vm.Set("records", wrapper.WrapRecords(records))
+		vm.Set("ctx", ctx)
 		// define the arguments
 		for argIdx := 0; argIdx < c.argc; argIdx++ {
 			// unmarshal a typed value from the string value of
@@ -56,10 +58,10 @@ func (c *compiled) Run(records *storage.Records, args []string) (ctx *wrapper.Co
 				// that the args list is made of simple strings.
 				return otto.NullValue(), fmt.Errorf("could not unmarshal value '%s': %s", argRaw, err)
 			}
-			c.vm.Set(c.args[argIdx], anyValue)
+			vm.Set(c.args[argIdx], anyValue)
 		}
 		// evaluate the function call
-		return c.vm.Run(c.call)
+		return vm.Run(c.call)
 	}()
 
 	if err != nil {
