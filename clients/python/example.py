@@ -31,7 +31,7 @@ if __name__ == '__main__':
     client = Client('127.0.0.1:50051')
 
     # STEP 1: send the oracle code to the server and get its id
-    oracle_id = client.define_oracle('oracles/findsimilar.js', 'findSimilar')
+    oracle_id = client.define_oracle(os.path.dirname(__file__) + '/../example_oracles/findsimilar.js', 'findSimilar')
 
     # STEP 2: generate `num_rows` vectors of `num_columns` columns
     # each and ask the server to store them

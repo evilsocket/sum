@@ -37,7 +37,7 @@ for( $i = 0; $i < $num_rows; $i++ ) {
     $index[$record->getId()] = $record;
 }
 
-$oracle_id = $client->DefineOracle("oracles/findsimilar.js", "findSimilar");
+$oracle_id = $client->DefineOracle("$base/../example_oracles/findsimilar.js", "findSimilar");
 
 foreach( $index as $rec_id => $record ) {
     $index[$rec_id] = [
