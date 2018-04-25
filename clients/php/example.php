@@ -14,8 +14,7 @@ foreach( glob("$base/Sum/*.php") as $file ) {
 }
 
 require_once "$base/GPBMetadata/Proto/Sum.php";
-
-require("$base/SumClient.php");
+require_once "$base/SumClient.php";
  
 function rand_data($columns) {
     $data = [];
