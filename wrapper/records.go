@@ -30,11 +30,9 @@ func (w Records) Find(id uint64) Record {
 
 // All returns a wrapped list of records in the current storage.
 func (w Records) All() []Record {
-	wrapped := make([]Record, w.records.Size())
-	idx := 0
+	wrapped := make([]Record, 0)
 	w.records.ForEach(func(m proto.Message) error {
-		wrapped[idx] = WrapRecord(m.(*pb.Record))
-		idx++
+		wrapped = append(wrapped, WrapRecord(m.(*pb.Record)))
 		return nil
 	})
 	return wrapped
@@ -43,15 +41,11 @@ func (w Records) All() []Record {
 // AllBut returns a wrapped list of records in the current storage
 // but the one specified.
 func (w Records) AllBut(exclude Record) []Record {
-	// NOTE: this preallocation assumes the excluded element will
-	// be found in the list of records.
-	wrapped := make([]Record, w.records.Size()-1)
-	idx := 0
+	wrapped := make([]Record, 0)
 	w.records.ForEach(func(m proto.Message) error {
 		record := m.(*pb.Record)
 		if record.Id != exclude.record.Id {
-			wrapped[idx] = WrapRecord(record)
-			idx++
+			wrapped = append(wrapped, WrapRecord(record))
 		}
 		return nil
 	})
