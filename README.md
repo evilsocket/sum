@@ -55,7 +55,7 @@ Once defined on the Sum server, any client will be able to execute calls like `f
 calls will be evaluated on data **in memory** in order to be as fast as possible, while the same data will be persisted on disk 
 as binary protobuf encoded files.
 
-To have a better idea of how this works, take a look at [the example python code](https://github.com/evilsocket/sum/blob/master/example_logic.py) that will
+To have a better idea of how this works, take a look at [the example python client code](https://github.com/evilsocket/sum/blob/master/clients/python/example.py) that will
 create a few vectors on the server, define an oracle, call it for every vector and print the similarities the server returned.
 
 **This is work in progress, do not use until v1.0.0 will be released.**

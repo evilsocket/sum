@@ -4,9 +4,6 @@ import os
 import random
 import datetime
 
-path = os.path.join(os.path.abspath(os.path.dirname(__file__)),"clients/python")
-sys.path.append(path)
-
 from client import Client
 
 def timer_start():

@@ -21,9 +21,7 @@ class SumClient {
     private function checkResponse($s, $r) {
         if($s->code != \Grpc\STATUS_OK) {
             throw new \Exception($s->details);
-        }
-
-        if(!$r->getSuccess()) {
+        } else if(!$r->getSuccess()) {
             throw new \Exception($r->getMsg());
         }
     }
@@ -57,6 +55,7 @@ class SumClient {
         list($result, $status) = $this->rpc->DeleteRecord($byId)->wait();
         $this->checkResponse($status, $result);
     }
+    
 
     public function DefineOracle($filename, $name) {
         $byName = new Sum\ByName;
@@ -79,12 +78,25 @@ class SumClient {
         }
     }
 
-    /*
-    def invoke_oracle(self, oracle_id, args):
-        resp = self._rpc.Run(proto.Call(oracle_id=oracle_id, args=map(json.dumps, args)))
-        self._check_resp(resp)
-        return self._get_oracle_payload(resp.data)
-     */
+    private function getOraclePayload($data) {
+        $compressed = $data->getCompressed();
+        $payload = $data->getPayload();
+        if($compressed) {
+            $payload = gzdecode($payload);
+        }
+        return json_decode($payload, true);
+    }
+
     public function InvokeOracle($oracle_id, $args) {
+        $args = array_map('json_encode', $args);
+
+        $call = new Sum\Call;
+        $call->setOracleId($oracle_id);
+        $call->setArgs($args);
+
+        list($result, $status) = $this->rpc->Run($call)->wait();
+        $this->checkResponse($status, $result);
+
+        return $this->getOraclePayload($result->getData());
     }
 }

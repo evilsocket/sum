@@ -6,7 +6,7 @@
 function findSimilar(id, threshold) {
     var v = records.Find(id);
     if( v.IsNull() == true ) {
-        return ctx.Error("Vector " + id + " not found.");
+        return ctx.Error("vector " + id + " not found.");
     }
 
     var results = {};
