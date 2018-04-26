@@ -57,6 +57,19 @@ class SumServiceClient extends \Grpc\BaseStub {
     }
 
     /**
+     * @param \Sum\ListRequest $argument input argument
+     * @param array $metadata metadata
+     * @param array $options call options
+     */
+    public function ListRecords(\Sum\ListRequest $argument,
+      $metadata = [], $options = []) {
+        return $this->_simpleRequest('/sum.SumService/ListRecords',
+        $argument,
+        ['\Sum\RecordListResponse', 'decode'],
+        $metadata, $options);
+    }
+
+    /**
      * @param \Sum\ById $argument input argument
      * @param array $metadata metadata
      * @param array $options call options

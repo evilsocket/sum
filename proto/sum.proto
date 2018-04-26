@@ -7,6 +7,7 @@ service SumService {
   rpc CreateRecord(Record) returns (RecordResponse) {}
   rpc UpdateRecord(Record) returns (RecordResponse) {}
   rpc ReadRecord(ById) returns (RecordResponse) {}
+  rpc ListRecords(ListRequest) returns (RecordListResponse) {}
   rpc DeleteRecord(ById) returns (RecordResponse) {}
   // oracles CRUD
   rpc CreateOracle(Oracle) returns (OracleResponse) {}
@@ -30,6 +31,17 @@ message RecordResponse {
     bool success = 1;
     string msg = 2;
     Record record = 3;
+}
+
+message ListRequest {
+    uint64 page = 1;
+    uint64 per_page = 2;
+}
+
+message RecordListResponse {
+    uint64 total = 1;
+    uint64 pages = 2;
+    repeated Record records = 3;
 }
 
 message Oracle {

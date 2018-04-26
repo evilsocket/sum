@@ -48,6 +48,19 @@ class SumClient {
         return $result->getRecord();
     }
 
+    public function ListRecords($page, $perPage) {
+        $req = new Sum\ListRequest();
+        $req->setPage((int)$page);
+        $req->setPerPage((int)$perPage);
+
+        list($result, $status) = $this->rpc->ListRecords($list)->wait();
+        if($status->code != \Grpc\STATUS_OK) {
+            throw new \Exception($s->details);
+        }
+
+        return $result;
+    }
+
     public function DeleteRecord($identifier) {
         $id = (int)$identifier;
         $byId = new Sum\Byid;

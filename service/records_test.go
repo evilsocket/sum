@@ -147,6 +147,84 @@ func TestServiceReadRecordWithInvalidId(t *testing.T) {
 	}
 }
 
+func TestServiceListRecordsSinglePage(t *testing.T) {
+	setup(t, true, true)
+	defer teardown(t)
+
+	list := pb.ListRequest{
+		Page:    1,
+		PerPage: testRecords,
+	}
+
+	if svc, err := New(testFolder); err != nil {
+		t.Fatal(err)
+	} else if resp, err := svc.ListRecords(context.TODO(), &list); err != nil {
+		t.Fatal(err)
+	} else if resp.Total != testRecords {
+		t.Fatalf("expected %d total records, got %d", testRecords, resp.Total)
+	} else if resp.Pages != 1 {
+		t.Fatalf("expected 1 page, got %d", resp.Pages)
+	} else if len(resp.Records) != testRecords {
+		t.Fatalf("expected %d total records, got %d", testRecords, len(resp.Records))
+	} else {
+		for _, r := range resp.Records {
+			if testRecord.Id = r.Id; !reflect.DeepEqual(*r, testRecord) {
+				t.Fatalf("unexpected record: %v", r)
+			}
+		}
+	}
+}
+
+func TestServiceListRecordsMultiPage(t *testing.T) {
+	setup(t, true, true)
+	defer teardown(t)
+
+	list := pb.ListRequest{
+		Page:    1,
+		PerPage: 2,
+	}
+
+	if svc, err := New(testFolder); err != nil {
+		t.Fatal(err)
+	} else if resp, err := svc.ListRecords(context.TODO(), &list); err != nil {
+		t.Fatal(err)
+	} else if resp.Total != testRecords {
+		t.Fatalf("expected %d total records, got %d", testRecords, resp.Total)
+	} else if resp.Pages != 3 {
+		t.Fatalf("expected 3 pages got %d", resp.Pages)
+	} else if len(resp.Records) != 2 {
+		t.Fatalf("expected %d total records, got %d", 2, len(resp.Records))
+	} else {
+		for _, r := range resp.Records {
+			if testRecord.Id = r.Id; !reflect.DeepEqual(*r, testRecord) {
+				t.Fatalf("unexpected record: %v", r)
+			}
+		}
+	}
+}
+
+func TestServiceListRecordsInvalidPage(t *testing.T) {
+	setup(t, true, true)
+	defer teardown(t)
+
+	list := pb.ListRequest{
+		Page:    100000,
+		PerPage: 2,
+	}
+
+	if svc, err := New(testFolder); err != nil {
+		t.Fatal(err)
+	} else if resp, err := svc.ListRecords(context.TODO(), &list); err != nil {
+		t.Fatal(err)
+	} else if resp.Total != testRecords {
+		t.Fatalf("expected %d total records, got %d", testRecords, resp.Total)
+	} else if resp.Pages != 3 {
+		t.Fatalf("expected 3 pages got %d", resp.Pages)
+	} else if len(resp.Records) != 0 {
+		t.Fatalf("expected %d total records, got %d", 0, len(resp.Records))
+	}
+}
+
 func TestServiceDeleteRecord(t *testing.T) {
 	setup(t, true, true)
 	defer teardown(t)

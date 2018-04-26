@@ -39,6 +39,11 @@ class Client:
         self._check_resp(resp)
         return resp.record
 
+    def list_records(self, page, per_page):
+        return self._rpc.ListRecords(proto.ListRequest( \
+            page=page,
+            per_page=per_page))
+
     def delete_record(self, identifier):
         resp = self._rpc.DeleteRecord(proto.ById(id=identifier))
         self._check_resp(resp)

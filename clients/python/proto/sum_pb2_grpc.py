@@ -29,6 +29,11 @@ class SumServiceStub(object):
         request_serializer=sum__pb2.ById.SerializeToString,
         response_deserializer=sum__pb2.RecordResponse.FromString,
         )
+    self.ListRecords = channel.unary_unary(
+        '/sum.SumService/ListRecords',
+        request_serializer=sum__pb2.ListRequest.SerializeToString,
+        response_deserializer=sum__pb2.RecordListResponse.FromString,
+        )
     self.DeleteRecord = channel.unary_unary(
         '/sum.SumService/DeleteRecord',
         request_serializer=sum__pb2.ById.SerializeToString,
@@ -90,6 +95,13 @@ class SumServiceServicer(object):
     raise NotImplementedError('Method not implemented!')
 
   def ReadRecord(self, request, context):
+    # missing associated documentation comment in .proto file
+    pass
+    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+    context.set_details('Method not implemented!')
+    raise NotImplementedError('Method not implemented!')
+
+  def ListRecords(self, request, context):
     # missing associated documentation comment in .proto file
     pass
     context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -169,6 +181,11 @@ def add_SumServiceServicer_to_server(servicer, server):
           servicer.ReadRecord,
           request_deserializer=sum__pb2.ById.FromString,
           response_serializer=sum__pb2.RecordResponse.SerializeToString,
+      ),
+      'ListRecords': grpc.unary_unary_rpc_method_handler(
+          servicer.ListRecords,
+          request_deserializer=sum__pb2.ListRequest.FromString,
+          response_serializer=sum__pb2.RecordListResponse.SerializeToString,
       ),
       'DeleteRecord': grpc.unary_unary_rpc_method_handler(
           servicer.DeleteRecord,

@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"sort"
 
 	pb "github.com/evilsocket/sum/proto"
 	"golang.org/x/net/context"
@@ -41,6 +42,48 @@ func (s *Service) ReadRecord(ctx context.Context, query *pb.ById) (*pb.RecordRes
 		return errRecordResponse("record %d not found.", query.Id), nil
 	}
 	return &pb.RecordResponse{Success: true, Record: record}, nil
+}
+
+// ListRecords returns list of records given a ListRequest object.
+func (s *Service) ListRecords(ctx context.Context, list *pb.ListRequest) (*pb.RecordListResponse, error) {
+	all := s.records.Objects()
+	total := uint64(len(all))
+	start := (list.Page - 1) * list.PerPage
+	end := start + list.PerPage
+	npages := total / list.PerPage
+	if total%list.PerPage > 0 {
+		npages++
+	}
+
+	// out of range
+	if total <= start {
+		return &pb.RecordListResponse{Total: total, Pages: npages}, nil
+	}
+
+	resp := pb.RecordListResponse{
+		Total:   total,
+		Pages:   npages,
+		Records: make([]*pb.Record, 0),
+	}
+
+	// sort by id
+	sort.Slice(all, func(i, j int) bool {
+		return all[i].(*pb.Record).Id < all[j].(*pb.Record).Id
+	})
+
+	if total <= end {
+		// partially filled page
+		for _, m := range all[start:] {
+			resp.Records = append(resp.Records, m.(*pb.Record))
+		}
+	} else {
+		// full page
+		for _, m := range all[start : end-start] {
+			resp.Records = append(resp.Records, m.(*pb.Record))
+		}
+	}
+
+	return &resp, nil
 }
 
 // DeleteRecord removes a record from the storage given its identifier.

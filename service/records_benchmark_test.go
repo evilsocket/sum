@@ -60,6 +60,28 @@ func BenchmarkServiceReadRecord(b *testing.B) {
 	}
 }
 
+func BenchmarkServiceListRecords(b *testing.B) {
+	setup(b, true, true)
+	defer teardown(b)
+
+	svc, err := New(testFolder)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	list := pb.ListRequest{
+		Page:    1,
+		PerPage: testRecords,
+	}
+
+	ctx := context.TODO()
+	for i := 0; i < b.N; i++ {
+		if _, err := svc.ListRecords(ctx, &list); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
 func BenchmarkServiceDeleteRecord(b *testing.B) {
 	defer teardown(b)
 
