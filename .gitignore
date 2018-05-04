@@ -1,6 +1,7 @@
 sumd
 vendor
 test_*.py
+*_experiments
 *.csv
 *.pyc
 *.profile
