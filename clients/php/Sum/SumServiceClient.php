@@ -83,6 +83,20 @@ class SumServiceClient extends \Grpc\BaseStub {
     }
 
     /**
+     * find a vector given a meta name and value to filter for
+     * @param \Sum\ByMeta $argument input argument
+     * @param array $metadata metadata
+     * @param array $options call options
+     */
+    public function FindRecords(\Sum\ByMeta $argument,
+      $metadata = [], $options = []) {
+        return $this->_simpleRequest('/sum.SumService/FindRecords',
+        $argument,
+        ['\Sum\FindResponse', 'decode'],
+        $metadata, $options);
+    }
+
+    /**
      * oracles CRUD
      * @param \Sum\Oracle $argument input argument
      * @param array $metadata metadata

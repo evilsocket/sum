@@ -68,7 +68,16 @@ class SumClient {
         list($result, $status) = $this->rpc->DeleteRecord($byId)->wait();
         $this->checkResponse($status, $result);
     }
-    
+
+    public function FindRecords($meta, $value) {
+        $byMeta = new Sum\ByMeta();
+        $byMeta->setMeta($meta);
+        $byMeta->setValue($value);
+        list($result, $status) = $this->rpc->FindRecords($byMeta)->wait();
+        $this->checkResponse($status, $result);
+
+        return $result->getRecords();
+    }
 
     public function DefineOracle($filename, $name) {
         $byName = new Sum\ByName;

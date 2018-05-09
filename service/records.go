@@ -12,6 +12,10 @@ func errRecordResponse(format string, args ...interface{}) *pb.RecordResponse {
 	return &pb.RecordResponse{Success: false, Msg: fmt.Sprintf(format, args...)}
 }
 
+func errFindResponse(format string, args ...interface{}) *pb.FindResponse {
+	return &pb.FindResponse{Success: false, Msg: fmt.Sprintf(format, args...)}
+}
+
 // NumRecords returns the number of records currently loaded by the service.
 func (s *Service) NumRecords() int {
 	return s.records.Size()
@@ -93,4 +97,13 @@ func (s *Service) DeleteRecord(ctx context.Context, query *pb.ById) (*pb.RecordR
 		return errRecordResponse("record %d not found.", query.Id), nil
 	}
 	return &pb.RecordResponse{Success: true}, nil
+}
+
+// FindRecords returns a FindResponse object corresponding to the records that matched the search criteria.
+func (s *Service) FindRecords(ctx context.Context, query *pb.ByMeta) (*pb.FindResponse, error) {
+	records := s.records.FindBy(query.Meta, query.Value)
+	if records == nil {
+		return errFindResponse("meta %s not indexed.", query.Meta), nil
+	}
+	return &pb.FindResponse{Success: true, Records: records}, nil
 }

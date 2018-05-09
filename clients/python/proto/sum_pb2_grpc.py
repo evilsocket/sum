@@ -39,6 +39,11 @@ class SumServiceStub(object):
         request_serializer=sum__pb2.ById.SerializeToString,
         response_deserializer=sum__pb2.RecordResponse.FromString,
         )
+    self.FindRecords = channel.unary_unary(
+        '/sum.SumService/FindRecords',
+        request_serializer=sum__pb2.ByMeta.SerializeToString,
+        response_deserializer=sum__pb2.FindResponse.FromString,
+        )
     self.CreateOracle = channel.unary_unary(
         '/sum.SumService/CreateOracle',
         request_serializer=sum__pb2.Oracle.SerializeToString,
@@ -111,6 +116,13 @@ class SumServiceServicer(object):
   def DeleteRecord(self, request, context):
     # missing associated documentation comment in .proto file
     pass
+    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+    context.set_details('Method not implemented!')
+    raise NotImplementedError('Method not implemented!')
+
+  def FindRecords(self, request, context):
+    """find a vector given a meta name and value to filter for
+    """
     context.set_code(grpc.StatusCode.UNIMPLEMENTED)
     context.set_details('Method not implemented!')
     raise NotImplementedError('Method not implemented!')
@@ -191,6 +203,11 @@ def add_SumServiceServicer_to_server(servicer, server):
           servicer.DeleteRecord,
           request_deserializer=sum__pb2.ById.FromString,
           response_serializer=sum__pb2.RecordResponse.SerializeToString,
+      ),
+      'FindRecords': grpc.unary_unary_rpc_method_handler(
+          servicer.FindRecords,
+          request_deserializer=sum__pb2.ByMeta.FromString,
+          response_serializer=sum__pb2.FindResponse.SerializeToString,
       ),
       'CreateOracle': grpc.unary_unary_rpc_method_handler(
           servicer.CreateOracle,

@@ -48,6 +48,11 @@ class Client:
         resp = self._rpc.DeleteRecord(proto.ById(id=identifier))
         self._check_resp(resp)
 
+    def find_records(self, meta, value):
+        resp = self._rpc.FindRecords(proto.ByMeta(meta=meta, value=value))
+        self._check_resp(resp)
+        return resp.records
+
     def define_oracle(self, filename, name):
         resp = self._rpc.FindOracle(proto.ByName(name=name))
         self._check_resp(resp)
