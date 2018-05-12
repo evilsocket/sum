@@ -4,7 +4,7 @@ import (
 	pb "github.com/evilsocket/sum/proto"
 )
 
-type metaIndex map[string][]*pb.Record
+type metaIndex map[string][]uint64
 
 // Records is specialized version of a storage.Index
 // used to map, store and persist pb.Record objects.
@@ -41,10 +41,10 @@ func (r *Records) metaIndexCreate(rec *pb.Record) {
 		// create the index by this key if not there already
 		if metaIdx, found := r.metaBy[key]; !found {
 			r.metaBy[key] = metaIndex{
-				val: []*pb.Record{rec},
+				val: []uint64{rec.Id},
 			}
 		} else {
-			metaIdx[val] = append(metaIdx[val], rec)
+			metaIdx[val] = append(metaIdx[val], rec.Id)
 		}
 	}
 }
@@ -58,9 +58,9 @@ func (r *Records) metaIndexRemove(rec *pb.Record) {
 		if metaIdx, found := r.metaBy[key]; !found {
 			// find the bucket by value
 			bucket := metaIdx[val]
-			for i, elem := range bucket {
+			for i, elemID := range bucket {
 				// find the record by id
-				if elem.Id == rec.Id {
+				if elemID == rec.Id {
 					// remove it
 					metaIdx[val] = append(bucket[:i], bucket[i+1:]...)
 					break
@@ -90,11 +90,17 @@ func (r *Records) FindBy(meta string, val string) []*pb.Record {
 		return nil
 	}
 
-	indexed, found := metaIdx[val]
-	if !found {
-		return []*pb.Record{}
+	records := []*pb.Record{}
+	if bucket, found := metaIdx[val]; found {
+		for _, recID := range bucket {
+			m := r.Index.Find(recID)
+			if m != nil {
+				records = append(records, m.(*pb.Record))
+			}
+		}
 	}
-	return indexed
+
+	return records
 }
 
 // Delete removes a stored pb.Record from the index given its identifier,
