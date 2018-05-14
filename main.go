@@ -20,10 +20,12 @@ import (
 )
 
 var (
-	listenString = flag.String("listen", ":50051", "String to create the TCP listener.")
+	listenString = flag.String("listen", "127.0.0.1:50051", "String to create the TCP listener.")
 	dataPath     = flag.String("datapath", "/var/lib/sumd", "Sum data folder.")
-	cpuProfile   = flag.String("cpu-profile", "", "Write CPU profile to this file.")
-	memProfile   = flag.String("mem-profile", "", "Write memory profile to this file.")
+	logFile      = flag.String("log-file", "", "If filled, sumd will log to this file.")
+
+	cpuProfile = flag.String("cpu-profile", "", "Write CPU profile to this file.")
+	memProfile = flag.String("mem-profile", "", "Write memory profile to this file.")
 
 	svc     = (*service.Service)(nil)
 	sigChan = (chan os.Signal)(nil)
@@ -94,6 +96,15 @@ func main() {
 	flag.Parse()
 
 	setupSignals()
+
+	if *logFile != "" {
+		f, err := os.OpenFile(*logFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+		if err != nil {
+			log.Fatalf("error opening file: %v", err)
+		}
+		defer f.Close()
+		log.SetOutput(f)
+	}
 
 	listener, err := net.Listen("tcp", *listenString)
 	if err != nil {
