@@ -58,8 +58,6 @@ as binary protobuf encoded files.
 To have a better idea of how this works, take a look at [the example python client code](https://github.com/evilsocket/sum/blob/master/clients/python/example.py) that will
 create a few vectors on the server, define an oracle, call it for every vector and print the similarities the server returned.
 
-**This is work in progress, do not use until v1.0.0 will be released.**
-
 ## Useful links
 
 Deps, config, compilation, etc:
