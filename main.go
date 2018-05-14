@@ -22,6 +22,8 @@ import (
 var (
 	listenString = flag.String("listen", "127.0.0.1:50051", "String to create the TCP listener.")
 	dataPath     = flag.String("datapath", "/var/lib/sumd", "Sum data folder.")
+	gcPeriod     = flag.Int("gc-period", 1800, "Period in seconds to report memory statistics and call the gc.")
+	maxMsgSize   = flag.Int("max-msg-size", 10*1024*1024, "Maximum size in bytes of a GRPC message.")
 	logFile      = flag.String("log-file", "", "If filled, sumd will log to this file.")
 
 	cpuProfile = flag.String("cpu-profile", "", "Write CPU profile to this file.")
@@ -79,7 +81,7 @@ func setupSignals() {
 func statsReport() {
 	var m runtime.MemStats
 
-	ticker := time.NewTicker(5 * time.Second)
+	ticker := time.NewTicker(time.Duration(*gcPeriod) * time.Second)
 	for range ticker.C {
 		runtime.GC()
 		runtime.ReadMemStats(&m)
@@ -116,7 +118,7 @@ func main() {
 		log.Fatalf("%v", err)
 	}
 
-	grpc.MaxMsgSize(10 * 1024 * 1024)
+	grpc.MaxMsgSize(*maxMsgSize)
 	server := grpc.NewServer()
 	pb.RegisterSumServiceServer(server, svc)
 	reflection.Register(server)
