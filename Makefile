@@ -48,6 +48,13 @@ reset_env: clean
 	@mkdir -p "${SUMD_DATAPATH}/data"
 	@mkdir -p "${SUMD_DATAPATH}/oracles"
 
+install:
+	@mkdir -p /var/lib/sumd/data
+	@mkdir -p /var/lib/sumd/oracles
+	@cp sumd /usr/local/bin/
+	@cp sumd.service /etc/systemd/system/
+	@systemctl daemon-reload
+
 #
 # Testing and benchmarking
 #

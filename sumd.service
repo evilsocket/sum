@@ -1,0 +1,16 @@
+[Unit]
+Description=sum is a linear algebra server.
+Documentation=https://github.com/evilsocket/sum
+Wants=network.target
+After=network.target
+
+[Service]
+Type=simple
+PermissionsStartOnly=true
+ExecStartPre=/bin/mkdir -p /var/lib/sumd
+ExecStart=/usr/local/bin/sumd -log-file /var/log/sumd.log -gc-period 3600
+Restart=always
+RestartSec=30
+
+[Install]
+WantedBy=multi-user.target
