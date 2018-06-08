@@ -87,6 +87,25 @@ func (w Record) Cosine(b Record) float64 {
 	return cos
 }
 
+func (w Record) Jaccard(b Record) float64 {
+	m11 := 0.0
+	m10 := 0.0
+
+	for i, va := range w.record.Data {
+		vb := b.record.Data[i]
+		m11 += va * vb
+		if (va + vb) == 1 {
+			m10 += 1
+		}
+	}
+
+	if (m10 + m11) == 0 {
+		return 0
+	}
+
+	return m11 / (m11 + m10)
+}
+
 // CosineSub returns the cosine similarity between a vector and another using up until the specificed number of elements.
 func (w Record) CosineSub(b Record, elems uint) float64 {
 	cos := 0.0
@@ -97,4 +116,46 @@ func (w Record) CosineSub(b Record, elems uint) float64 {
 		cos = w.DotSub(b, elems) / den
 	}
 	return cos
+}
+
+// DotSub performs the dot product between a vector and another using a range of elements.
+func (w Record) DotRange(b Record, start uint, end uint) float64 {
+	dot := float64(0.0)
+	for i := start; i < end; i++ {
+		va := w.record.Data[i]
+		vb := b.record.Data[i]
+		dot += float64(va) * float64(vb)
+	}
+	return dot
+}
+
+func (w Record) CosineRange(b Record, start uint, end uint) float64 {
+	cos := 0.0
+	aMag := math.Sqrt(w.DotRange(w, start, end))
+	bMag := math.Sqrt(b.DotRange(b, start, end))
+
+	if den := aMag * bMag; den != 0.0 {
+		cos = w.DotRange(b, start, end) / den
+	}
+	return cos
+}
+
+func (w Record) JaccardRange(b Record, start uint, end uint) float64 {
+	m11 := 0.0
+	m10 := 0.0
+
+	for i := start; i < end; i++ {
+		va := w.record.Data[i]
+		vb := b.record.Data[i]
+		m11 += va * vb
+		if (va + vb) == 1 {
+			m10 += 1
+		}
+	}
+
+	if (m10 + m11) == 0 {
+		return 0
+	}
+
+	return m11 / (m11 + m10)
 }
