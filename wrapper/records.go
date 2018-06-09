@@ -51,3 +51,9 @@ func (w Records) AllBut(exclude Record) []Record {
 	})
 	return wrapped
 }
+
+func (w Records) CreateRecord(data []float64) Record {
+	r := Record{record: new(pb.Record)}
+	r.record.Data = data
+	return r
+}
