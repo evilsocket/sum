@@ -82,13 +82,13 @@ func (i *Index) Load() error {
 			}
 			recID := i.driver.GetID(record)
 			i.index[recID] = record
-			// the list 'files' returned by ListPath is not sorted, 
+			// the list 'files' returned by ListPath is not sorted,
 			// so if the last 2 loaded files have the last sequential ids (4 and 5 for example)
 			// the id will be increased with the second-last record but not with the last one.
 			if recID >= i.nextID {
 				i.nextID = recID + 1
 			}
-		
+		}
 	}
 
 	return nil
