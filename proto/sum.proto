@@ -24,6 +24,10 @@ service SumService {
   rpc Info(Empty) returns (ServerInfo) {}
 }
 
+service SumInternalService {
+    rpc CreateRecordWithId(Record) returns (RecordResponse) {}
+}
+
 message Record {
     uint64 id = 1;
     repeated float data = 2;

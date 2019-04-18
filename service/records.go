@@ -30,6 +30,13 @@ func (s *Service) CreateRecord(ctx context.Context, record *pb.Record) (*pb.Reco
 	return &pb.RecordResponse{Success: true, Msg: fmt.Sprintf("%d", record.Id)}, nil
 }
 
+func (s *Service) CreateRecordWithId(ctx context.Context, record *pb.Record) (*pb.RecordResponse, error) {
+	if err := s.records.CreatedWithId(record); err != nil {
+		return errRecordResponse("%s", err), nil
+	}
+	return &pb.RecordResponse{Success: true, Msg: fmt.Sprintf("%s", record.Id)}, nil
+}
+
 // UpdateRecord updates the contents of a record with the ones of a raw *pb.Record
 // object given its identifier.
 func (s *Service) UpdateRecord(ctx context.Context, record *pb.Record) (*pb.RecordResponse, error) {

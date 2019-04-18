@@ -143,6 +143,7 @@ func main() {
 	grpc.MaxMsgSize(*maxMsgSize)
 	server := grpc.NewServer(grpc.Creds(creds))
 	pb.RegisterSumServiceServer(server, svc)
+	pb.RegisterSumInternalServiceServer(server, svc)
 	reflection.Register(server)
 
 	go statsReport()
