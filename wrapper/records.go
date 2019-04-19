@@ -22,7 +22,15 @@ func WrapRecords(records *storage.Records) Records {
 }
 
 func (_ Records) New(msg string) Record {
+<<<<<<< HEAD
 	return *FromCompressedText(msg)
+=======
+	if r, err := FromCompressedText(msg); err != nil {
+		panic(err)
+	} else {
+		return r
+	}
+>>>>>>> ZMLWR-48: fixed serialization
 }
 
 // Find returns a wrapped Record given its identifier.
