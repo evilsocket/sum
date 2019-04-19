@@ -224,7 +224,7 @@ func (a *astRaccoon) PatchCode(record *Record) (newCode string, err error) {
 		return
 	}
 
-	newRecord := fmt.Sprintf("record.New('%s')", compressed)
+	newRecord := fmt.Sprintf("records.New('%s')", compressed)
 	newRecordLen := file.Idx(len(newRecord))
 
 	for _, n := range a.callNodes {
@@ -281,8 +281,7 @@ func (ms *MuxService) CreateOracle(ctx context.Context, arg *Oracle) (*OracleRes
 	raccoon := &astRaccoon{src: arg.Code[:], firstArgName: oracleFunction.Function.ParameterList.List[0].Name}
 	ast.Walk(raccoon, oracleFunction.Function)
 
-	log.Debugf("Wunderbar!: %s", raccoon.src)
-	log.Debugf("Wunderbar!: %s", raccoon.PatchCode(&Record{Id: 2, Meta: map[string]string{"key": "value"}, Data: []float64{0.1, 0.2}}))
+	//TODO: store raccoon
 
 	// -- Runtime
 	// 3. replace records.Find(id) with current vector, build js, send it to nodes, run it
