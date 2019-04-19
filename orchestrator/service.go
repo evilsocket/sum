@@ -4,8 +4,13 @@ import (
 	"context"
 	"fmt"
 	. "github.com/evilsocket/sum/proto"
+	"github.com/evilsocket/sum/wrapper"
+	"github.com/robertkrimen/otto/ast"
+	"github.com/robertkrimen/otto/file"
+	"github.com/robertkrimen/otto/parser"
 	log "github.com/sirupsen/logrus"
 	"sort"
+	"strings"
 	"sync"
 )
 
@@ -163,7 +168,7 @@ func (ms *MuxService) ListRecords(ctx context.Context, arg *ListRequest) (*Recor
 			ctx, _ := newCommContext()
 			resp, err := n.Client.ReadRecord(ctx, &ById{Id: id})
 			if err != nil || !resp.Success {
-				log.Error("Unable to read record %d on node %d: %v", id, n.ID, getTheFuckingErrorMessage(err, resp))
+				log.Errorf("Unable to read record %d on node %d: %v", id, n.ID, getTheFuckingErrorMessage(err, resp))
 			} else {
 				outch <- resp.Record
 			}
@@ -204,13 +209,86 @@ func (ms *MuxService) FindRecords(ctx context.Context, arg *ByMeta) (*FindRespon
 	panic("not implemented yet")
 }
 
+type astRaccoon struct {
+	src          string
+	firstArgName string
+	callNodes    []ast.Node
+}
+
+func (a *astRaccoon) PatchCode(record *Record) (newCode string, err error) {
+	var compressed string
+	shift := file.Idx(0)
+	newCode = a.src
+
+	if compressed, err = wrapper.RecordToCompressedText(record); err != nil {
+		return
+	}
+
+	newRecord := fmt.Sprintf("record.New('%s')", compressed)
+	newRecordLen := file.Idx(len(newRecord))
+
+	for _, n := range a.callNodes {
+		idx0 := n.Idx0() + shift - 1
+		idx1 := n.Idx1() + shift - 1
+		newCode = newCode[:idx0] + newRecord + newCode[idx1:]
+		shift += newRecordLen - (idx1 - idx0)
+	}
+
+	return
+}
+
+func (a *astRaccoon) Enter(n ast.Node) ast.Visitor {
+	if _, ok := n.(*ast.CallExpression); ok {
+		idx0 := n.Idx0() - 1
+		idx1 := n.Idx1() - 1
+		callStr := a.src[idx0:idx1]
+		callStr = strings.Join(strings.Fields(callStr), "")
+		if callStr == ("records.Find(" + a.firstArgName + ")") {
+			a.callNodes = append(a.callNodes, n)
+			return nil
+		}
+	}
+
+	return a
+}
+
+func (a *astRaccoon) Exit(n ast.Node) {}
+
 func (ms *MuxService) CreateOracle(ctx context.Context, arg *Oracle) (*OracleResponse, error) {
-	// 1. parse the AST
+	functionList := make([]*ast.FunctionDeclaration, 0)
+	// 1. parse the AST ( FunctionDeclaration.FunctionLiteral.Body, walk over it
+
+	program, err := parser.ParseFile(nil, "", arg.Code, 0)
+	if err != nil {
+		return errOracleResponse("Cannot parse oracle: %v", err), nil
+	}
+
+	for _, d := range program.DeclarationList {
+		if fd, ok := d.(*ast.FunctionDeclaration); ok {
+			functionList = append(functionList, fd)
+		}
+	}
+
+	if len(functionList) == 0 {
+		return errOracleResponse("No function provided"), nil
+	}
+
+	oracleFunction := functionList[0]
+
 	// 2. make a list of nodes that invoke records.Find(id)
+
+	//TODO check parameter list
+	raccoon := &astRaccoon{src: arg.Code[:], firstArgName: oracleFunction.Function.ParameterList.List[0].Name}
+	ast.Walk(raccoon, oracleFunction.Function)
+
+	log.Debugf("Wunderbar!: %s", raccoon.src)
+	log.Debugf("Wunderbar!: %s", raccoon.PatchCode(&Record{Id: 2, Meta: map[string]string{"key": "value"}, Data: []float64{0.1, 0.2}}))
+
 	// -- Runtime
 	// 3. replace records.Find(id) with current vector, build js, send it to nodes, run it
 	// 4. parse json output and use the merge function if provided ( required for scalars )
 	panic("not implemented yet")
+
 }
 
 func (ms *MuxService) UpdateOracle(ctx context.Context, arg *Oracle) (*OracleResponse, error) {
