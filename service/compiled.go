@@ -28,6 +28,9 @@ func (c *compiled) Is(o pb.Oracle) bool {
 
 func dontPanic(err *error) {
 	p := recover()
+	if p == nil {
+		return
+	}
 	switch p.(type) {
 	case string:
 		*err = errors.New(p.(string))
