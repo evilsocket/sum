@@ -8,6 +8,8 @@ import (
 	"fmt"
 	. "github.com/evilsocket/sum/proto"
 	"github.com/evilsocket/sum/service"
+	"github.com/evilsocket/sum/wrapper"
+	"github.com/robertkrimen/otto"
 	"github.com/robertkrimen/otto/ast"
 	"github.com/robertkrimen/otto/parser"
 	log "github.com/sirupsen/logrus"
@@ -48,12 +50,15 @@ type MuxService struct {
 	raccoons map[uint64]*astRaccoon
 	// id of the next raccoon
 	nextRaccoonId uint64
+	// vm pool
+	vmPool *service.ExecutionPool
 }
 
 func NewMuxService(nodes []*NodeInfo) *MuxService {
 	ms := &MuxService{nextId: 1, recId2node: make(map[uint64]*NodeInfo), nodes: make([]*NodeInfo, 0)}
 	ms.nodes = append(ms.nodes, nodes...) // solves `nil` slice argument
 	ms.balance()
+	ms.vmPool = service.CreateExecutionPool(otto.New())
 	return ms
 }
 
@@ -225,8 +230,8 @@ func (ms *MuxService) FindRecords(ctx context.Context, arg *ByMeta) (*FindRespon
 }
 
 func (ms *MuxService) CreateOracle(ctx context.Context, arg *Oracle) (*OracleResponse, error) {
-	functionList := make([]*ast.FunctionDeclaration, 0)
-	// 1. parse the AST ( FunctionDeclaration.FunctionLiteral.Body, walk over it
+	functionList := make([]*ast.FunctionLiteral, 0)
+	// 1. parse the AST
 
 	program, err := parser.ParseFile(nil, "", arg.Code, 0)
 	if err != nil {
@@ -235,7 +240,7 @@ func (ms *MuxService) CreateOracle(ctx context.Context, arg *Oracle) (*OracleRes
 
 	for _, d := range program.DeclarationList {
 		if fd, ok := d.(*ast.FunctionDeclaration); ok {
-			functionList = append(functionList, fd)
+			functionList = append(functionList, fd.Function)
 		}
 	}
 
@@ -244,10 +249,29 @@ func (ms *MuxService) CreateOracle(ctx context.Context, arg *Oracle) (*OracleRes
 	}
 
 	oracleFunction := functionList[0]
+	var mergerFunction *ast.FunctionLiteral
+
+	// search for a merger function
+	for _, decl := range functionList {
+		if decl == oracleFunction {
+			continue
+		}
+		if !strings.HasPrefix(decl.Name.Name, "merge") {
+			continue
+		}
+
+		if len(decl.ParameterList.List) != 1 {
+			log.Warnf("Function %s is not a merger function as it does not take 1 argument", decl.Name.Name)
+			continue
+		}
+
+		mergerFunction = decl
+		break
+	}
 
 	// 2. make a list of nodes that invoke records.Find(anyArg)
 
-	raccoon := NewAstRaccoon(arg.Code, oracleFunction.Function)
+	raccoon := NewAstRaccoon(arg.Code, oracleFunction, mergerFunction)
 	raccoon.Name = arg.Name
 
 	// store the raccoon
@@ -385,8 +409,7 @@ func (ms *MuxService) Run(ctx context.Context, arg *Call) (*CallResponse, error)
 	close(resultChan)
 
 	errs := make([]string, 0)
-	var resultType *reflect.Type
-	var mergedResults interface{} = nil
+	results := make([]interface{}, 0)
 
 	for err := range errorChan {
 		errs = append(errs, err)
@@ -397,15 +420,62 @@ func (ms *MuxService) Run(ctx context.Context, arg *Call) (*CallResponse, error)
 	}
 
 	for res := range resultChan {
+		results = append(results, res)
+	}
+
+	var mergedResults interface{}
+
+	if raccoon.MergerFunction != nil {
+		vm := ms.vmPool.Get()
+		defer vm.Release()
+
+		mf := raccoon.MergerFunction
+		ctx := wrapper.NewContext()
+
+		if err := vm.Set(mf.ParameterList.List[0].Name, results); err != nil {
+			return errCallResponse("Unable to set parameter variable '%s': %v", mf.ParameterList.List[0].Name, err), nil
+		} else if err := vm.Set("ctx", ctx); err != nil {
+			return errCallResponse("Unable to set parameter variable '%s': %v", "ctx", err), nil
+		}
+
+		call := fmt.Sprintf("%s(%s)", mf.Name.Name, mf.ParameterList.List[0].Name)
+		ret, err := vm.Run(call)
+
+		if err != nil {
+			return errCallResponse("Unable to run merger function: %v", err), nil
+		} else if ctx.IsError() {
+			// same goes for errors triggered within the oracle
+			return errCallResponse("Merger function failed: %v", ctx.Message()), nil
+		} else if mergedResults, err = ret.Export(); err != nil {
+			// or if we can't export its return value
+			return errCallResponse("Couldn't deserialize returned object from merger: %v", err), nil
+		}
+	} else {
+		if mergedResults, err = ms.defaultMerger(results); err != nil {
+			return errCallResponse("Unable to merge results from nodes: %v", err), nil
+		}
+	}
+
+	if raw, err := json.Marshal(mergedResults); err != nil {
+		return errCallResponse("Unable to marshal result: %v", err), nil
+	} else {
+		return &CallResponse{Success: true, Msg: "", Data: service.BuildPayload(raw)}, nil
+	}
+}
+
+func (_ *MuxService) defaultMerger(results []interface{}) (mergedResults interface{}, _ error) {
+	var resultType *reflect.Type
+
+	mergedResults = nil
+
+	for _, res := range results {
 		t := reflect.TypeOf(res)
 		if resultType == nil {
 			resultType = &t
 		} else if *resultType != t {
-			return errCallResponse("Heterogeneous results: prior results had type %v, this one has type %v", *resultType, t), nil
+			return nil, fmt.Errorf("heterogeneous results: prior results had type %v, this one has type %v", *resultType, t)
 		}
 
-		//TODO: custom merge functions
-		//FIXME: this shall be moved to a separate function
 		if t.Kind() == reflect.Map {
 			if mergedResults == nil {
 				mergedResults = make(map[interface{}]interface{})
@@ -413,7 +483,7 @@ func (ms *MuxService) Run(ctx context.Context, arg *Call) (*CallResponse, error)
 			mr := mergedResults.(map[interface{}]interface{})
 			for k, v := range res.(map[interface{}]interface{}) {
 				if v1, exist := mr[k]; exist {
-					return errCallResponse("Merge conflict: multiple results define key %v: oldValue='%v', newValue='%v'", k, v1, v), nil
+					return nil, fmt.Errorf("merge conflict: multiple results define key %v: oldValue='%v', newValue='%v'", k, v1, v)
 				}
 				mr[k] = v
 			}
@@ -426,15 +496,10 @@ func (ms *MuxService) Run(ctx context.Context, arg *Call) (*CallResponse, error)
 				mr = append(mr, v)
 			}
 		} else {
-			return errCallResponse("Type %v is not supported for auto-merge, please provide a custom merge function", t), nil
+			return nil, fmt.Errorf("type %v is not supported for auto-merge, please provide a custom merge function", t)
 		}
 	}
-
-	if raw, err := json.Marshal(mergedResults); err != nil {
-		return errCallResponse("Unable to marshal result: %v", err), nil
-	} else {
-		return &CallResponse{Success: true, Msg: "", Data: service.BuildPayload(raw)}, nil
-	}
+	return
 }
 
 func (ms *MuxService) Info(ctx context.Context, arg *Empty) (*ServerInfo, error) {

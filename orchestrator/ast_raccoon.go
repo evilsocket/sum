@@ -9,6 +9,7 @@ import (
 	"strings"
 )
 
+// JS is garbage, this cute animal is responsible of digging in it.
 type astRaccoon struct {
 	ID        uint64
 	Name      string
@@ -17,14 +18,16 @@ type astRaccoon struct {
 	// parameters for the main function
 	parameters         []*ast.Identifier
 	parametersToLookup map[int]bool
+	MergerFunction     *ast.FunctionLiteral
 }
 
-func NewAstRaccoon(source string, function *ast.FunctionLiteral) *astRaccoon {
+func NewAstRaccoon(source string, function, mergerFunction *ast.FunctionLiteral) *astRaccoon {
 	a := &astRaccoon{
 		src:                source[:],
 		parameters:         function.ParameterList.List,
 		callNodes:          make([]*ast.CallExpression, 0),
 		parametersToLookup: make(map[int]bool),
+		MergerFunction:     mergerFunction,
 	}
 	ast.Walk(a, function.Body)
 	return a
