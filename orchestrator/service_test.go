@@ -68,11 +68,10 @@ function findSimilar(id, threshold) {
 	Nil(t, err)
 	Equal(t, 1, len(program.DeclarationList))
 
-	raccoon := &astRaccoon{src: code, firstArgName: "id"}
-	ast.Walk(raccoon, program.DeclarationList[0].(*ast.FunctionDeclaration).Function.Body)
+	raccoon := NewAstRaccoon(code, program.DeclarationList[0].(*ast.FunctionDeclaration).Function)
 
 	r := &sum.Record{Id: 1, Meta: map[string]string{"key": "value"}, Data: []float64{0.1, 0.2, 0.3}}
-	newCode, err := raccoon.PatchCode(r)
+	newCode, err := raccoon.PatchCode([]*sum.Record{r, nil})
 	Nil(t, err)
 
 	expected := strings.Replace(code, "records.Find(id)", "records.New('eJziYBSSmDUTBHbaQ+iT9sZgcNleioeLOTu1Uoi1LDGnNBUQAAD//17vD1Y=')", -1)

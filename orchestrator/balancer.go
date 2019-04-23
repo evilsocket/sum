@@ -1,19 +1,40 @@
 package main
 
 import (
+	"fmt"
 	pb "github.com/evilsocket/sum/proto"
+	"github.com/golang/protobuf/proto"
 	log "github.com/sirupsen/logrus"
 )
 
 // I really hate this "success" in the response
-func getTheFuckingErrorMessage(err error, response *pb.RecordResponse) string {
+func getTheFuckingErrorMessage(err error, response proto.Message) string {
 	if err != nil {
 		return err.Error()
-	} else if !response.Success {
-		return response.Msg
-	} else {
-		panic("no errors dude")
 	}
+
+	var success bool
+	var msg string
+
+	switch response.(type) {
+	case *pb.RecordResponse:
+		success = response.(*pb.RecordResponse).Success
+		msg = response.(*pb.RecordResponse).Msg
+	case *pb.OracleResponse:
+		success = response.(*pb.OracleResponse).Success
+		msg = response.(*pb.OracleResponse).Msg
+	case *pb.CallResponse:
+		success = response.(*pb.CallResponse).Success
+		msg = response.(*pb.CallResponse).Msg
+	default:
+		panic(fmt.Sprintf("unsupported message %T: %v", response, response))
+	}
+
+	if !success {
+		return msg
+	}
+
+	panic("no errors dude")
 }
 
 func transferOne(fromNode, toNode *NodeInfo, recordId uint64) {

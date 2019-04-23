@@ -128,7 +128,7 @@ func (s *Service) Info(ctx context.Context, dummy *pb.Empty) (*pb.ServerInfo, er
 	}, nil
 }
 
-func buildPayload(raw []byte) *pb.Data {
+func BuildPayload(raw []byte) *pb.Data {
 	data := pb.Data{
 		Compressed: false,
 		Payload:    raw,
@@ -173,7 +173,7 @@ func (s *Service) Run(ctx context.Context, call *pb.Call) (resp *pb.CallResponse
 
 	resp = &pb.CallResponse{
 		Success: true,
-		Data:    buildPayload(raw),
+		Data:    BuildPayload(raw),
 	}
 	return resp, err
 }

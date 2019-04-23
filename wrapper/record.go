@@ -65,11 +65,7 @@ func RecordToCompressedText(record *pb.Record) (str string, err error) {
 	return
 }
 
-<<<<<<< HEAD
-func FromCompressedText(msg string) (r *Record) {
-=======
-func FromCompressedText(msg string) (r Record, err error) {
->>>>>>> ZMLWR-48: fixed serialization
+func FromCompressedText(msg string) (r *Record, err error) {
 	var record pb.Record
 	var data []byte
 	var rr io.Reader

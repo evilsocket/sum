@@ -1,15 +1,20 @@
 package main
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
+	"encoding/json"
 	"fmt"
 	. "github.com/evilsocket/sum/proto"
-	"github.com/evilsocket/sum/wrapper"
+	"github.com/evilsocket/sum/service"
 	"github.com/robertkrimen/otto/ast"
-	"github.com/robertkrimen/otto/file"
 	"github.com/robertkrimen/otto/parser"
 	log "github.com/sirupsen/logrus"
+	"io/ioutil"
+	"reflect"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 )
@@ -20,6 +25,10 @@ func errRecordResponse(format string, args ...interface{}) *RecordResponse {
 
 func errOracleResponse(format string, args ...interface{}) *OracleResponse {
 	return &OracleResponse{Success: false, Msg: fmt.Sprintf(format, args...)}
+}
+
+func errCallResponse(format string, args ...interface{}) *CallResponse {
+	return &CallResponse{Success: false, Msg: fmt.Sprintf(format, args...)}
 }
 
 type MuxService struct {
@@ -33,6 +42,12 @@ type MuxService struct {
 	nextId uint64
 	// map a record to its containing node
 	recId2node map[uint64]*NodeInfo
+	// control access to `raccoons`
+	cageLock sync.RWMutex
+	// raccoons ready to mess with messy JS code
+	raccoons map[uint64]*astRaccoon
+	// id of the next raccoon
+	nextRaccoonId uint64
 }
 
 func NewMuxService(nodes []*NodeInfo) *MuxService {
@@ -209,51 +224,6 @@ func (ms *MuxService) FindRecords(ctx context.Context, arg *ByMeta) (*FindRespon
 	panic("not implemented yet")
 }
 
-type astRaccoon struct {
-	src          string
-	firstArgName string
-	callNodes    []ast.Node
-}
-
-func (a *astRaccoon) PatchCode(record *Record) (newCode string, err error) {
-	var compressed string
-	shift := file.Idx(0)
-	newCode = a.src
-
-	if compressed, err = wrapper.RecordToCompressedText(record); err != nil {
-		return
-	}
-
-	newRecord := fmt.Sprintf("records.New('%s')", compressed)
-	newRecordLen := file.Idx(len(newRecord))
-
-	for _, n := range a.callNodes {
-		idx0 := n.Idx0() + shift - 1
-		idx1 := n.Idx1() + shift - 1
-		newCode = newCode[:idx0] + newRecord + newCode[idx1:]
-		shift += newRecordLen - (idx1 - idx0)
-	}
-
-	return
-}
-
-func (a *astRaccoon) Enter(n ast.Node) ast.Visitor {
-	if _, ok := n.(*ast.CallExpression); ok {
-		idx0 := n.Idx0() - 1
-		idx1 := n.Idx1() - 1
-		callStr := a.src[idx0:idx1]
-		callStr = strings.Join(strings.Fields(callStr), "")
-		if callStr == ("records.Find(" + a.firstArgName + ")") {
-			a.callNodes = append(a.callNodes, n)
-			return nil
-		}
-	}
-
-	return a
-}
-
-func (a *astRaccoon) Exit(n ast.Node) {}
-
 func (ms *MuxService) CreateOracle(ctx context.Context, arg *Oracle) (*OracleResponse, error) {
 	functionList := make([]*ast.FunctionDeclaration, 0)
 	// 1. parse the AST ( FunctionDeclaration.FunctionLiteral.Body, walk over it
@@ -275,19 +245,22 @@ func (ms *MuxService) CreateOracle(ctx context.Context, arg *Oracle) (*OracleRes
 
 	oracleFunction := functionList[0]
 
-	// 2. make a list of nodes that invoke records.Find(id)
+	// 2. make a list of nodes that invoke records.Find(anyArg)
 
-	//TODO check parameter list
-	raccoon := &astRaccoon{src: arg.Code[:], firstArgName: oracleFunction.Function.ParameterList.List[0].Name}
-	ast.Walk(raccoon, oracleFunction.Function)
+	raccoon := NewAstRaccoon(arg.Code, oracleFunction.Function)
+	raccoon.Name = arg.Name
 
-	//TODO: store raccoon
+	// store the raccoon
 
-	// -- Runtime
-	// 3. replace records.Find(id) with current vector, build js, send it to nodes, run it
-	// 4. parse json output and use the merge function if provided ( required for scalars )
-	panic("not implemented yet")
+	ms.cageLock.Lock()
+	defer ms.cageLock.Unlock()
 
+	raccoon.ID = ms.nextRaccoonId
+	ms.nextRaccoonId++
+
+	ms.raccoons[raccoon.ID] = raccoon
+
+	return &OracleResponse{Success: true, Msg: fmt.Sprintf("%d", raccoon.ID)}, nil
 }
 
 func (ms *MuxService) UpdateOracle(ctx context.Context, arg *Oracle) (*OracleResponse, error) {
@@ -303,8 +276,167 @@ func (ms *MuxService) DeleteOracle(ctx context.Context, arg *ById) (*OracleRespo
 	panic("not implemented yet")
 }
 func (ms *MuxService) Run(ctx context.Context, arg *Call) (*CallResponse, error) {
-	panic("not implemented yet")
+
+	// NB: always keep this order of locking
+	ms.nodesLock.RLock()
+	defer ms.nodesLock.RUnlock()
+	ms.cageLock.RLock()
+	defer ms.cageLock.RUnlock()
+
+	raccoon, found := ms.raccoons[arg.OracleId]
+	if !found {
+		return errCallResponse("Oracle %d not found", arg.OracleId), nil
+	}
+
+	// 1. Find the record the oracle is working on
+
+	resolvedRecords := make([]*Record, len(arg.Args)) // fill with nil
+
+	for i, a := range arg.Args {
+		if !raccoon.IsParameterPositionARecordLookup(i) {
+			continue
+		}
+
+		recId, err := strconv.ParseUint(a, 10, 64)
+		if err != nil {
+			return errCallResponse("Unable to parse record id form parameter #%d: %v", i, err), nil
+		}
+		node, found := ms.recId2node[recId]
+		if !found {
+			return errCallResponse("Record %d not found", recId), nil
+		}
+		record, err := node.Client.ReadRecord(ctx, &ById{Id: recId})
+		if err != nil || !record.Success {
+			return errCallResponse("Unable to retrieve record %d form node %d: %v",
+				recId, node.ID, getTheFuckingErrorMessage(err, record)), nil
+		}
+		resolvedRecords[i] = record.Record
+	}
+
+	// 2. substitute all the calls to records.Find(...) with their resolved record
+
+	newCode, err := raccoon.PatchCode(resolvedRecords)
+	if err != nil {
+		return errCallResponse("Unable to patch JS code: %v", err), nil
+	}
+
+	// 3. create the modified oracle on all nodes
+	node2oracleId := make(map[*NodeInfo]uint64)
+	newOracle := &Oracle{Code: newCode, Name: raccoon.Name}
+
+	// cleanup created oracles
+	defer func() {
+		for n, oId := range node2oracleId {
+			resp, err := n.Client.DeleteOracle(ctx, &ById{Id: oId})
+			if err != nil || !resp.Success {
+				log.Warnf("Unable to delete temporary oracle %d on node %d: %v",
+					oId, n.ID, getTheFuckingErrorMessage(err, resp))
+			}
+		}
+	}()
+
+	worker := func(wg sync.WaitGroup, n *NodeInfo, okChan chan<- interface{}, errChan chan<- string) {
+		defer wg.Done()
+		resp, err := n.Client.CreateOracle(ctx, newOracle)
+		if err != nil || !resp.Success {
+			errChan <- getTheFuckingErrorMessage(err, resp)
+			return
+		}
+		oId, err := strconv.ParseUint(resp.Msg, 10, 64)
+		if err != nil {
+			errChan <- fmt.Sprintf("unable to parse oracleId string '%s': %v", resp.Msg, err)
+			return
+		}
+		node2oracleId[n] = oId
+		resp1, err := n.Client.Run(ctx, &Call{OracleId: oId, Args: arg.Args})
+		if err != nil || !resp1.Success {
+			errChan <- getTheFuckingErrorMessage(err, resp1)
+			return
+		}
+		if resp1.Data.Compressed {
+			if r, err := gzip.NewReader(bytes.NewReader(resp1.Data.Payload)); err != nil {
+				errChan <- err.Error()
+				return
+			} else if resp1.Data.Payload, err = ioutil.ReadAll(r); err != nil {
+				errChan <- err.Error()
+				return
+			}
+		}
+		var res interface{}
+		if err = json.Unmarshal(resp1.Data.Payload, &res); err != nil {
+			errChan <- err.Error()
+			return
+		}
+		okChan <- res
+	}
+
+	errorChan := make(chan string)
+	resultChan := make(chan interface{})
+	wg := sync.WaitGroup{}
+	wg.Add(len(ms.nodes))
+
+	for _, n := range ms.nodes {
+		go worker(wg, n, resultChan, errorChan)
+	}
+
+	wg.Wait()
+
+	close(errorChan)
+	close(resultChan)
+
+	errs := make([]string, 0)
+	var resultType *reflect.Type
+	var mergedResults interface{} = nil
+
+	for err := range errorChan {
+		errs = append(errs, err)
+	}
+
+	if len(errs) > 0 {
+		return errCallResponse("Error from nodes: %s", strings.Join(errs, ", ")), nil
+	}
+
+	for res := range resultChan {
+		t := reflect.TypeOf(res)
+		if resultType == nil {
+			resultType = &t
+		} else if *resultType != t {
+			return errCallResponse("Heterogeneous results: prior results had type %v, this one has type %v", *resultType, t), nil
+		}
+
+		//TODO: custom merge functions
+		//FIXME: this shall be moved to a separate function
+		if t.Kind() == reflect.Map {
+			if mergedResults == nil {
+				mergedResults = make(map[interface{}]interface{})
+			}
+			mr := mergedResults.(map[interface{}]interface{})
+			for k, v := range res.(map[interface{}]interface{}) {
+				if v1, exist := mr[k]; exist {
+					return errCallResponse("Merge conflict: multiple results define key %v: oldValue='%v', newValue='%v'", k, v1, v), nil
+				}
+				mr[k] = v
+			}
+		} else if t.Kind() == reflect.Array {
+			if mergedResults == nil {
+				mergedResults = make([]interface{}, 0)
+			}
+			mr := mergedResults.([]interface{})
+			for _, v := range res.([]interface{}) {
+				mr = append(mr, v)
+			}
+		} else {
+			return errCallResponse("Type %v is not supported for auto-merge, please provide a custom merge function", t), nil
+		}
+	}
+
+	if raw, err := json.Marshal(mergedResults); err != nil {
+		return errCallResponse("Unable to marshal result: %v", err), nil
+	} else {
+		return &CallResponse{Success: true, Msg: "", Data: service.BuildPayload(raw)}, nil
+	}
 }
+
 func (ms *MuxService) Info(ctx context.Context, arg *Empty) (*ServerInfo, error) {
 	panic("not implemented yet")
 }
