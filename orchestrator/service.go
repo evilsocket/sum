@@ -5,6 +5,7 @@ import (
 	"compress/gzip"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	. "github.com/evilsocket/sum/proto"
 	"github.com/evilsocket/sum/service"
@@ -14,11 +15,13 @@ import (
 	"github.com/robertkrimen/otto/parser"
 	log "github.com/sirupsen/logrus"
 	"io/ioutil"
+	"os"
 	"reflect"
 	"sort"
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 )
 
 func errRecordResponse(format string, args ...interface{}) *RecordResponse {
@@ -52,6 +55,15 @@ type MuxService struct {
 	nextRaccoonId uint64
 	// vm pool
 	vmPool *service.ExecutionPool
+
+	// stats
+
+	// start time
+	started time.Time
+	// pid
+	pid uint64
+	// uid
+	uid uint64
 }
 
 func NewMuxService(nodes []*NodeInfo) *MuxService {
@@ -59,6 +71,9 @@ func NewMuxService(nodes []*NodeInfo) *MuxService {
 	ms.nodes = append(ms.nodes, nodes...) // solves `nil` slice argument
 	ms.balance()
 	ms.vmPool = service.CreateExecutionPool(otto.New())
+	ms.started = time.Now()
+	ms.pid = uint64(os.Getpid())
+	ms.uid = uint64(os.Getuid())
 	return ms
 }
 
@@ -229,13 +244,13 @@ func (ms *MuxService) FindRecords(ctx context.Context, arg *ByMeta) (*FindRespon
 	panic("not implemented yet")
 }
 
-func (ms *MuxService) CreateOracle(ctx context.Context, arg *Oracle) (*OracleResponse, error) {
+func (_ *MuxService) parseAst(code string) (oracleFunction, mergerFunction *ast.FunctionLiteral, err error) {
 	functionList := make([]*ast.FunctionLiteral, 0)
 	// 1. parse the AST
 
-	program, err := parser.ParseFile(nil, "", arg.Code, 0)
+	program, err := parser.ParseFile(nil, "", code, 0)
 	if err != nil {
-		return errOracleResponse("Cannot parse oracle: %v", err), nil
+		return nil, nil, err
 	}
 
 	for _, d := range program.DeclarationList {
@@ -245,11 +260,10 @@ func (ms *MuxService) CreateOracle(ctx context.Context, arg *Oracle) (*OracleRes
 	}
 
 	if len(functionList) == 0 {
-		return errOracleResponse("No function provided"), nil
+		return nil, nil, errors.New("no function provided")
 	}
 
-	oracleFunction := functionList[0]
-	var mergerFunction *ast.FunctionLiteral
+	oracleFunction = functionList[0]
 
 	// search for a merger function
 	for _, decl := range functionList {
@@ -267,6 +281,15 @@ func (ms *MuxService) CreateOracle(ctx context.Context, arg *Oracle) (*OracleRes
 
 		mergerFunction = decl
 		break
+	}
+	return
+}
+
+func (ms *MuxService) CreateOracle(ctx context.Context, arg *Oracle) (*OracleResponse, error) {
+	// 1. parse AST
+	oracleFunction, mergerFunction, err := ms.parseAst(arg.Code)
+	if err != nil {
+		return errOracleResponse("Error parsing the code: %v", err), nil
 	}
 
 	// 2. make a list of nodes that invoke records.Find(anyArg)
@@ -288,7 +311,28 @@ func (ms *MuxService) CreateOracle(ctx context.Context, arg *Oracle) (*OracleRes
 }
 
 func (ms *MuxService) UpdateOracle(ctx context.Context, arg *Oracle) (*OracleResponse, error) {
-	panic("not implemented yet")
+	// 1. parse AST
+	oracleFunction, mergerFunction, err := ms.parseAst(arg.Code)
+	if err != nil {
+		return errOracleResponse("Error parsing the code: %v", err), nil
+	}
+
+	// 2. make a list of nodes that invoke records.Find(anyArg)
+
+	raccoon := NewAstRaccoon(arg.Code, oracleFunction, mergerFunction)
+	raccoon.Name = arg.Name
+
+	ms.cageLock.Lock()
+	defer ms.cageLock.Unlock()
+
+	if _, found := ms.raccoons[arg.Id]; !found {
+		return errOracleResponse("Oracle %d not found", arg.Id), nil
+	}
+
+	raccoon.ID = arg.Id
+	ms.raccoons[arg.Id] = raccoon
+
+	return &OracleResponse{Success: true}, nil
 }
 func (ms *MuxService) ReadOracle(ctx context.Context, arg *ById) (*OracleResponse, error) {
 	panic("not implemented yet")
@@ -327,6 +371,7 @@ func (ms *MuxService) Run(ctx context.Context, arg *Call) (*CallResponse, error)
 		}
 		node, found := ms.recId2node[recId]
 		if !found {
+			//FIXME: we shell make records.Find(...) return `null` when this happens
 			return errCallResponse("Record %d not found", recId), nil
 		}
 		record, err := node.Client.ReadRecord(ctx, &ById{Id: recId})
@@ -416,7 +461,7 @@ func (ms *MuxService) Run(ctx context.Context, arg *Call) (*CallResponse, error)
 	}
 
 	if len(errs) > 0 {
-		return errCallResponse("Error from nodes: %s", strings.Join(errs, ", ")), nil
+		return errCallResponse("Errors from nodes: [%s]", strings.Join(errs, ", ")), nil
 	}
 
 	for res := range resultChan {
@@ -503,5 +548,18 @@ func (_ *MuxService) defaultMerger(results []interface{}) (mergedResults interfa
 }
 
 func (ms *MuxService) Info(ctx context.Context, arg *Empty) (*ServerInfo, error) {
-	panic("not implemented yet")
+	ms.nodesLock.RLock()
+	defer ms.nodesLock.RUnlock()
+	ms.cageLock.RLock()
+	defer ms.cageLock.RUnlock()
+
+	return &ServerInfo{
+		Version: Version,
+		Uptime:  uint64(time.Since(ms.started).Seconds()),
+		Pid:     ms.pid,
+		Uid:     ms.uid,
+		Argv:    os.Args,
+		Records: uint64(len(ms.recId2node)),
+		Oracles: uint64(len(ms.raccoons)),
+	}, nil
 }
