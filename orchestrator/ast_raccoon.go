@@ -138,3 +138,7 @@ func (a *astRaccoon) Exit(n ast.Node) {}
 func (a *astRaccoon) IsParameterPositionARecordLookup(i int) bool {
 	return a.parametersToLookup[i]
 }
+
+func (a *astRaccoon) AsOracle() *Oracle {
+	return &Oracle{Id: a.ID, Name: a.Name, Code: a.src}
+}

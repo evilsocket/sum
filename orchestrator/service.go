@@ -28,6 +28,10 @@ func errRecordResponse(format string, args ...interface{}) *RecordResponse {
 	return &RecordResponse{Success: false, Msg: fmt.Sprintf(format, args...)}
 }
 
+func errFindResponse(format string, args ...interface{}) *FindResponse {
+	return &FindResponse{Success: false, Msg: fmt.Sprintf(format, args...)}
+}
+
 func errOracleResponse(format string, args ...interface{}) *OracleResponse {
 	return &OracleResponse{Success: false, Msg: fmt.Sprintf(format, args...)}
 }
@@ -251,7 +255,58 @@ func (ms *MuxService) DeleteRecord(ctx context.Context, arg *ById) (*RecordRespo
 }
 
 func (ms *MuxService) FindRecords(ctx context.Context, arg *ByMeta) (*FindResponse, error) {
-	panic("not implemented yet")
+	ms.nodesLock.RLock()
+	defer ms.nodesLock.RUnlock()
+
+	errChan := make(chan string)
+	recordsChan := make(chan *Record)
+	wg, readersWg := &sync.WaitGroup{}, &sync.WaitGroup{}
+	wg.Add(len(ms.nodes))
+	readersWg.Add(2)
+
+	for _, n := range ms.nodes {
+		go func(n *NodeInfo) {
+			resp, err := n.Client.FindRecords(ctx, arg)
+			if err != nil || !resp.Success {
+				errChan <- getTheFuckingErrorMessage(err, resp)
+			} else {
+				for _, r := range resp.Records {
+					recordsChan <- r
+				}
+			}
+			wg.Done()
+		}(n)
+	}
+
+	errs := make([]string, 0)
+	records := make([]*Record, 0)
+
+	go func() {
+		for err := range errChan {
+			errs = append(errs, err)
+		}
+		readersWg.Done()
+	}()
+
+	go func() {
+		for r := range recordsChan {
+			records = append(records, r)
+		}
+		readersWg.Done()
+	}()
+
+	wg.Wait()
+
+	close(errChan)
+	close(recordsChan)
+
+	readersWg.Wait()
+
+	if len(errs) > 0 {
+		return errFindResponse("Errors from nodes: [%s]", strings.Join(errs, ", ")), nil
+	}
+
+	return &FindResponse{Success: true, Records: records}, nil
 }
 
 func (_ *MuxService) parseAst(code string) (oracleFunction, mergerFunction *ast.FunctionLiteral, err error) {
@@ -344,14 +399,40 @@ func (ms *MuxService) UpdateOracle(ctx context.Context, arg *Oracle) (*OracleRes
 
 	return &OracleResponse{Success: true}, nil
 }
+
 func (ms *MuxService) ReadOracle(ctx context.Context, arg *ById) (*OracleResponse, error) {
-	panic("not implemented yet")
+	ms.cageLock.RLock()
+	defer ms.cageLock.RUnlock()
+
+	if raccoon, found := ms.raccoons[arg.Id]; !found {
+		return errOracleResponse("Oracle %d not found", arg.Id), nil
+	} else {
+		return &OracleResponse{Success: true, Oracles: []*Oracle{raccoon.AsOracle()}}, nil
+	}
 }
 func (ms *MuxService) FindOracle(ctx context.Context, arg *ByName) (*OracleResponse, error) {
-	panic("not implemented yet")
+	ms.cageLock.RLock()
+	defer ms.cageLock.RUnlock()
+
+	var res = make([]*Oracle, 0)
+
+	for _, r := range ms.raccoons {
+		if r.Name == arg.Name {
+			res = append(res, r.AsOracle())
+		}
+	}
+
+	return &OracleResponse{Success: true, Oracles: res}, nil
 }
 func (ms *MuxService) DeleteOracle(ctx context.Context, arg *ById) (*OracleResponse, error) {
-	panic("not implemented yet")
+	ms.cageLock.Lock()
+	defer ms.cageLock.Unlock()
+
+	if _, found := ms.raccoons[arg.Id]; !found {
+		return errOracleResponse("Oracle %d not found", arg.Id), nil
+	}
+	delete(ms.raccoons, arg.Id)
+	return &OracleResponse{Success: true}, nil
 }
 func (ms *MuxService) Run(ctx context.Context, arg *Call) (*CallResponse, error) {
 
