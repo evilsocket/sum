@@ -196,6 +196,7 @@ func TestDistributedRun(t *testing.T) {
 
 	createdRecords := append(list1.Records, list2.Records...)
 	Equal(t, 2, len(createdRecords))
+	NotEqual(t, createdRecords[0].Id, createdRecords[1].Id)
 
 	// create oracle
 
