@@ -5,14 +5,11 @@ import (
 	"compress/gzip"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	. "github.com/evilsocket/sum/proto"
 	"github.com/evilsocket/sum/service"
 	"github.com/evilsocket/sum/wrapper"
 	"github.com/robertkrimen/otto"
-	"github.com/robertkrimen/otto/ast"
-	"github.com/robertkrimen/otto/parser"
 	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"os"
@@ -309,57 +306,12 @@ func (ms *MuxService) FindRecords(ctx context.Context, arg *ByMeta) (*FindRespon
 	return &FindResponse{Success: true, Records: records}, nil
 }
 
-func (_ *MuxService) parseAst(code string) (oracleFunction, mergerFunction *ast.FunctionLiteral, err error) {
-	functionList := make([]*ast.FunctionLiteral, 0)
-	// 1. parse the AST
-
-	program, err := parser.ParseFile(nil, "", code, 0)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	for _, d := range program.DeclarationList {
-		if fd, ok := d.(*ast.FunctionDeclaration); ok {
-			functionList = append(functionList, fd.Function)
-		}
-	}
-
-	if len(functionList) == 0 {
-		return nil, nil, errors.New("no function provided")
-	}
-
-	oracleFunction = functionList[0]
-
-	// search for a merger function
-	for _, decl := range functionList {
-		if decl == oracleFunction {
-			continue
-		}
-		if !strings.HasPrefix(decl.Name.Name, "merge") {
-			continue
-		}
-
-		if len(decl.ParameterList.List) != 1 {
-			log.Warnf("Function %s is not a merger function as it does not take 1 argument", decl.Name.Name)
-			continue
-		}
-
-		mergerFunction = decl
-		break
-	}
-	return
-}
-
 func (ms *MuxService) CreateOracle(ctx context.Context, arg *Oracle) (*OracleResponse, error) {
-	// 1. parse AST
-	oracleFunction, mergerFunction, err := ms.parseAst(arg.Code)
+	raccoon, err := NewAstRaccoon(arg.Code)
 	if err != nil {
 		return errOracleResponse("Error parsing the code: %v", err), nil
 	}
 
-	// 2. make a list of nodes that invoke records.Find(anyArg)
-
-	raccoon := NewAstRaccoon(arg.Code, oracleFunction, mergerFunction)
 	raccoon.Name = arg.Name
 
 	// store the raccoon
@@ -376,15 +328,11 @@ func (ms *MuxService) CreateOracle(ctx context.Context, arg *Oracle) (*OracleRes
 }
 
 func (ms *MuxService) UpdateOracle(ctx context.Context, arg *Oracle) (*OracleResponse, error) {
-	// 1. parse AST
-	oracleFunction, mergerFunction, err := ms.parseAst(arg.Code)
+	raccoon, err := NewAstRaccoon(arg.Code)
 	if err != nil {
 		return errOracleResponse("Error parsing the code: %v", err), nil
 	}
 
-	// 2. make a list of nodes that invoke records.Find(anyArg)
-
-	raccoon := NewAstRaccoon(arg.Code, oracleFunction, mergerFunction)
 	raccoon.Name = arg.Name
 
 	ms.cageLock.Lock()
@@ -410,6 +358,7 @@ func (ms *MuxService) ReadOracle(ctx context.Context, arg *ById) (*OracleRespons
 		return &OracleResponse{Success: true, Oracles: []*Oracle{raccoon.AsOracle()}}, nil
 	}
 }
+
 func (ms *MuxService) FindOracle(ctx context.Context, arg *ByName) (*OracleResponse, error) {
 	ms.cageLock.RLock()
 	defer ms.cageLock.RUnlock()
@@ -424,6 +373,7 @@ func (ms *MuxService) FindOracle(ctx context.Context, arg *ByName) (*OracleRespo
 
 	return &OracleResponse{Success: true, Oracles: res}, nil
 }
+
 func (ms *MuxService) DeleteOracle(ctx context.Context, arg *ById) (*OracleResponse, error) {
 	ms.cageLock.Lock()
 	defer ms.cageLock.Unlock()
@@ -434,6 +384,7 @@ func (ms *MuxService) DeleteOracle(ctx context.Context, arg *ById) (*OracleRespo
 	delete(ms.raccoons, arg.Id)
 	return &OracleResponse{Success: true}, nil
 }
+
 func (ms *MuxService) Run(ctx context.Context, arg *Call) (*CallResponse, error) {
 
 	// NB: always keep this order of locking
@@ -590,8 +541,10 @@ func (ms *MuxService) Run(ctx context.Context, arg *Call) (*CallResponse, error)
 			return errCallResponse("Unable to set parameter variable '%s': %v", "ctx", err), nil
 		}
 
-		call := fmt.Sprintf("%s(%s)", mf.Name.Name, mf.ParameterList.List[0].Name)
-		ret, err := vm.Run(call)
+		code := fmt.Sprintf("%s\n%s(%s)",
+			raccoon.src, raccoon.MergerFunction.Name.Name, raccoon.MergerFunction.ParameterList.List[0].Name)
+
+		ret, err := vm.Run(code)
 
 		if err != nil {
 			return errCallResponse("Unable to run merger function: %v", err), nil

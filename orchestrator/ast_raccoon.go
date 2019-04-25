@@ -1,11 +1,14 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	. "github.com/evilsocket/sum/proto"
 	"github.com/evilsocket/sum/wrapper"
 	"github.com/robertkrimen/otto/ast"
 	"github.com/robertkrimen/otto/file"
+	"github.com/robertkrimen/otto/parser"
+	log "github.com/sirupsen/logrus"
 	"strings"
 )
 
@@ -21,7 +24,12 @@ type astRaccoon struct {
 	MergerFunction     *ast.FunctionLiteral
 }
 
-func NewAstRaccoon(source string, function, mergerFunction *ast.FunctionLiteral) *astRaccoon {
+func NewAstRaccoon(source string) (*astRaccoon, error) {
+	function, mergerFunction, err := parseAst(source)
+	if err != nil {
+		return nil, err
+	}
+
 	a := &astRaccoon{
 		src:                source[:],
 		parameters:         function.ParameterList.List,
@@ -30,7 +38,47 @@ func NewAstRaccoon(source string, function, mergerFunction *ast.FunctionLiteral)
 		MergerFunction:     mergerFunction,
 	}
 	ast.Walk(a, function.Body)
-	return a
+	return a, nil
+}
+
+func parseAst(code string) (oracleFunction, mergerFunction *ast.FunctionLiteral, err error) {
+	functionList := make([]*ast.FunctionLiteral, 0)
+
+	program, err := parser.ParseFile(nil, "", code, 0)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	for _, d := range program.DeclarationList {
+		if fd, ok := d.(*ast.FunctionDeclaration); ok {
+			functionList = append(functionList, fd.Function)
+		}
+	}
+
+	if len(functionList) == 0 {
+		return nil, nil, errors.New("no function provided")
+	}
+
+	oracleFunction = functionList[0]
+
+	// search for a merger function
+	for _, decl := range functionList {
+		if decl == oracleFunction {
+			continue
+		}
+		if !strings.HasPrefix(decl.Name.Name, "merge") {
+			continue
+		}
+
+		if len(decl.ParameterList.List) != 1 {
+			log.Warnf("Function %s is not a merger function as it does not take 1 argument", decl.Name.Name)
+			continue
+		}
+
+		mergerFunction = decl
+		break
+	}
+	return
 }
 
 func (a *astRaccoon) PatchCode(records []*Record) (newCode string, err error) {
