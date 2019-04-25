@@ -96,7 +96,7 @@ func (ms *MuxService) balance() {
 	var maxRecords uint64 = 0
 	var maxDelta int64 = 0
 
-	var deltas = make([][]int64, 0, nNodes)
+	var deltas = make([][]int64, nNodes)
 	var id2node = make(map[uint]*NodeInfo, nNodes)
 	var id2status = make(map[uint]pb.ServerInfo, nNodes)
 
@@ -106,7 +106,10 @@ func (ms *MuxService) balance() {
 	}
 
 	for i := uint(0); i < nNodes; i++ {
-		deltas[i] = make([]int64, 0, nNodes)
+		deltas[i] = make([]int64, nNodes)
+	}
+
+	for i := uint(0); i < nNodes; i++ {
 		for j := i + 1; j < nNodes; j++ {
 			deltas[i][j] = int64(id2status[j].Records - id2status[i].Records)
 			deltas[j][i] = -deltas[i][j]

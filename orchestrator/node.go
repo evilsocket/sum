@@ -52,7 +52,7 @@ func createNode(node string) (*NodeInfo, error) {
 	defer cancelFn()
 
 	// check service availability
-	svcInfo, err := client.Info(ctx, nil)
+	svcInfo, err := client.Info(ctx, &Empty{})
 	if err != nil {
 		return nil, fmt.Errorf("unable to get service info from node '%s': %v", node, err)
 	}

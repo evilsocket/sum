@@ -34,7 +34,7 @@ func (s *Service) CreateRecordWithId(ctx context.Context, record *pb.Record) (*p
 	if err := s.records.CreatedWithId(record); err != nil {
 		return errRecordResponse("%s", err), nil
 	}
-	return &pb.RecordResponse{Success: true, Msg: fmt.Sprintf("%s", record.Id)}, nil
+	return &pb.RecordResponse{Success: true, Msg: fmt.Sprintf("%d", record.Id)}, nil
 }
 
 // UpdateRecord updates the contents of a record with the ones of a raw *pb.Record

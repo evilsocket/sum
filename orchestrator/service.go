@@ -67,13 +67,18 @@ type MuxService struct {
 }
 
 func NewMuxService(nodes []*NodeInfo) *MuxService {
-	ms := &MuxService{nextId: 1, recId2node: make(map[uint64]*NodeInfo), nodes: make([]*NodeInfo, 0)}
-	ms.nodes = append(ms.nodes, nodes...) // solves `nil` slice argument
+	ms := &MuxService{
+		nextId:     1,
+		recId2node: make(map[uint64]*NodeInfo),
+		nodes:      nodes[:],
+		raccoons:   make(map[uint64]*astRaccoon),
+		vmPool:     service.CreateExecutionPool(otto.New()),
+		started:    time.Now(),
+		pid:        uint64(os.Getpid()),
+		uid:        uint64(os.Getuid()),
+	}
 	ms.balance()
-	ms.vmPool = service.CreateExecutionPool(otto.New())
-	ms.started = time.Now()
-	ms.pid = uint64(os.Getpid())
-	ms.uid = uint64(os.Getuid())
+
 	return ms
 }
 
@@ -133,13 +138,18 @@ func (ms *MuxService) CreateRecord(ctx context.Context, record *Record) (*Record
 		return errRecordResponse("No nodes available, try later"), nil
 	}
 
+	// for targetNode.status.Records++
+	targetNode.Lock()
+	defer targetNode.Unlock()
+
 	record.Id = ms.findNextAvailableId()
-	resp, err := targetNode.Client.CreateRecord(ctx, record)
+	resp, err := targetNode.InternalClient.CreateRecordWithId(ctx, record)
 
 	if err == nil && resp.Success {
 		ms.nextId++
 		targetNode.RecordIds[record.Id] = true
 		ms.recId2node[record.Id] = targetNode
+		targetNode.status.Records++
 	}
 
 	return resp, err
@@ -391,6 +401,7 @@ func (ms *MuxService) Run(ctx context.Context, arg *Call) (*CallResponse, error)
 
 	// 3. create the modified oracle on all nodes
 	node2oracleId := make(map[*NodeInfo]uint64)
+	mapLock := sync.Mutex{}
 	newOracle := &Oracle{Code: newCode, Name: raccoon.Name}
 
 	// cleanup created oracles
@@ -404,7 +415,7 @@ func (ms *MuxService) Run(ctx context.Context, arg *Call) (*CallResponse, error)
 		}
 	}()
 
-	worker := func(wg sync.WaitGroup, n *NodeInfo, okChan chan<- interface{}, errChan chan<- string) {
+	worker := func(wg *sync.WaitGroup, n *NodeInfo, okChan chan<- interface{}, errChan chan<- string) {
 		defer wg.Done()
 		resp, err := n.Client.CreateOracle(ctx, newOracle)
 		if err != nil || !resp.Success {
@@ -416,7 +427,11 @@ func (ms *MuxService) Run(ctx context.Context, arg *Call) (*CallResponse, error)
 			errChan <- fmt.Sprintf("unable to parse oracleId string '%s': %v", resp.Msg, err)
 			return
 		}
-		node2oracleId[n] = oId
+		func() {
+			mapLock.Lock()
+			defer mapLock.Unlock()
+			node2oracleId[n] = oId
+		}()
 		resp1, err := n.Client.Run(ctx, &Call{OracleId: oId, Args: arg.Args})
 		if err != nil || !resp1.Success {
 			errChan <- getTheFuckingErrorMessage(err, resp1)
@@ -441,31 +456,42 @@ func (ms *MuxService) Run(ctx context.Context, arg *Call) (*CallResponse, error)
 
 	errorChan := make(chan string)
 	resultChan := make(chan interface{})
-	wg := sync.WaitGroup{}
+	wg := &sync.WaitGroup{}
+	readersWg := &sync.WaitGroup{}
 	wg.Add(len(ms.nodes))
+	readersWg.Add(2)
 
 	for _, n := range ms.nodes {
 		go worker(wg, n, resultChan, errorChan)
 	}
+
+	errs := make([]string, 0)
+	results := make([]interface{}, 0)
+
+	go func() {
+		for err := range errorChan {
+			errs = append(errs, err)
+		}
+		readersWg.Done()
+	}()
+
+	go func() {
+		for res := range resultChan {
+			results = append(results, res)
+		}
+		readersWg.Done()
+	}()
 
 	wg.Wait()
 
 	close(errorChan)
 	close(resultChan)
 
-	errs := make([]string, 0)
-	results := make([]interface{}, 0)
-
-	for err := range errorChan {
-		errs = append(errs, err)
-	}
+	// ensure that readers are done
+	readersWg.Wait()
 
 	if len(errs) > 0 {
 		return errCallResponse("Errors from nodes: [%s]", strings.Join(errs, ", ")), nil
-	}
-
-	for res := range resultChan {
-		results = append(results, res)
 	}
 
 	var mergedResults interface{}
@@ -521,26 +547,26 @@ func (_ *MuxService) defaultMerger(results []interface{}) (mergedResults interfa
 			return nil, fmt.Errorf("heterogeneous results: prior results had type %v, this one has type %v", *resultType, t)
 		}
 
-		if t.Kind() == reflect.Map {
+		switch t.Kind() {
+		case reflect.Map:
 			if mergedResults == nil {
-				mergedResults = make(map[interface{}]interface{})
+				mergedResults = make(map[string]interface{})
 			}
-			mr := mergedResults.(map[interface{}]interface{})
-			for k, v := range res.(map[interface{}]interface{}) {
+			mr := mergedResults.(map[string]interface{})
+			for k, v := range res.(map[string]interface{}) {
 				if v1, exist := mr[k]; exist {
 					return nil, fmt.Errorf("merge conflict: multiple results define key %v: oldValue='%v', newValue='%v'", k, v1, v)
 				}
 				mr[k] = v
 			}
-		} else if t.Kind() == reflect.Array {
+		case reflect.Slice:
 			if mergedResults == nil {
 				mergedResults = make([]interface{}, 0)
 			}
-			mr := mergedResults.([]interface{})
 			for _, v := range res.([]interface{}) {
-				mr = append(mr, v)
+				mergedResults = append(mergedResults.([]interface{}), v)
 			}
-		} else {
+		default:
 			return nil, fmt.Errorf("type %v is not supported for auto-merge, please provide a custom merge function", t)
 		}
 	}
