@@ -92,26 +92,26 @@ func transfer(fromNode, toNode *NodeInfo, nRecords int64) {
 
 // balance the load among nodes
 func (ms *MuxService) balance() {
-	var nNodes = uint(len(ms.nodes))
+	var nNodes = len(ms.nodes)
 	var maxRecords uint64 = 0
 	var maxDelta int64 = 0
 
 	var deltas = make([][]int64, nNodes)
-	var id2node = make(map[uint]*NodeInfo, nNodes)
-	var id2status = make(map[uint]pb.ServerInfo, nNodes)
+	var idx2node = make(map[int]*NodeInfo, nNodes)
+	var idx2status = make(map[int]pb.ServerInfo, nNodes)
 
-	for _, n := range ms.nodes {
-		id2node[n.ID] = n
-		id2status[n.ID] = n.Status()
+	for i, n := range ms.nodes {
+		idx2node[i] = n
+		idx2status[i] = n.Status()
 	}
 
-	for i := uint(0); i < nNodes; i++ {
+	for i := 0; i < nNodes; i++ {
 		deltas[i] = make([]int64, nNodes)
 	}
 
-	for i := uint(0); i < nNodes; i++ {
+	for i := 0; i < nNodes; i++ {
 		for j := i + 1; j < nNodes; j++ {
-			deltas[i][j] = int64(id2status[j].Records - id2status[i].Records)
+			deltas[i][j] = int64(idx2status[j].Records - idx2status[i].Records)
 			deltas[j][i] = -deltas[i][j]
 
 			if deltas[i][j] > maxDelta {
@@ -120,8 +120,8 @@ func (ms *MuxService) balance() {
 				maxDelta = deltas[j][i]
 			}
 		}
-		if id2status[i].Records > maxRecords {
-			maxRecords = id2status[i].Records
+		if idx2status[i].Records > maxRecords {
+			maxRecords = idx2status[i].Records
 		}
 	}
 
@@ -134,7 +134,7 @@ func (ms *MuxService) balance() {
 
 	// balance
 
-	for i := uint(0); i < nNodes; i++ {
+	for i := 0; i < nNodes; i++ {
 		for j := i + 1; j < nNodes; j++ {
 			records := deltas[i][j]
 			if records > threshold || (-records) > threshold {
@@ -142,7 +142,7 @@ func (ms *MuxService) balance() {
 				if records < 0 {
 					src, dst, records = dst, src, -records
 				}
-				transfer(id2node[src], id2node[dst], records)
+				transfer(idx2node[src], idx2node[dst], records/2)
 			}
 		}
 	}
