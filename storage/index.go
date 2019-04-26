@@ -183,7 +183,7 @@ func (i *Index) _createRecordWithId(record proto.Message) error {
 	return nil
 }
 
-func (i *Index) CreatedWithId(record proto.Message) error {
+func (i *Index) CreateWithId(record proto.Message) error {
 	i.Lock()
 	defer i.Unlock()
 

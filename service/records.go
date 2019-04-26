@@ -31,7 +31,7 @@ func (s *Service) CreateRecord(ctx context.Context, record *pb.Record) (*pb.Reco
 }
 
 func (s *Service) CreateRecordWithId(ctx context.Context, record *pb.Record) (*pb.RecordResponse, error) {
-	if err := s.records.CreatedWithId(record); err != nil {
+	if err := s.records.CreateWithId(record); err != nil {
 		return errRecordResponse("%s", err), nil
 	}
 	return &pb.RecordResponse{Success: true, Msg: fmt.Sprintf("%d", record.Id)}, nil
