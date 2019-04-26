@@ -5,42 +5,58 @@ import (
 	"sync"
 )
 
-// run `f` in parallel on all the available nodes
-func (ms *MuxService) doParallel(f func(node *NodeInfo, resultChannel chan<- interface{}, errorChannel chan<- string)) (results []interface{}, errs []string) {
-	// assumes ms.nodesLock is held
-
+// run `f` in parallel on the given nodes
+func doParallel(nodes []*NodeInfo, f func(node *NodeInfo, resultChannel chan<- interface{}, errorChannel chan<- string)) (results []interface{}, errs []string) {
 	wg, readersWg := &sync.WaitGroup{}, &sync.WaitGroup{}
 	resultChan := make(chan interface{})
 	errorChan := make(chan string)
+	nNodes := len(nodes)
 
-	wg.Add(len(ms.nodes))
-	readersWg.Add(2)
-
-	for _, n := range ms.nodes {
-		go func(n *NodeInfo) {
-			defer wg.Done()
-			defer func() {
-				if e := recover(); e != nil {
-					errorChan <- fmt.Sprintf("Worker exception: %v", e)
-				}
-			}()
-			f(n, resultChan, errorChan)
-		}(n)
+	if nNodes == 0 {
+		return nil, nil
 	}
 
-	go func() {
+	worker := func(n *NodeInfo) {
+		defer wg.Done()
+		defer func() {
+			if e := recover(); e != nil {
+				errorChan <- fmt.Sprintf("Worker exception: %v", e)
+			}
+		}()
+		f(n, resultChan, errorChan)
+	}
+
+	resultReader := func() {
 		for val := range resultChan {
 			results = append(results, val)
 		}
 		readersWg.Done()
-	}()
-
-	go func() {
+	}
+	errorReader := func() {
 		for err := range errorChan {
 			errs = append(errs, err)
 		}
 		readersWg.Done()
-	}()
+	}
+
+	wg.Add(nNodes)
+	readersWg.Add(2)
+
+	if nNodes == 1 {
+		worker(nodes[0])
+		close(resultChan)
+		close(errorChan)
+		resultReader()
+		errorReader()
+		return
+	}
+
+	for _, n := range nodes {
+		go worker(n)
+	}
+
+	go resultReader()
+	go errorReader()
 
 	wg.Wait()
 
@@ -50,4 +66,10 @@ func (ms *MuxService) doParallel(f func(node *NodeInfo, resultChannel chan<- int
 	readersWg.Wait()
 
 	return
+}
+
+// run `f` in parallel on all the available nodes
+func (ms *MuxService) doParallel(f func(node *NodeInfo, resultChannel chan<- interface{}, errorChannel chan<- string)) (results []interface{}, errs []string) {
+	// assumes ms.nodesLock is held
+	return doParallel(ms.nodes, f)
 }

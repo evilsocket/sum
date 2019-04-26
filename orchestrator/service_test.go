@@ -28,7 +28,8 @@ func init() {
 }
 
 func TestCreateOracle(t *testing.T) {
-	ms := NewMuxService([]*NodeInfo{})
+	ms, err := NewMuxService([]*NodeInfo{})
+	Nil(t, err)
 
 	arg := &pb.Oracle{}
 	arg.Name = "alakazam"
@@ -120,7 +121,8 @@ func spawnOrchestrator(t *testing.T, port uint32, nodesStr string) (*grpc.Server
 	listener, err := net.Listen("tcp", addr)
 	Nil(t, err)
 
-	ms := NewMuxService(nodes)
+	ms, err := NewMuxService(nodes)
+	Nil(t, err)
 
 	go updater(ms)
 

@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/evilsocket/sum/service"
 	"github.com/robertkrimen/otto"
+	log "github.com/sirupsen/logrus"
 	"os"
 	"sync"
 	"time"
@@ -38,7 +39,7 @@ type MuxService struct {
 	uid uint64
 }
 
-func NewMuxService(nodes []*NodeInfo) *MuxService {
+func NewMuxService(nodes []*NodeInfo) (*MuxService, error) {
 	ms := &MuxService{
 		nextId:        1,
 		nextRaccoonId: 1,
@@ -50,9 +51,20 @@ func NewMuxService(nodes []*NodeInfo) *MuxService {
 		pid:           uint64(os.Getpid()),
 		uid:           uint64(os.Getuid()),
 	}
+
+	if err := ms.solveAllConflictsInTheWorld(); err != nil {
+		return nil, err
+	}
+
+	for _, n := range nodes {
+		for rId := range n.RecordIds {
+			ms.recId2node[rId] = n
+		}
+	}
+
 	ms.balance()
 
-	return ms
+	return ms, nil
 }
 
 func (ms *MuxService) UpdateNodes() {
@@ -69,6 +81,10 @@ func (ms *MuxService) AddNode(n *NodeInfo) {
 	defer ms.nodesLock.Unlock()
 
 	ms.nodes = append(ms.nodes, n)
+
+	if err := ms.solveAllConflictsInTheWorld(); err != nil {
+		log.Errorf("Cannot solve conflicts after adding node %d: %v", n.ID, err)
+	}
 
 	ms.balance()
 }

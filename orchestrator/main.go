@@ -51,7 +51,10 @@ func main() {
 		log.Fatalf("failed to create listener: %v", err)
 	}
 
-	ms := NewMuxService(nodes)
+	ms, err := NewMuxService(nodes)
+	if err != nil {
+		log.Fatalf("Failed to create MuxService: %v", err)
+	}
 
 	go updater(ms)
 
