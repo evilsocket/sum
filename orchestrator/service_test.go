@@ -128,11 +128,7 @@ func spawnOrchestrator(t *testing.T, port uint32, nodesStr string) (*grpc.Server
 	pb.RegisterSumServiceServer(server, ms)
 	reflection.Register(server)
 
-	go func() {
-		if err := server.Serve(listener); err != nil {
-			log.Fatalf("failed to serve: %v", err)
-		}
-	}()
+	go server.Serve(listener)
 
 	return server, ms
 }
