@@ -14,8 +14,6 @@ import (
 
 	pb "github.com/evilsocket/sum/proto"
 	"github.com/evilsocket/sum/storage"
-
-	"github.com/evilsocket/islazy/log"
 )
 
 const (
@@ -76,8 +74,6 @@ func decompress(t testing.TB, d *pb.Data) string {
 }
 
 func setup(t testing.TB, withRecords bool, withOracles bool) {
-	log.SetOutput(ioutil.Discard)
-
 	// start clean
 	teardown(t)
 
@@ -120,8 +116,6 @@ func setup(t testing.TB, withRecords bool, withOracles bool) {
 }
 
 func setupFolders(t testing.TB) {
-	log.SetOutput(ioutil.Discard)
-
 	// start clean
 	teardown(t)
 
