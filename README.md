@@ -7,6 +7,10 @@
 [![GoDoc](https://godoc.org/github.com/evilsocket/sum?status.svg)](https://godoc.org/github.com/evilsocket/sum) 
 [![Release](https://img.shields.io/github/release/evilsocket/sum.svg?style=flat-square)](https://github.com/evilsocket/sum/releases/latest) 
 
+Sum is a specialized database server for linear algebra and machine learning.
+
+#### Why?
+
 If you work with machine learning you probably find yourself having around a bunch of huge CSV files that maybe you 
 keep using to train your models, or you run PCA on them, or you perform any sort of analysis. If this is the case, you 
 know the struggle of:
@@ -57,11 +61,3 @@ as binary protobuf encoded files.
 
 To have a better idea of how this works, take a look at [the example python client code](https://github.com/evilsocket/sum/blob/master/clients/python/example.py) that will
 create a few vectors on the server, define an oracle, call it for every vector and print the similarities the server returned.
-
-#### Example Usecase
-
-Clustering Android malware samples by behavioural similarities:
-
-<center>
-    <img src="https://pbs.twimg.com/media/DcrQOSRX4AMWMnI.jpg:large"/>
-</center>
