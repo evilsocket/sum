@@ -52,6 +52,7 @@ func (w Records) AllBut(exclude Record) []Record {
 	return wrapped
 }
 
+// CreateRecord creates a new record from raw data.
 func (w Records) CreateRecord(data []float64) Record {
 	r := Record{record: new(pb.Record)}
 	r.record.Data = data
