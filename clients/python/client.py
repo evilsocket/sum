@@ -31,7 +31,7 @@ class Client:
         raw = data.payload
         if data.compressed:
             raw = zlib.decompress(raw, 16+zlib.MAX_WBITS)
-        return json.loads(str(raw))
+        return json.loads(raw)
 
     def create_record(self, meta, data):
         record = proto.Record(data=data, meta=meta)
