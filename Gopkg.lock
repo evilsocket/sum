@@ -10,6 +10,17 @@
   revision = "02af3965c54e8cacf948b97fef38925c4120652c"
 
 [[projects]]
+  digest = "1:b3b0d33cd8bdc2146691f3f3df34687f694d372547f5bb879d942abd5220a36f"
+  name = "github.com/evilsocket/islazy"
+  packages = [
+    "log",
+    "tui",
+  ]
+  pruneopts = "UT"
+  revision = "c5c7a41bb1c20e6df409825ed24af8de5fb7fb70"
+  version = "v1.10.4"
+
+[[projects]]
   digest = "1:f52e4148b9bbc9de7574513218171e86231741e5c559ffcbbbe1671e6d702eca"
   name = "github.com/golang/protobuf"
   packages = [
@@ -138,6 +149,7 @@
   analyzer-version = 1
   input-imports = [
     "github.com/dustin/go-humanize",
+    "github.com/evilsocket/islazy/log",
     "github.com/golang/protobuf/proto",
     "github.com/robertkrimen/otto",
     "github.com/robertkrimen/otto/ast",

@@ -5,7 +5,6 @@ import (
 	"compress/gzip"
 	"context"
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -15,6 +14,8 @@ import (
 
 	pb "github.com/evilsocket/sum/proto"
 	"github.com/evilsocket/sum/storage"
+
+	"github.com/evilsocket/islazy/log"
 )
 
 const (

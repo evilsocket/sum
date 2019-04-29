@@ -2,13 +2,14 @@ package storage
 
 import (
 	"errors"
-	"log"
 	"os"
 	"strconv"
 	"strings"
 	"sync"
 
 	"github.com/golang/protobuf/proto"
+
+	"github.com/evilsocket/islazy/log"
 )
 
 var (
@@ -74,7 +75,7 @@ func (i *Index) Load() error {
 	i.dataPath = absPath + pathSep
 	i.nextID = 1
 	if nfiles := len(files); nfiles > 0 {
-		log.Printf("loading %d data files from %s ...", len(files), i.dataPath)
+		log.Info("loading %d data files from %s ...", len(files), i.dataPath)
 		for _, fileName := range files {
 			record := i.driver.Make()
 			if err := Load(fileName, record); err != nil {

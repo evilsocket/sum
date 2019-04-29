@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"compress/gzip"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"sync"
@@ -13,6 +12,7 @@ import (
 	pb "github.com/evilsocket/sum/proto"
 	"github.com/evilsocket/sum/storage"
 
+	"github.com/evilsocket/islazy/log"
 	"github.com/golang/protobuf/proto"
 	"golang.org/x/net/context"
 )
@@ -67,7 +67,7 @@ func New(dataPath string) (*Service, error) {
 	}
 
 	if oracles.Size() > 0 {
-		log.Printf("precompiling %d oracles ...", oracles.Size())
+		log.Info("precompiling %d oracles ...", oracles.Size())
 		err := oracles.ForEach(func(m proto.Message) error {
 			oracle := m.(*pb.Oracle)
 			compiled, err := compile(oracle)

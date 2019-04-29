@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"log"
 	"net"
 	"os"
 	"os/signal"
@@ -16,6 +15,7 @@ import (
 	"github.com/evilsocket/sum/service"
 
 	"github.com/dustin/go-humanize"
+	"github.com/evilsocket/islazy/log"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/reflection"
@@ -38,24 +38,24 @@ var (
 )
 
 func doCleanup() {
-	log.Printf("shutting down ...")
+	log.Info("shutting down ...")
 
 	if *cpuProfile != "" {
-		log.Printf("saving cpu profile to %s ...", *cpuProfile)
+		log.Info("saving cpu profile to %s ...", *cpuProfile)
 		pprof.StopCPUProfile()
 	}
 
 	if *memProfile != "" {
-		log.Printf("saving memory profile to %s ...", *memProfile)
+		log.Info("saving memory profile to %s ...", *memProfile)
 		f, err := os.Create(*memProfile)
 		if err != nil {
-			log.Printf("could not create memory profile: %s", err)
+			log.Info("could not create memory profile: %s", err)
 			return
 		}
 		defer f.Close()
 		runtime.GC() // get up-to-date statistics
 		if err := pprof.WriteHeapProfile(f); err != nil {
-			log.Printf("could not write memory profile: %s", err)
+			log.Info("could not write memory profile: %s", err)
 		}
 	}
 }
@@ -63,9 +63,9 @@ func doCleanup() {
 func setupSignals() {
 	if *cpuProfile != "" {
 		if f, err := os.Create(*cpuProfile); err != nil {
-			log.Fatal(err)
+			log.Fatal("%v", err)
 		} else if err := pprof.StartCPUProfile(f); err != nil {
-			log.Fatal(err)
+			log.Fatal("%v", err)
 		}
 	}
 
@@ -77,10 +77,25 @@ func setupSignals() {
 		syscall.SIGQUIT)
 	go func() {
 		sig := <-sigChan
-		log.Printf("got signal %v", sig)
+		log.Info("got signal %v", sig)
 		doCleanup()
 		os.Exit(0)
 	}()
+}
+
+func setupLogging() {
+	log.OnFatal = log.ExitOnFatal
+	if *logFile != "" {
+		log.Output = *logFile
+	}
+
+	if *logDebug {
+		log.Level = log.DEBUG
+	}
+
+	if err := log.Open(); err != nil {
+		panic(err)
+	}
 }
 
 func statsReport() {
@@ -91,7 +106,7 @@ func statsReport() {
 		runtime.GC()
 		runtime.ReadMemStats(&m)
 
-		log.Printf("records:%d oracles:%d mem:%s numgc:%d",
+		log.Info("records:%d oracles:%d mem:%s numgc:%d",
 			svc.NumRecords(),
 			svc.NumOracles(),
 			humanize.Bytes(m.Sys),
@@ -104,30 +119,24 @@ func main() {
 
 	setupSignals()
 
-	if *logFile != "" {
-		f, err := os.OpenFile(*logFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-		if err != nil {
-			log.Fatalf("error opening file: %v", err)
-		}
-		defer f.Close()
-		log.SetOutput(f)
-	}
+	setupLogging()
+	defer log.Close()
 
 	crtFile := path.Join(*credsPath, "cert.pem")
 	keyFile := path.Join(*credsPath, "key.pem")
 	creds, err := credentials.NewServerTLSFromFile(crtFile, keyFile)
 	if err != nil {
-		log.Fatalf("failed to load credentials from %s: %v", *credsPath, err)
+		log.Fatal("failed to load credentials from %s: %v", *credsPath, err)
 	}
 
 	listener, err := net.Listen("tcp", *listenString)
 	if err != nil {
-		log.Fatalf("failed to create listener: %v", err)
+		log.Fatal("failed to create listener: %v", err)
 	}
 
 	svc, err = service.New(*dataPath)
 	if err != nil {
-		log.Fatalf("%v", err)
+		log.Fatal("%v", err)
 	}
 
 	grpc.MaxMsgSize(*maxMsgSize)
@@ -137,8 +146,8 @@ func main() {
 
 	go statsReport()
 
-	log.Printf("sumd v%s is listening on %s ...", service.Version, *listenString)
+	log.Info("sumd v%s is listening on %s ...", service.Version, *listenString)
 	if err := server.Serve(listener); err != nil {
-		log.Fatalf("failed to serve: %v", err)
+		log.Fatal("failed to serve: %v", err)
 	}
 }
