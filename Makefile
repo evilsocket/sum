@@ -1,5 +1,5 @@
 SHELL := bash
-.PHONY: all clients godep golint gomegacheck deps test codecov html_coverage benchmark
+.HONY: all clients godep golint deps test codecov html_coverage benchmark
 .PHONY: clean reset_env profile run build_docker run_docker pycli phpcli
 
 #
@@ -25,7 +25,7 @@ clients: pycli phpcli
 godep:
 	@go get -u github.com/golang/dep/...
 
-deps: godep golint gomegacheck
+deps: godep golint
 	@dep ensure
 
 proto/sum.pb.go:
@@ -61,18 +61,14 @@ install:
 golint:
 	@go get github.com/golang/lint/golint
 
-gomegacheck:
-	@go get honnef.co/go/tools/cmd/megacheck
-
 # Go 1.9 doesn't support test coverage on multiple packages, while
 # Go 1.10 does, let's keep it 1.9 compatible in order not to break
 # travis
-test: server_deps gomegacheck golint
+test: server_deps golint
 	@echo "mode: atomic" > coverage.profile
 	@for pkg in $(PACKAGES); do \
 		go vet ./$$pkg ; \
 		golint -set_exit_status ./$$pkg ; \
-		megacheck ./$$pkg ; \
 		go test -race ./$$pkg -coverprofile=$$pkg.profile -covermode=atomic; \
 		tail -n +2 $$pkg.profile >> coverage.profile && rm $$pkg.profile ; \
 	done
