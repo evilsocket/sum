@@ -1,5 +1,5 @@
 [Unit]
-Description=sum is a linear algebra server.
+Description=sum is a specialized database server for linear algebra and machine learning.
 Documentation=https://github.com/evilsocket/sum
 Wants=network.target
 After=network.target

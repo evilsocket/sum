@@ -7,12 +7,14 @@ class SumClient {
     private $options = [];
     private $rpc = NULL;
 
-    public function __construct($conn_string) {
+    public function __construct($conn_string, $certificate) {
         $this->connection_string = $conn_string;
+        $this->creds = Grpc\ChannelCredentials::createSsl(file_get_contents($certificate));
+
         $this->options = [
             'grpc.max_send_message_length' => self::MAX_MESSAGE_SIZE, 
             'grpc.max_receive_message_length' => self::MAX_MESSAGE_SIZE,
-            'credentials' => Grpc\ChannelCredentials::createInsecure()
+            'credentials' => $this->creds
         ];
 
         $this->rpc = new Sum\SumServiceClient($this->connection_string, $this->options);

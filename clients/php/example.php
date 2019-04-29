@@ -27,7 +27,7 @@ function rand_data($columns) {
 $num_rows = 300;
 $num_columns = 100;
 $index = [];
-$client = new SumClient('127.0.0.1:50051'); 
+$client = new SumClient('localhost:50051', '/etc/sumd/creds/cert.pem'); 
 
 echo "@ Creating $num_rows vectors ...\n";
 

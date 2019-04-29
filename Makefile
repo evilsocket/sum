@@ -48,7 +48,11 @@ reset_env: clean
 	@mkdir -p "${SUMD_DATAPATH}/data"
 	@mkdir -p "${SUMD_DATAPATH}/oracles"
 
-install:
+install_certificate:
+	@mkdir -p /etc/sumd/creds
+	@openssl req -x509 -newkey rsa:4096 -keyout /etc/sumd/creds/key.pem -out /etc/sumd/creds/cert.pem -days 365 -nodes -subj '/CN=localhost'
+
+install: install_certificate
 	@mkdir -p /var/lib/sumd/data
 	@mkdir -p /var/lib/sumd/oracles
 	@cp sumd /usr/local/bin/

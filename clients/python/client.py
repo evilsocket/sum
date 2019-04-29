@@ -10,12 +10,18 @@ import proto.sum_pb2_grpc as proto_svc
 class Client:
     MAX_MESSAGE_SIZE = 10 * 1024 * 1024
 
-    def __init__(self, connection_string):
+    def __init__(self, connection_string, cert_path):
         self._conn_str = connection_string
         self._opts =[ 
                 ('grpc.max_send_message_length', Client.MAX_MESSAGE_SIZE), 
                 ('grpc.max_receive_message_length', Client.MAX_MESSAGE_SIZE)]
-        self._rpc = proto_svc.SumServiceStub(grpc.insecure_channel(self._conn_str, options=self._opts))
+
+        with open(cert_path, 'rb') as fp:
+            cert = fp.read()
+
+        self._creds = grpc.ssl_channel_credentials(root_certificates=cert)
+        self._channel = grpc.secure_channel(self._conn_str, self._creds, options=self._opts)
+        self._rpc = proto_svc.SumServiceStub(self._channel)
     
     def _check_resp(self, r):
         if r.success == False:

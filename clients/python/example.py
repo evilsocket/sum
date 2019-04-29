@@ -28,7 +28,7 @@ if __name__ == '__main__':
     num_columns = 100
     index = {}
 
-    client = Client('127.0.0.1:50051')
+    client = Client('localhost:50051', '/etc/sumd/creds/cert.pem')
 
     # STEP 1: send the oracle code to the server and get its id
     oracle_id = client.define_oracle(os.path.dirname(__file__) + '/../example_oracles/findsimilar.js', 'findSimilar')

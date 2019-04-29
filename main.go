@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"path"
 	"runtime"
 	"runtime/pprof"
 	"syscall"
@@ -16,15 +17,18 @@ import (
 
 	"github.com/dustin/go-humanize"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/reflection"
 )
 
 var (
 	listenString = flag.String("listen", "127.0.0.1:50051", "String to create the TCP listener.")
+	credsPath    = flag.String("creds", "/etc/sumd/creds", "Path to the key.pem and cert.pem files to use for TLS based authentication.")
 	dataPath     = flag.String("datapath", "/var/lib/sumd", "Sum data folder.")
 	gcPeriod     = flag.Int("gc-period", 1800, "Period in seconds to report memory statistics and call the gc.")
 	maxMsgSize   = flag.Int("max-msg-size", 10*1024*1024, "Maximum size in bytes of a GRPC message.")
 	logFile      = flag.String("log-file", "", "If filled, sumd will log to this file.")
+	logDebug     = flag.Bool("debug", false, "Enable debug logs.")
 
 	cpuProfile = flag.String("cpu-profile", "", "Write CPU profile to this file.")
 	memProfile = flag.String("mem-profile", "", "Write memory profile to this file.")
@@ -55,6 +59,7 @@ func doCleanup() {
 		}
 	}
 }
+
 func setupSignals() {
 	if *cpuProfile != "" {
 		if f, err := os.Create(*cpuProfile); err != nil {
@@ -108,6 +113,13 @@ func main() {
 		log.SetOutput(f)
 	}
 
+	crtFile := path.Join(*credsPath, "cert.pem")
+	keyFile := path.Join(*credsPath, "key.pem")
+	creds, err := credentials.NewServerTLSFromFile(crtFile, keyFile)
+	if err != nil {
+		log.Fatalf("failed to load credentials from %s: %v", *credsPath, err)
+	}
+
 	listener, err := net.Listen("tcp", *listenString)
 	if err != nil {
 		log.Fatalf("failed to create listener: %v", err)
@@ -119,7 +131,7 @@ func main() {
 	}
 
 	grpc.MaxMsgSize(*maxMsgSize)
-	server := grpc.NewServer()
+	server := grpc.NewServer(grpc.Creds(creds))
 	pb.RegisterSumServiceServer(server, svc)
 	reflection.Register(server)
 
