@@ -118,9 +118,10 @@ func main() {
 	flag.Parse()
 
 	setupSignals()
-
 	setupLogging()
 	defer log.Close()
+
+	log.Info("sumd v%s is starting ...", service.Version)
 
 	crtFile := path.Join(*credsPath, "cert.pem")
 	keyFile := path.Join(*credsPath, "key.pem")
@@ -146,7 +147,7 @@ func main() {
 
 	go statsReport()
 
-	log.Info("sumd v%s is listening on %s ...", service.Version, *listenString)
+	log.Info("now listening on %s ...", *listenString)
 	if err := server.Serve(listener); err != nil {
 		log.Fatal("failed to serve: %v", err)
 	}
