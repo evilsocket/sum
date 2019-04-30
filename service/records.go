@@ -6,8 +6,6 @@ import (
 
 	pb "github.com/evilsocket/sum/proto"
 	"golang.org/x/net/context"
-
-	"github.com/evilsocket/islazy/log"
 )
 
 func errRecordResponse(format string, args ...interface{}) *pb.RecordResponse {
