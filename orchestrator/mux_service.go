@@ -68,8 +68,8 @@ func NewMuxService(nodes []*NodeInfo) (*MuxService, error) {
 }
 
 func (ms *MuxService) UpdateNodes() {
-	ms.nodesLock.Lock()
-	defer ms.nodesLock.Unlock()
+	ms.nodesLock.RLock()
+	defer ms.nodesLock.RUnlock()
 
 	for _, n := range ms.nodes {
 		n.UpdateStatus()

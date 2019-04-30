@@ -25,9 +25,13 @@ func newCommContext() (context.Context, context.CancelFunc) {
 	return context.WithTimeout(context.Background(), *timeout)
 }
 
-func updater(ms *MuxService) {
+func updater(ctx context.Context, ms *MuxService) {
 	ticker := time.NewTicker(*pollPeriod)
-	for range ticker.C {
+
+	select {
+	case <-ctx.Done():
+		return
+	case <-ticker.C:
 		ms.UpdateNodes()
 	}
 }
@@ -56,7 +60,9 @@ func main() {
 		log.Fatalf("Failed to create MuxService: %v", err)
 	}
 
-	go updater(ms)
+	ctx, cf := context.WithCancel(context.Background())
+	defer cf()
+	go updater(ctx, ms)
 
 	server := grpc.NewServer()
 	pb.RegisterSumServiceServer(server, ms)

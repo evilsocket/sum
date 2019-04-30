@@ -22,7 +22,7 @@ type NodeInfo struct {
 func (n *NodeInfo) UpdateStatus() {
 	ctx, cf := newCommContext()
 	defer cf()
-	srvInfo, err := n.Client.Info(ctx, nil)
+	srvInfo, err := n.Client.Info(ctx, &Empty{})
 
 	if err != nil {
 		log.Errorf("Unable to update node '%s' status: %v", n.Name, err)

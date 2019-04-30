@@ -87,12 +87,16 @@ function findSimilar(id, threshold) {
 	Equal(t, expected, newCode)
 }
 
-func spawnNode(t *testing.T, port uint32, dataPath string) (*grpc.Server, *service.Service) {
+func spawnNodeErr(port uint32, dataPath string) (*grpc.Server, *service.Service, error) {
 	addr := fmt.Sprintf("localhost:%d", port)
 	listener, err := net.Listen("tcp", addr)
-	Nil(t, err)
+	if err != nil {
+		return nil, nil, err
+	}
 	svc, err := service.New(dataPath)
-	Nil(t, err)
+	if err != nil {
+		return nil, nil, err
+	}
 	server := grpc.NewServer()
 	pb.RegisterSumServiceServer(server, svc)
 	pb.RegisterSumInternalServiceServer(server, svc)
@@ -104,34 +108,56 @@ func spawnNode(t *testing.T, port uint32, dataPath string) (*grpc.Server, *servi
 		}
 	}()
 
+	return server, svc, nil
+}
+
+func spawnNode(t *testing.T, port uint32, dataPath string) (*grpc.Server, *service.Service) {
+	server, svc, err := spawnNodeErr(port, dataPath)
+	Nil(t, err)
 	return server, svc
 }
 
-func spawnOrchestrator(t *testing.T, port uint32, nodesStr string) (*grpc.Server, *MuxService) {
+func spawnOrchestratorErr(port uint32, nodesStr string) (*grpc.Server, *MuxService, error) {
 	nodes := make([]*NodeInfo, 0)
 
 	for _, n := range strings.Split(nodesStr, ",") {
 		node, err := createNode(n)
-		Nil(t, err)
+		if err != nil {
+			return nil, nil, err
+		}
 		node.ID = uint(len(nodes) + 1)
 		nodes = append(nodes, node)
 	}
 
 	addr := fmt.Sprintf("localhost:%d", port)
 	listener, err := net.Listen("tcp", addr)
-	Nil(t, err)
+	if err != nil {
+		return nil, nil, err
+	}
 
 	ms, err := NewMuxService(nodes)
-	Nil(t, err)
+	if err != nil {
+		return nil, nil, err
+	}
 
-	go updater(ms)
+	ctx, cf := context.WithCancel(context.Background())
+	go updater(ctx, ms)
 
 	server := grpc.NewServer()
 	pb.RegisterSumServiceServer(server, ms)
 	reflection.Register(server)
 
-	go server.Serve(listener)
+	go func() {
+		server.Serve(listener)
+		cf()
+	}()
 
+	return server, ms, nil
+}
+
+func spawnOrchestrator(t *testing.T, port uint32, nodesStr string) (*grpc.Server, *MuxService) {
+	server, ms, err := spawnOrchestratorErr(port, nodesStr)
+	Nil(t, err)
 	return server, ms
 }
 
