@@ -39,6 +39,12 @@ class Client:
         self._check_resp(resp)
         record.id = int(resp.msg)
         return record 
+
+    def update_record(self, id, meta, data):
+        record = proto.Record(id=id, data=data, meta=meta)
+        resp = self._rpc.UpdateRecord(record)
+        self._check_resp(resp)
+        return resp.success 
     
     def read_record(self, identifier):
         resp = self._rpc.ReadRecord(proto.ById(id=int(identifier)))
