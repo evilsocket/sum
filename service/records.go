@@ -6,6 +6,8 @@ import (
 
 	pb "github.com/evilsocket/sum/proto"
 	"golang.org/x/net/context"
+
+	"github.com/evilsocket/islazy/log"
 )
 
 func errRecordResponse(format string, args ...interface{}) *pb.RecordResponse {
@@ -82,7 +84,7 @@ func (s *Service) ListRecords(ctx context.Context, list *pb.ListRequest) (*pb.Re
 		}
 	} else {
 		// full page
-		for _, m := range all[start : end-start] {
+		for _, m := range all[start:end] {
 			resp.Records = append(resp.Records, m.(*pb.Record))
 		}
 	}
