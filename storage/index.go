@@ -151,26 +151,24 @@ func (i *Index) Create(record proto.Message) error {
 
 	// make sure the id is unique and that we
 	// are able to create the data file
-	for {
-		_, found := i.index[i.nextID]
-		if !found {
-			break
-		}
-		i.nextID++
-	}
-
-	i.driver.SetID(record, i.nextID)
-
-	if err := i._createRecordWithId(record); err != nil {
+	recID := i.nextID
+	i.driver.SetID(record, recID)
+	if _, found := i.index[recID]; found {
+		return ErrInvalidID
+	} else if err := Flush(record, i.pathForID(recID)); err != nil {
 		return err
 	}
 
 	i.nextID++
+	i.index[recID] = record
 
 	return nil
 }
 
-func (i *Index) _createRecordWithId(record proto.Message) error {
+func (i *Index) CreateWithId(record proto.Message) error {
+	i.Lock()
+	defer i.Unlock()
+
 	recID := i.driver.GetID(record)
 	if _, found := i.index[recID]; found {
 		return ErrInvalidID
@@ -181,13 +179,6 @@ func (i *Index) _createRecordWithId(record proto.Message) error {
 	i.index[recID] = record
 
 	return nil
-}
-
-func (i *Index) CreateWithId(record proto.Message) error {
-	i.Lock()
-	defer i.Unlock()
-
-	return i._createRecordWithId(record)
 }
 
 // Update changes the contents of a stored object given a protobuf
