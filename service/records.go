@@ -52,6 +52,15 @@ func (s *Service) ReadRecord(ctx context.Context, query *pb.ById) (*pb.RecordRes
 func (s *Service) ListRecords(ctx context.Context, list *pb.ListRequest) (*pb.RecordListResponse, error) {
 	all := s.records.Objects()
 	total := uint64(len(all))
+
+	if list.Page < 1 {
+		list.Page = 1
+	}
+
+	if list.PerPage < 1 {
+		list.PerPage = 1
+	}
+
 	start := (list.Page - 1) * list.PerPage
 	end := start + list.PerPage
 	npages := total / list.PerPage
