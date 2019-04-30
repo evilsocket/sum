@@ -39,6 +39,6 @@ archive:
     - goos: windows
       format: zip
   files:
-      - LICENSE.md
+      - LICENSE
       - README.md
       - sumd.service
