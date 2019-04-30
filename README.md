@@ -86,3 +86,8 @@ function findSimilar(id, threshold) {
 Once defined on the Sum server, any client will be able to execute calls like `findSimilar("some-vector-id-here", 0.9)`, such
 calls will be evaluated on data **in memory** in order to be as fast as possible, while the same data will be persisted on disk 
 as binary protobuf encoded files.
+
+Here you can see the output of an example usecase - finding behaviourally similar malware samples given a reference executable:
+
+<img src="https://raw.githubusercontent.com/evilsocket/sum/master/malware.png" />
+
