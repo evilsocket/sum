@@ -9,6 +9,22 @@
 
 Sum is a specialized database server for linear algebra and machine learning.
 
+## Installation
+
+Download the [latest binary release](https://github.com/evilsocket/sum/releases/latest), then create the certificate used for authentication and channel encryption:
+
+	sudo mkdir -p /etc/sumd/creds
+	sudo openssl req -x509 -newkey rsa:4096 -keyout /etc/sumd/creds/key.pem -out /etc/sumd/creds/cert.pem -days 365 -nodes -subj '/CN=localhost'
+
+Proceed to install the `sumd` binary as a systemd service:
+
+    cd /path/to/extracted/sumd
+	sudo mkdir -p /var/lib/sumd/data
+	sudo mkdir -p /var/lib/sumd/oracles
+	sudo mv sumd /usr/local/bin/
+	sudo mv sumd.service /etc/systemd/system/
+	sudo systemctl daemon-reload
+
 ## Compile from Source
 
     go get github.com/evilsocket/sum
@@ -17,7 +33,9 @@ Sum is a specialized database server for linear algebra and machine learning.
     make sumd
     sudo make install
 
-This will generate the authentication certificate files inside `/etc/sumd/creds` and install the `sumd` systemd service.
+## Usage
+
+To have an idea of how this works, take a look at [the example python client code](https://github.com/evilsocket/sumpy/blob/master/example.py) that will create a few vectors on the server, define an oracle, call it for every vector and print the similarities the server returned.
 
 ## Why?
 
@@ -68,15 +86,3 @@ function findSimilar(id, threshold) {
 Once defined on the Sum server, any client will be able to execute calls like `findSimilar("some-vector-id-here", 0.9)`, such
 calls will be evaluated on data **in memory** in order to be as fast as possible, while the same data will be persisted on disk 
 as binary protobuf encoded files.
-
-To have a better idea of how this works, take a look at [the example python client code](https://github.com/evilsocket/sum/blob/master/clients/python/example.py) that will
-create a few vectors on the server, define an oracle, call it for every vector and print the similarities the server returned.
-
-To build the python client and run the example app:
-
-    sudo python -m pip install --upgrade pip
-    sudo python -m pip install grpcio
-    sudo python -m pip install grpcio-tools
-    make pycli
-    python clients/python/example.py
-
