@@ -19,6 +19,7 @@ PACKAGES=storage wrapper service
 all: sumd clients test codecov benchmark docker
 
 server_deps: deps proto/sum.pb.go
+client_deps: deps proto/sum.pb.go
 
 clients: pycli phpcli 
 
@@ -31,14 +32,18 @@ deps: godep golint
 proto/sum.pb.go:
 	@${GRPC_PROTOC} -I. --go_out=plugins=grpc:. proto/sum.proto
 
-sumd: server_deps
-	@go build -o sumd .
+sumcli: client_deps
+	@go build -o sumcli.bin cmd/sumcli/*.go
+
+sumd: server_deps sumcli
+	@go build -o sumd.bin cmd/sumd/*.go
 
 run: reset_env sumd
-	@./sumd -datapath "${SUMD_DATAPATH}"
+	@./sumd.bin -datapath "${SUMD_DATAPATH}"
 
 clean:
-	@rm -rf sumd
+	@rm -rf sumd.bin
+	@rm -rf sumcli.bin
 	@rm -rf *.profile
 	@rm -rf *.profile.html
 	@rm -rf "${SUMD_DATAPATH}"
@@ -52,10 +57,11 @@ install_certificate:
 	@mkdir -p /etc/sumd/creds
 	@openssl req -x509 -newkey rsa:4096 -keyout /etc/sumd/creds/key.pem -out /etc/sumd/creds/cert.pem -days 365 -nodes -subj '/CN=localhost'
 
-install: install_certificate
+install: install_certificate sumd sumcli
 	@mkdir -p /var/lib/sumd/data
 	@mkdir -p /var/lib/sumd/oracles
-	@cp sumd /usr/local/bin/
+	@cp sumd.bin /usr/local/bin/sumd
+	@cp sumcli.bin /usr/local/bin/sumcli
 	@cp sumd.service /etc/systemd/system/
 	@systemctl daemon-reload
 

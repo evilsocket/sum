@@ -10,10 +10,11 @@
   revision = "02af3965c54e8cacf948b97fef38925c4120652c"
 
 [[projects]]
-  digest = "1:b3b0d33cd8bdc2146691f3f3df34687f694d372547f5bb879d942abd5220a36f"
+  digest = "1:213ba08dfc01a24b6861cb8f5a1d22bc3702a3fb6d75806be0cb90d68f0d3c08"
   name = "github.com/evilsocket/islazy"
   packages = [
     "log",
+    "str",
     "tui",
   ]
   pruneopts = "UT"
@@ -150,6 +151,8 @@
   input-imports = [
     "github.com/dustin/go-humanize",
     "github.com/evilsocket/islazy/log",
+    "github.com/evilsocket/islazy/str",
+    "github.com/evilsocket/islazy/tui",
     "github.com/golang/protobuf/proto",
     "github.com/robertkrimen/otto",
     "github.com/robertkrimen/otto/ast",

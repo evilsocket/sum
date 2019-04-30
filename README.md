@@ -22,8 +22,11 @@ Proceed to install the `sumd` binary as a systemd service:
 	sudo mkdir -p /var/lib/sumd/data
 	sudo mkdir -p /var/lib/sumd/oracles
 	sudo mv sumd /usr/local/bin/
+	sudo mv sumcli /usr/local/bin/
 	sudo mv sumd.service /etc/systemd/system/
 	sudo systemctl daemon-reload
+
+Access your instance by using the `sumcli` client.
 
 ## Compile from Source
 
