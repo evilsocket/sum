@@ -2,12 +2,13 @@ package main
 
 import (
 	"context"
+	. "github.com/evilsocket/sum/common"
 	pb "github.com/evilsocket/sum/proto"
 	log "github.com/sirupsen/logrus"
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 	"gopkg.in/alecthomas/kingpin.v2"
-	"net"
+	"os"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -17,6 +18,12 @@ var (
 	timeout      = kingpin.Arg("timeout", "communication timeout").Default("3s").Duration()
 	pollPeriod   = kingpin.Arg("pollinterval", "poll interval").Default("500ms").Duration()
 	listenString = kingpin.Arg("listen", "String to create the TCP listener.").Default("127.0.0.1:50051").String()
+	cpuProfile   = kingpin.Arg("cpu-profile", "Write CPU profile to this file.").Default("").String()
+	memProfile   = kingpin.Arg("mem-profile", "Write memory profile to this file.").Default("").String()
+	logFile      = kingpin.Arg("log-file", "If filled, sumd will log to this file.").Default("").String()
+	logDebug     = kingpin.Arg("debug", "Enable debug logs.").Default("false").Bool()
+	maxMsgSize   = kingpin.Arg("max-msg-size", "Maximum size in bytes of a GRPC message.").Default(strconv.Itoa(10 * 1024 * 1024)).Int()
+	credsPath    = kingpin.Arg("creds", "Path to the key.pem and cert.pem files to use for TLS based authentication.").Default("/etc/sumd/creds").ExistingDir()
 )
 
 const Version = "1.0.0"
@@ -39,6 +46,13 @@ func updater(ctx context.Context, ms *MuxService) {
 func main() {
 	kingpin.Parse()
 
+	StartProfiling(cpuProfile)
+
+	SetupSignals(func(_ os.Signal) { DoCleanup(cpuProfile, memProfile) })
+
+	SetupLogging(logFile, logDebug)
+	defer TeardownLogging()
+
 	nodes := make([]*NodeInfo, 0)
 
 	for _, n := range strings.Split(*nodesStrings, ",") {
@@ -50,10 +64,7 @@ func main() {
 		}
 	}
 
-	listener, err := net.Listen("tcp", *listenString)
-	if err != nil {
-		log.Fatalf("failed to create listener: %v", err)
-	}
+	server, listener := SetupGrpcServer(credsPath, listenString, maxMsgSize)
 
 	ms, err := NewMuxService(nodes)
 	if err != nil {
@@ -64,7 +75,6 @@ func main() {
 	defer cf()
 	go updater(ctx, ms)
 
-	server := grpc.NewServer()
 	pb.RegisterSumServiceServer(server, ms)
 	reflection.Register(server)
 
