@@ -135,7 +135,7 @@ func main() {
 		log.Fatal("failed to create listener: %v", err)
 	}
 
-	svc, err = service.New(*dataPath)
+	svc, err = service.New(*dataPath, *credsPath, *listenString)
 	if err != nil {
 		log.Fatal("%v", err)
 	}

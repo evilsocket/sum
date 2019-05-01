@@ -95,12 +95,24 @@ message ByMeta {
 
 message ServerInfo {
     string version = 1;
-    uint64 uptime  = 2;
-    uint64 pid = 3;
-    uint64 uid = 4;
-    repeated string argv = 5;
-    uint64 records = 6;
-    uint64 oracles = 7;
+    string os = 2;
+    string arch = 3;
+    string go_version = 4;
+    uint64 cpus = 5;
+    uint64 max_cpus = 6;
+    uint64 goroutines = 7;
+    uint64 alloc = 8;
+    uint64 sys = 9;
+    uint64 num_gc = 10;
+    string datapath = 11;
+    string credspath = 12;
+    string address = 13;
+    uint64 uptime  = 14;
+    uint64 pid = 15;
+    uint64 uid = 16;
+    repeated string argv = 17;
+    uint64 records = 18;
+    uint64 oracles = 19;
 }
 
 message Empty {}

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sync"
 	"time"
 
@@ -34,18 +35,27 @@ func errCallResponse(format string, args ...interface{}) *pb.CallResponse {
 type Service struct {
 	sync.RWMutex
 
-	started time.Time
-	pid     uint64
-	uid     uint64
-	argv    []string
-	records *storage.Records
-	oracles *storage.Oracles
-	cache   *compiledCache
+	datapath  string
+	credspath string
+	address   string
+	started   time.Time
+	pid       uint64
+	uid       uint64
+	argv      []string
+	records   *storage.Records
+	oracles   *storage.Oracles
+	cache     *compiledCache
 }
 
 // New loads records and oracles from a given path and returns
 // a new instance of the *Service object.
-func New(dataPath string) (*Service, error) {
+func New(dataPath string, credsPath string, address string) (svc *Service, err error) {
+	if dataPath, err = filepath.Abs(dataPath); err != nil {
+		return nil, err
+	} else if credsPath, err = filepath.Abs(credsPath); err != nil {
+		return nil, err
+	}
+
 	records, err := storage.LoadRecords(filepath.Join(dataPath, dataFolderName))
 	if err != nil {
 		return nil, err
@@ -56,14 +66,17 @@ func New(dataPath string) (*Service, error) {
 		return nil, err
 	}
 
-	svc := Service{
-		started: time.Now(),
-		pid:     uint64(os.Getpid()),
-		uid:     uint64(os.Getuid()),
-		argv:    os.Args,
-		records: records,
-		oracles: oracles,
-		cache:   newCache(),
+	svc = &Service{
+		datapath:  dataPath,
+		credspath: credsPath,
+		address:   address,
+		started:   time.Now(),
+		pid:       uint64(os.Getpid()),
+		uid:       uint64(os.Getuid()),
+		argv:      os.Args,
+		records:   records,
+		oracles:   oracles,
+		cache:     newCache(),
 	}
 
 	if oracles.Size() > 0 {
@@ -82,20 +95,36 @@ func New(dataPath string) (*Service, error) {
 		}
 	}
 
-	return &svc, nil
+	return svc, nil
 }
 
 // Info returns a *pb.ServerInfo object with various realtime information
 // about the service and its runtime.
 func (s *Service) Info(ctx context.Context, dummy *pb.Empty) (*pb.ServerInfo, error) {
+	var m runtime.MemStats
+
+	runtime.ReadMemStats(&m)
+
 	return &pb.ServerInfo{
-		Version: Version,
-		Uptime:  uint64(time.Since(s.started).Seconds()),
-		Pid:     s.pid,
-		Uid:     s.uid,
-		Argv:    s.argv,
-		Records: uint64(s.records.Size()),
-		Oracles: uint64(s.oracles.Size()),
+		Version:    Version,
+		Os:         runtime.GOOS,
+		Arch:       runtime.GOARCH,
+		GoVersion:  runtime.Version(),
+		Cpus:       uint64(runtime.NumCPU()),
+		MaxCpus:    uint64(runtime.GOMAXPROCS(0)),
+		Goroutines: uint64(runtime.NumGoroutine()),
+		Alloc:      m.Alloc,
+		Sys:        m.Sys,
+		NumGc:      uint64(m.NumGC),
+		Datapath:   s.datapath,
+		Credspath:  s.credspath,
+		Address:    s.address,
+		Uptime:     uint64(time.Since(s.started).Seconds()),
+		Pid:        s.pid,
+		Uid:        s.uid,
+		Argv:       s.argv,
+		Records:    uint64(s.records.Size()),
+		Oracles:    uint64(s.oracles.Size()),
 	}, nil
 }
 

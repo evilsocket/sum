@@ -7,7 +7,7 @@ SHELL := bash
 #
 GRPC_PATH=/opt/grpc/bins/opt
 GRPC_PHP_PLUGIN=${GRPC_PATH}/grpc_php_plugin
-GRPC_PROTOC=${GRPC_PATH}/protobuf/protoc
+GRPC_PROTOC=/opt/google/protoc/bin/protoc
 
 SUMD_DATAPATH=/tmp/sumd
 

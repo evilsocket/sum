@@ -30,6 +30,8 @@ Access your instance by using the `sumcli` client.
 
 ## Compile from Source
 
+Install [gRPC go bindings](https://grpc.io/docs/quickstart/go/) and then:
+
     go get github.com/evilsocket/sum
     cd $GOPATH/src/github.com/evilsocket/sum
     make deps
