@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"strings"
 
 	pb "github.com/evilsocket/sum/proto"
 
@@ -13,6 +14,33 @@ import (
 
 	"github.com/chzyer/readline"
 )
+
+func tos(value reflect.Value) string {
+	fieldValue := ""
+	switch value.Kind() {
+	case reflect.String:
+		fieldValue = value.String()
+	case reflect.Int:
+	case reflect.Int32:
+	case reflect.Int64:
+	case reflect.Uint:
+	case reflect.Uint32:
+	case reflect.Uint64:
+		fieldValue = fmt.Sprintf("%d", value)
+	case reflect.Slice:
+		res := []string{}
+		for i := 0; i < value.Len(); i++ {
+			item := value.Index(i)
+			res = append(res, tos(item))
+		}
+		fieldValue = strings.Join(res, " ")
+	default:
+		fmt.Printf("type=%v\n", value.Kind())
+		fieldValue = value.String()
+	}
+
+	return fieldValue
+}
 
 var infoHandler = handler{
 	Name:        "INFO",
@@ -32,21 +60,7 @@ var infoHandler = handler{
 		for i := 0; i < fields.NumField(); i++ {
 			if fieldName := str.Comma(fields.Field(i).Tag.Get("json"))[0]; fieldName != "" && fieldName != "-" {
 				value := values.Field(i)
-				fieldValue := ""
-
-				switch value.Kind() {
-				case reflect.String:
-					fieldValue = value.String()
-				case reflect.Int:
-				case reflect.Int32:
-				case reflect.Int64:
-				case reflect.Uint:
-				case reflect.Uint32:
-				case reflect.Uint64:
-					fieldValue = fmt.Sprintf("%d", value)
-				default:
-					fieldValue = value.String()
-				}
+				fieldValue := tos(value)
 
 				rows = append(rows, []string{
 					fieldName,
