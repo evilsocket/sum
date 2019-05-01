@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	. "github.com/evilsocket/sum/proto"
+	"github.com/evilsocket/sum/storage"
 )
 
 func (ms *MuxService) CreateOracle(ctx context.Context, arg *Oracle) (*OracleResponse, error) {
@@ -20,9 +21,14 @@ func (ms *MuxService) CreateOracle(ctx context.Context, arg *Oracle) (*OracleRes
 	defer ms.cageLock.Unlock()
 
 	raccoon.ID = ms.nextRaccoonId
-	ms.nextRaccoonId++
+
+	if _, exists := ms.raccoons[raccoon.ID]; exists {
+		return errOracleResponse("%v", storage.ErrInvalidID), nil
+	}
 
 	ms.raccoons[raccoon.ID] = raccoon
+
+	ms.nextRaccoonId++
 
 	return &OracleResponse{Success: true, Msg: fmt.Sprintf("%d", raccoon.ID)}, nil
 }
@@ -39,7 +45,7 @@ func (ms *MuxService) UpdateOracle(ctx context.Context, arg *Oracle) (*OracleRes
 	defer ms.cageLock.Unlock()
 
 	if _, found := ms.raccoons[arg.Id]; !found {
-		return errOracleResponse("Oracle %d not found", arg.Id), nil
+		return errOracleResponse("%v", storage.ErrRecordNotFound), nil
 	}
 
 	raccoon.ID = arg.Id
@@ -53,7 +59,7 @@ func (ms *MuxService) ReadOracle(ctx context.Context, arg *ById) (*OracleRespons
 	defer ms.cageLock.RUnlock()
 
 	if raccoon, found := ms.raccoons[arg.Id]; !found {
-		return errOracleResponse("Oracle %d not found", arg.Id), nil
+		return errOracleResponse("oracle %d not found.", arg.Id), nil
 	} else {
 		return &OracleResponse{Success: true, Oracles: []*Oracle{raccoon.AsOracle()}}, nil
 	}
@@ -79,7 +85,7 @@ func (ms *MuxService) DeleteOracle(ctx context.Context, arg *ById) (*OracleRespo
 	defer ms.cageLock.Unlock()
 
 	if _, found := ms.raccoons[arg.Id]; !found {
-		return errOracleResponse("Oracle %d not found", arg.Id), nil
+		return errOracleResponse("Oracle %d not found.", arg.Id), nil
 	}
 	delete(ms.raccoons, arg.Id)
 	return &OracleResponse{Success: true}, nil

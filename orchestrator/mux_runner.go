@@ -27,12 +27,12 @@ func (ms *MuxService) Run(ctx context.Context, arg *Call) (*CallResponse, error)
 
 	raccoon, found := ms.raccoons[arg.OracleId]
 	if !found {
-		return errCallResponse("Oracle %d not found", arg.OracleId), nil
+		return errCallResponse("oracle %d not found.", arg.OracleId), nil
 	}
 
 	// 1. Find the record the oracle is working on
 
-	resolvedRecords := make([]*Record, len(arg.Args)) // fill with nil
+	resolvedRecords := make([]*Record, len(raccoon.parameters)) // fill with nil
 
 	for i, a := range arg.Args {
 		if !raccoon.IsParameterPositionARecordLookup(i) {

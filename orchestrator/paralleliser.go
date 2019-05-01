@@ -42,15 +42,6 @@ func doParallel(nodes []*NodeInfo, f func(node *NodeInfo, resultChannel chan<- i
 	wg.Add(nNodes)
 	readersWg.Add(2)
 
-	if nNodes == 1 {
-		worker(nodes[0])
-		close(resultChan)
-		close(errorChan)
-		resultReader()
-		errorReader()
-		return
-	}
-
 	for _, n := range nodes {
 		go worker(n)
 	}

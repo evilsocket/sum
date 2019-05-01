@@ -95,6 +95,7 @@ func spawnNodeErr(port uint32, dataPath string) (*grpc.Server, *service.Service,
 	}
 	svc, err := service.New(dataPath)
 	if err != nil {
+		listener.Close()
 		return nil, nil, err
 	}
 	server := grpc.NewServer()

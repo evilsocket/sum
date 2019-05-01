@@ -82,16 +82,24 @@ func setupNetwork(numNodes, numOrchestrators int) (setup networkSetup, err error
 
 	var dir string
 	nodesStr := &strings.Builder{}
+	useTestFolder := false
+
+	if stat, err := os.Stat(testFolder); err == nil && numNodes == 1 && stat.IsDir() {
+		useTestFolder = true
+		dir = testFolder
+	}
 
 	for i := 0; i < numNodes; i++ {
-		dir, err = ioutil.TempDir("", "")
-		if err != nil {
-			return
-		}
-		for _, childDir := range []string{"data", "oracles"} {
-			err = os.Mkdir(filepath.Join(dir, childDir), 0755)
+		if !useTestFolder {
+			dir, err = ioutil.TempDir("", "")
 			if err != nil {
 				return
+			}
+			for _, childDir := range []string{"data", "oracles"} {
+				err = os.Mkdir(filepath.Join(dir, childDir), 0755)
+				if err != nil {
+					return
+				}
 			}
 		}
 		n := &nodeSetup{}
@@ -119,6 +127,21 @@ func setupNetwork(numNodes, numOrchestrators int) (setup networkSetup, err error
 		}
 		setup.orchestrators = append(setup.orchestrators, *o)
 	}
+
+	return
+}
+
+func setupPopulatedNetwork(numNodes, numOrchestrators int) (setup networkSetup, err error) {
+	setup, err = setupNetwork(numNodes, numOrchestrators)
+	if err != nil {
+		return
+	}
+	defer func(e *error) {
+		if *e == nil {
+			return
+		}
+		cleanupNetwork(&setup)
+	}(&err)
 
 	var createRecord func(context.Context, *pb.Record) (*pb.RecordResponse, error)
 	var createOracle func(context.Context, *pb.Oracle) (*pb.OracleResponse, error)
@@ -197,7 +220,7 @@ func cleanupNetwork(ns *networkSetup) {
 
 // benchmark a network composed of only 1 sum node ( previous not distributed approach )
 func BenchmarkSingleSum(b *testing.B) {
-	setup, err := setupNetwork(1, 0)
+	setup, err := setupPopulatedNetwork(1, 0)
 	if err != nil {
 		panic(err)
 	}
@@ -226,7 +249,7 @@ func BenchmarkSingleSum(b *testing.B) {
 
 // 2 nodes and 1 orchestrator
 func BenchmarkDoubleSum(b *testing.B) {
-	setup, err := setupNetwork(2, 1)
+	setup, err := setupPopulatedNetwork(2, 1)
 	if err != nil {
 		panic(err)
 	}
@@ -255,7 +278,7 @@ func BenchmarkDoubleSum(b *testing.B) {
 
 // 4 nodes and 1 orchestrator
 func BenchmarkTetraSum(b *testing.B) {
-	setup, err := setupNetwork(4, 1)
+	setup, err := setupPopulatedNetwork(4, 1)
 	if err != nil {
 		panic(err)
 	}
@@ -284,7 +307,7 @@ func BenchmarkTetraSum(b *testing.B) {
 
 // $(nproc) nodes and 1 orchestrator
 func BenchmarkNprocSum(b *testing.B) {
-	setup, err := setupNetwork(runtime.NumCPU(), 1)
+	setup, err := setupPopulatedNetwork(runtime.NumCPU(), 1)
 	if err != nil {
 		panic(err)
 	}

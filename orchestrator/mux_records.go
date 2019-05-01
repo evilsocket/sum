@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	. "github.com/evilsocket/sum/proto"
+	"github.com/evilsocket/sum/storage"
 	log "github.com/sirupsen/logrus"
 	"sort"
 	"strings"
@@ -32,7 +33,13 @@ func (ms *MuxService) CreateRecord(ctx context.Context, record *Record) (*Record
 	targetNode.Lock()
 	defer targetNode.Unlock()
 
-	record.Id = ms.findNextAvailableId()
+	// record.Id = ms.findNextAvailableId()
+	// strange, bad but legacy behaviour
+	record.Id = ms.nextId
+	if _, exists := ms.recId2node[record.Id]; exists {
+		return errRecordResponse("%v", storage.ErrInvalidID), nil
+	}
+
 	resp, err := targetNode.InternalClient.CreateRecordWithId(ctx, record)
 
 	if err == nil && resp.Success {
@@ -50,7 +57,7 @@ func (ms *MuxService) UpdateRecord(ctx context.Context, arg *Record) (*RecordRes
 	defer ms.nodesLock.RUnlock()
 
 	if n, found := ms.recId2node[arg.Id]; !found {
-		return errRecordResponse("Record %d not found", arg.Id), nil
+		return errRecordResponse("%v", storage.ErrRecordNotFound), nil
 	} else {
 		return n.Client.UpdateRecord(ctx, arg)
 	}
@@ -61,7 +68,7 @@ func (ms *MuxService) ReadRecord(ctx context.Context, arg *ById) (*RecordRespons
 	defer ms.nodesLock.RUnlock()
 
 	if n, found := ms.recId2node[arg.Id]; !found {
-		return errRecordResponse("Record %d not found", arg.Id), nil
+		return errRecordResponse("record %d not found.", arg.Id), nil
 	} else {
 		return n.Client.ReadRecord(ctx, arg)
 	}
@@ -76,7 +83,7 @@ func (ms *MuxService) ListRecords(ctx context.Context, arg *ListRequest) (*Recor
 	for _, n := range ms.nodes {
 		n.RLock()
 		defer n.RUnlock() // defer: ensure consistent data across this whole function
-		workerInputs[n.ID] = make(chan uint64)
+		workerInputs[n.ID] = make(chan uint64, 1)
 	}
 
 	total := uint64(len(ms.recId2node))
@@ -89,6 +96,9 @@ func (ms *MuxService) ListRecords(ctx context.Context, arg *ListRequest) (*Recor
 	if end > total {
 		end = total
 	}
+	if start > end {
+		start = end
+	}
 	resp := &RecordListResponse{Total: total, Pages: pages, Records: make([]*Record, 0, end-start)}
 
 	if total == 0 || end == start {
@@ -98,6 +108,9 @@ func (ms *MuxService) ListRecords(ctx context.Context, arg *ListRequest) (*Recor
 	go func() {
 		for id, n := range ms.recId2node {
 			workerInputs[n.ID] <- id
+		}
+		for _, ch := range workerInputs {
+			close(ch)
 		}
 	}()
 
@@ -126,6 +139,8 @@ func (ms *MuxService) ListRecords(ctx context.Context, arg *ListRequest) (*Recor
 		return resp.Records[i].Id < resp.Records[j].Id
 	})
 
+	resp.Records = resp.Records[start:end]
+
 	return resp, nil
 }
 
@@ -134,9 +149,13 @@ func (ms *MuxService) DeleteRecord(ctx context.Context, arg *ById) (*RecordRespo
 	defer ms.nodesLock.RUnlock()
 
 	if n, found := ms.recId2node[arg.Id]; !found {
-		return errRecordResponse("Record %d not found", arg.Id), nil
+		return errRecordResponse("record %d not found.", arg.Id), nil
+	} else if resp, err := n.Client.DeleteRecord(ctx, arg); err != nil {
+		return resp, err
 	} else {
-		return n.Client.DeleteRecord(ctx, arg)
+		delete(n.RecordIds, arg.Id)
+		delete(ms.recId2node, arg.Id)
+		return &RecordResponse{Success: true}, nil
 	}
 }
 
