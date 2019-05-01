@@ -150,19 +150,28 @@ func buildPayload(raw []byte) *pb.Data {
 
 // Run executes a compiled oracle given its identifier and the arguments
 // in the *pb.Call object.
-func (s *Service) Run(ctx context.Context, call *pb.Call) (*pb.CallResponse, error) {
+func (s *Service) Run(ctx context.Context, call *pb.Call) (resp *pb.CallResponse, err error) {
 	compiled := s.cache.Get(call.OracleId)
 	if compiled == nil {
 		return errCallResponse("oracle %d not found.", call.OracleId), nil
 	}
+
+	defer func() {
+		if v := recover(); v != nil {
+			err = v.(error)
+			log.Debug("%s", err)
+			resp = errCallResponse("error while running oracle %d: %s", call.OracleId, err)
+		}
+	}()
 
 	_, raw, err := compiled.Run(s.records, call.Args)
 	if err != nil {
 		return errCallResponse("error while running oracle %d: %s", call.OracleId, err), nil
 	}
 
-	return &pb.CallResponse{
+	resp = &pb.CallResponse{
 		Success: true,
 		Data:    buildPayload(raw),
-	}, nil
+	}
+	return resp, err
 }
