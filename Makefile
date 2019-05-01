@@ -33,17 +33,17 @@ proto/sum.pb.go:
 	@${GRPC_PROTOC} -I. --go_out=plugins=grpc:. proto/sum.proto
 
 sumcli: client_deps
-	@go build -o sumcli.bin cmd/sumcli/*.go
+	@go build -o sumcli cmd/sumcli/*.go
 
 sumd: server_deps sumcli
-	@go build -o sumd.bin cmd/sumd/*.go
+	@go build -o sumd cmd/sumd/*.go
 
 run: reset_env sumd
-	@./sumd.bin -datapath "${SUMD_DATAPATH}"
+	@./sumd -datapath "${SUMD_DATAPATH}"
 
 clean:
-	@rm -rf sumd.bin
-	@rm -rf sumcli.bin
+	@rm -rf sumd
+	@rm -rf sumcli
 	@rm -rf *.profile
 	@rm -rf *.profile.html
 	@rm -rf "${SUMD_DATAPATH}"
@@ -60,8 +60,8 @@ install_certificate:
 install: install_certificate sumd sumcli
 	@mkdir -p /var/lib/sumd/data
 	@mkdir -p /var/lib/sumd/oracles
-	@cp sumd.bin /usr/local/bin/sumd
-	@cp sumcli.bin /usr/local/bin/sumcli
+	@cp sumd /usr/local/bin/
+	@cp sumcli /usr/local/bin/
 	@cp sumd.service /etc/systemd/system/
 	@systemctl daemon-reload
 

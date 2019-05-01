@@ -1,5 +1,7 @@
-sumd.bin
-sumcli.bin
+/sumd
+!/cmd/sumd
+/sumcli
+!/cmd/sumcli
 vendor
 test_*.py
 *_experiments

@@ -26,8 +26,6 @@ Proceed to install the `sumd` binary as a systemd service:
 	sudo mv sumd.service /etc/systemd/system/
 	sudo systemctl daemon-reload
 
-Access your instance by using the `sumcli` client.
-
 ## Compile from Source
 
 Install [gRPC go bindings](https://grpc.io/docs/quickstart/go/) and then:
@@ -40,7 +38,7 @@ Install [gRPC go bindings](https://grpc.io/docs/quickstart/go/) and then:
 
 ## Usage
 
-To have an idea of how this works, take a look at [the example python client code](https://github.com/evilsocket/sumpy/blob/master/example.py) that will create a few vectors on the server, define an oracle, call it for every vector and print the similarities the server returned.
+You can access your sum instance by using the `sumcli` client, run `sumcli -eval "help; q"` to print a list of available commands. Moreover, to have an idea of how the client side works, take a look at [the example python client code](https://github.com/evilsocket/sumpy/blob/master/example.py) that will create a few vectors on the server, define an oracle, call it for every vector and print the similarities the server returned.
 
 ## Why?
 
