@@ -63,6 +63,7 @@ func NewMuxService(nodes []*NodeInfo) (*MuxService, error) {
 	}
 
 	ms.balance()
+	ms.stealOracles()
 
 	return ms, nil
 }
@@ -87,6 +88,7 @@ func (ms *MuxService) AddNode(n *NodeInfo) {
 	}
 
 	ms.balance()
+	ms.stealOraclesFromNode(n)
 }
 
 func (ms *MuxService) findNextAvailableId() uint64 {
