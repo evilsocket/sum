@@ -39,6 +39,10 @@ var (
 	}
 )
 
+func sameRecord(a, b pb.Record) bool {
+	return a.Id == b.Id && reflect.DeepEqual(a.Data, b.Data) && reflect.DeepEqual(a.Meta, b.Meta)
+}
+
 func unlink(dir string) error {
 	d, err := os.Open(dir)
 	if err != nil {
@@ -153,7 +157,7 @@ func TestServiceNew(t *testing.T) {
 	setup(t, true, true)
 	defer teardown(t)
 
-	if svc, err := New(testFolder); err != nil {
+	if svc, err := New(testFolder, "", ""); err != nil {
 		t.Fatal(err)
 	} else if svc == nil {
 		t.Fatal("expected valid service instance")
@@ -176,14 +180,14 @@ func TestServiceNewWithoutFolders(t *testing.T) {
 	defer teardown(t)
 
 	setup(t, false, false)
-	if svc, err := New(testFolder); err == nil {
+	if svc, err := New(testFolder, "", ""); err == nil {
 		t.Fatal("expected error")
 	} else if svc != nil {
 		t.Fatal("expected null service instance")
 	}
 
 	setup(t, true, false)
-	if svc, err := New(testFolder); err == nil {
+	if svc, err := New(testFolder, "", ""); err == nil {
 		t.Fatal("expected error")
 	} else if svc != nil {
 		t.Fatal("expected null service instance")
@@ -200,7 +204,7 @@ func TestServiceNewWithBrokenCode(t *testing.T) {
 	setup(t, true, true)
 	defer teardown(t)
 
-	if _, err := New(testFolder); err == nil {
+	if _, err := New(testFolder, "", ""); err == nil {
 		t.Fatal("expected error due to invalid oracle code")
 	}
 }
@@ -209,7 +213,7 @@ func TestServiceInfo(t *testing.T) {
 	setup(t, true, true)
 	defer teardown(t)
 
-	if svc, err := New(testFolder); err != nil {
+	if svc, err := New(testFolder, "", ""); err != nil {
 		t.Fatal(err)
 	} else if info, err := svc.Info(context.TODO(), nil); err != nil {
 		t.Fatal(err)
@@ -234,7 +238,7 @@ func TestServiceRun(t *testing.T) {
 	setup(t, true, true)
 	defer teardown(t)
 
-	if svc, err := New(testFolder); err != nil {
+	if svc, err := New(testFolder, "", ""); err != nil {
 		t.Fatal(err)
 	} else if resp, err := svc.Run(context.TODO(), &testCall); err != nil {
 		t.Fatal(err)
@@ -263,7 +267,7 @@ func TestServiceRunWithCompression(t *testing.T) {
 	setup(t, true, true)
 	defer teardown(t)
 
-	if svc, err := New(testFolder); err != nil {
+	if svc, err := New(testFolder, "", ""); err != nil {
 		t.Fatal(err)
 	} else if resp, err := svc.Run(context.TODO(), &testCall); err != nil {
 		t.Fatal(err)
@@ -289,7 +293,7 @@ func TestServiceRunWithWithInvalidId(t *testing.T) {
 	call := pb.Call{OracleId: 12345}
 	msg := "oracle 12345 not found."
 
-	if svc, err := New(testFolder); err != nil {
+	if svc, err := New(testFolder, "", ""); err != nil {
 		t.Fatal(err)
 	} else if resp, err := svc.Run(context.TODO(), &call); err != nil {
 		t.Fatal(err)
@@ -312,7 +316,7 @@ func TestServiceRunWithWithInvalidArgs(t *testing.T) {
 	// what arguments we pass to it
 	call := pb.Call{OracleId: 1, Args: []string{"wut,"}}
 
-	if svc, err := New(testFolder); err != nil {
+	if svc, err := New(testFolder, "", ""); err != nil {
 		t.Fatal(err)
 	} else if resp, err := svc.Run(context.TODO(), &call); err != nil {
 		t.Fatal(err)
@@ -335,7 +339,7 @@ func TestServiceRunWithWithMissingArgs(t *testing.T) {
 
 	call := pb.Call{OracleId: 1, Args: []string{}}
 
-	if svc, err := New(testFolder); err != nil {
+	if svc, err := New(testFolder, "", ""); err != nil {
 		t.Fatal(err)
 	} else if resp, err := svc.Run(context.TODO(), &call); err != nil {
 		t.Fatal(err)
@@ -366,7 +370,7 @@ func TestServiceRunWithUnexportableReturn(t *testing.T) {
 	setup(t, true, true)
 	defer teardown(t)
 
-	if svc, err := New(testFolder); err != nil {
+	if svc, err := New(testFolder, "", ""); err != nil {
 		t.Fatal(err)
 	} else if resp, err := svc.Run(context.TODO(), &testCall); err != nil {
 		t.Fatal(err)
@@ -391,7 +395,7 @@ func TestServiceRunWithRuntimeError(t *testing.T) {
 	setup(t, true, true)
 	defer teardown(t)
 
-	if svc, err := New(testFolder); err != nil {
+	if svc, err := New(testFolder, "", ""); err != nil {
 		t.Fatal(err)
 	} else if resp, err := svc.Run(context.TODO(), &testCall); err != nil {
 		t.Fatal(err)
@@ -417,7 +421,7 @@ func TestServiceRunWithContextError(t *testing.T) {
 	setup(t, true, true)
 	defer teardown(t)
 
-	if svc, err := New(testFolder); err != nil {
+	if svc, err := New(testFolder, "", ""); err != nil {
 		t.Fatal(err)
 	} else if resp, err := svc.Run(context.TODO(), &testCall); err != nil {
 		t.Fatal(err)

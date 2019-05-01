@@ -9,7 +9,7 @@ func BenchmarkServiceInfo(b *testing.B) {
 	setup(b, true, true)
 	defer teardown(b)
 
-	svc, err := New(testFolder)
+	svc, err := New(testFolder, "", "")
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -26,7 +26,7 @@ func BenchmarkServiceRunWithoutCompression(b *testing.B) {
 	setup(b, true, true)
 	defer teardown(b)
 
-	svc, err := New(testFolder)
+	svc, err := New(testFolder, "", "")
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -50,7 +50,7 @@ func BenchmarkServiceRunWithCompression(b *testing.B) {
 	setup(b, true, true)
 	defer teardown(b)
 
-	svc, err := New(testFolder)
+	svc, err := New(testFolder, "", "")
 	if err != nil {
 		b.Fatal(err)
 	}

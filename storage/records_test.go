@@ -4,7 +4,6 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"reflect"
 	"testing"
 
 	pb "github.com/evilsocket/sum/proto"
@@ -67,7 +66,7 @@ func TestLoadRecords(t *testing.T) {
 	records.ForEach(func(m proto.Message) error {
 		r := m.(*pb.Record)
 		// id was updated while saving the record
-		if r.Id = testRecord.Id; !reflect.DeepEqual(*r, testRecord) {
+		if r.Id = testRecord.Id; !sameRecord(*r, testRecord) {
 			t.Fatalf("records should be the same here")
 		}
 		return nil
@@ -135,7 +134,7 @@ func TestRecordsUpdate(t *testing.T) {
 		t.Fatal(err)
 	} else if record := records.Find(updatedRecord.Id); record == nil {
 		t.Fatalf("expected record with id %d", updatedRecord.Id)
-	} else if !reflect.DeepEqual(*record, updatedRecord) {
+	} else if !sameRecord(*record, updatedRecord) {
 		t.Fatal("records should match")
 	}
 }

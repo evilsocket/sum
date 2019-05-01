@@ -4,7 +4,6 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"reflect"
 	"testing"
 
 	pb "github.com/evilsocket/sum/proto"
@@ -33,6 +32,10 @@ var (
 		Code: "function myBodyToo(){ return 0; }",
 	}
 )
+
+func sameOracle(a, b pb.Oracle) bool {
+	return a.Id == b.Id && a.Name == b.Name && a.Code == b.Code
+}
 
 func setupOracles(t testing.TB, withValid bool, withCorrupted bool, withBroken bool) {
 	log.SetOutput(ioutil.Discard)
@@ -94,7 +97,7 @@ func TestLoadOracles(t *testing.T) {
 	oracles.ForEach(func(m proto.Message) error {
 		oracle := m.(*pb.Oracle)
 		// id was updated while saving the oracle
-		if oracle.Id = testOracle.Id; !reflect.DeepEqual(*oracle, testOracle) {
+		if oracle.Id = testOracle.Id; !sameOracle(*oracle, testOracle) {
 			t.Fatalf("oracles should be the same here")
 		}
 		return nil
@@ -162,7 +165,7 @@ func TestOraclesUpdate(t *testing.T) {
 		t.Fatal(err)
 	} else if oracle := oracles.Find(updatedOracle.Id); oracle == nil {
 		t.Fatalf("expected oracle with id %d", updatedOracle.Id)
-	} else if !reflect.DeepEqual(*oracle, updatedOracle) {
+	} else if !sameOracle(*oracle, updatedOracle) {
 		t.Fatal("oracles should match")
 	}
 }

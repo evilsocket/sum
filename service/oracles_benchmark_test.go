@@ -11,7 +11,7 @@ func BenchmarkServiceCreateOracle(b *testing.B) {
 	setupFolders(b)
 	defer teardown(b)
 
-	svc, err := New(testFolder)
+	svc, err := New(testFolder, "", "")
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -28,7 +28,7 @@ func BenchmarkServiceUpdateOracle(b *testing.B) {
 	setup(b, true, true)
 	defer teardown(b)
 
-	svc, err := New(testFolder)
+	svc, err := New(testFolder, "", "")
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -46,7 +46,7 @@ func BenchmarkServiceReadOracle(b *testing.B) {
 	setup(b, true, true)
 	defer teardown(b)
 
-	svc, err := New(testFolder)
+	svc, err := New(testFolder, "", "")
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -64,7 +64,7 @@ func BenchmarkServiceFindOracle(b *testing.B) {
 	setup(b, true, true)
 	defer teardown(b)
 
-	svc, err := New(testFolder)
+	svc, err := New(testFolder, "", "")
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -90,7 +90,7 @@ func BenchmarkServiceDeleteOracle(b *testing.B) {
 		id := uint64(i%testOracles) + 1
 		if id == 1 {
 			setup(b, true, true)
-			if svc, err = New(testFolder); err != nil {
+			if svc, err = New(testFolder, "", ""); err != nil {
 				b.Fatal(err)
 			}
 		}

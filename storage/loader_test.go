@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"reflect"
 	"testing"
 
 	pb "github.com/evilsocket/sum/proto"
@@ -124,7 +123,7 @@ func TestLoaderLoad(t *testing.T) {
 		var rec pb.Record
 		if err := Load(fileName, &rec); err != nil {
 			t.Fatalf("erorr loading %s: %s", fileName, err)
-		} else if !reflect.DeepEqual(rec, testRecord) {
+		} else if !sameRecord(rec, testRecord) {
 			t.Fatal("records should be the same")
 		}
 	}

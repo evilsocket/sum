@@ -19,6 +19,10 @@ var (
 	}
 )
 
+func sameRecord(a, b pb.Record) bool {
+	return a.Id == b.Id && reflect.DeepEqual(a.Data, b.Data) && reflect.DeepEqual(a.Meta, b.Meta)
+}
+
 func TestStorageFlush(t *testing.T) {
 	if err := Flush(&testRecord, testDatFile); err != nil {
 		t.Fatal(err)
@@ -39,7 +43,7 @@ func TestStorageFlushAndBack(t *testing.T) {
 		t.Fatal(err)
 	} else if err := Load(testDatFile, &rec); err != nil {
 		t.Fatal(err)
-	} else if !reflect.DeepEqual(rec, testRecord) {
+	} else if !sameRecord(rec, testRecord) {
 		t.Fatal("records should be the same")
 	}
 }

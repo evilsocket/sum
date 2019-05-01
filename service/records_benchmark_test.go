@@ -11,7 +11,7 @@ func BenchmarkServiceCreateRecord(b *testing.B) {
 	setupFolders(b)
 	defer teardown(b)
 
-	svc, err := New(testFolder)
+	svc, err := New(testFolder, "", "")
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -28,7 +28,7 @@ func BenchmarkServiceUpdateRecord(b *testing.B) {
 	setup(b, true, true)
 	defer teardown(b)
 
-	svc, err := New(testFolder)
+	svc, err := New(testFolder, "", "")
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -46,7 +46,7 @@ func BenchmarkServiceReadRecord(b *testing.B) {
 	setup(b, true, true)
 	defer teardown(b)
 
-	svc, err := New(testFolder)
+	svc, err := New(testFolder, "", "")
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -64,7 +64,7 @@ func BenchmarkServiceListRecords(b *testing.B) {
 	setup(b, true, true)
 	defer teardown(b)
 
-	svc, err := New(testFolder)
+	svc, err := New(testFolder, "", "")
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -93,7 +93,7 @@ func BenchmarkServiceDeleteRecord(b *testing.B) {
 		id := uint64(i%testRecords) + 1
 		if id == 1 {
 			setup(b, true, true)
-			if svc, err = New(testFolder); err != nil {
+			if svc, err = New(testFolder, "", ""); err != nil {
 				b.Fatal(err)
 			}
 		}
