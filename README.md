@@ -92,5 +92,6 @@ as binary protobuf encoded files.
 
 Here you can see the output of an example usecase - finding behaviourally similar malware samples given a reference executable:
 
-<img src="https://raw.githubusercontent.com/evilsocket/sum/master/malware.png" />
+<img src="https://raw.githubusercontent.com/evilsocket/sum/master/malware_pe.png" />
 
+<img src="https://raw.githubusercontent.com/evilsocket/sum/master/malware_elf.png" />
