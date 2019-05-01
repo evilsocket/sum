@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -43,8 +44,15 @@ func dataAsString(data []float64, limit int) string {
 }
 
 func metaAsString(meta map[string]string) string {
+	keys := []string{}
+	for key, _ := range meta {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+
 	parts := []string{}
-	for key, value := range meta {
+	for _, key := range keys {
+		value := meta[key]
 		parts = append(parts, fmt.Sprintf("%s=%s", key, value))
 	}
 	return strings.Join(parts, " ")
