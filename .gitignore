@@ -1,7 +1,3 @@
-/sumd
-!/cmd/sumd
-/sumcli
-!/cmd/sumcli
 vendor
 test_*.py
 *_experiments

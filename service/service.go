@@ -164,6 +164,8 @@ func (s *Service) Run(ctx context.Context, call *pb.Call) (resp *pb.CallResponse
 		}
 	}()
 
+	log.Debug("call: %+v", call)
+
 	_, raw, err := compiled.Run(s.records, call.Args)
 	if err != nil {
 		return errCallResponse("error while running oracle %d: %s", call.OracleId, err), nil

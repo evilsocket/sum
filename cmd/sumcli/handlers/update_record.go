@@ -1,4 +1,4 @@
-package main
+package handlers
 
 import (
 	"context"
@@ -16,7 +16,7 @@ var updateRecordHandler = handler{
 	Mnemonic:    "UPDATE or U <ID>",
 	Completer:   readline.PcItem("update"),
 	Parser:      regexp.MustCompile(`^(?i)(UPDATE|U)\s+(\d+)$`),
-	Description: "Update a record given its id with specified elements and metadata.",
+	Description: "Update a record given its <ID> with specified elements and metadata.",
 	Callback: func(cmd string, args []string, reader *readline.Instance, client pb.SumServiceClient) error {
 		id, err := strconv.ParseUint(args[0], 10, 64)
 		if err != nil {

@@ -1,4 +1,4 @@
-package main
+package handlers
 
 import (
 	"context"
@@ -61,7 +61,7 @@ var readRecordHandler = handler{
 	Mnemonic:    "READ or R <ID>",
 	Completer:   readline.PcItem("read"),
 	Parser:      regexp.MustCompile(`^(?i)(READ|R)\s+(\d+)$`),
-	Description: "Read the data and metadata of a record given its id.",
+	Description: "Read the data and metadata of a record given its <ID>.",
 	Callback: func(cmd string, args []string, reader *readline.Instance, client pb.SumServiceClient) error {
 		id, err := strconv.ParseUint(args[0], 10, 64)
 		if err != nil {

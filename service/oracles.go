@@ -50,20 +50,24 @@ func (s *Service) ReadOracle(ctx context.Context, query *pb.ById) (*pb.OracleRes
 	if oracle == nil {
 		return errOracleResponse("oracle %d not found.", query.Id), nil
 	}
-	return &pb.OracleResponse{Success: true, Oracles: []*pb.Oracle{oracle}}, nil
+	return &pb.OracleResponse{Success: true, Oracle: oracle}, nil
 }
 
 // FindOracle returns a list of raw *pb.Oracle objects that match
 // the provided name.
 func (s *Service) FindOracle(ctx context.Context, query *pb.ByName) (*pb.OracleResponse, error) {
-	oracles := make([]*pb.Oracle, 0)
+	found := (*pb.Oracle)(nil)
 	s.oracles.ForEach(func(m proto.Message) error {
 		if oracle := m.(*pb.Oracle); oracle.Name == query.Name {
-			oracles = append(oracles, oracle)
+			found = oracle
 		}
 		return nil
 	})
-	return &pb.OracleResponse{Success: true, Oracles: oracles}, nil
+
+	if found == nil {
+		return errOracleResponse("oracle %s not found.", query.Name), nil
+	}
+	return &pb.OracleResponse{Success: true, Oracle: found}, nil
 }
 
 // DeleteOracle removes an oracle from the storage given its identifier.
@@ -73,4 +77,50 @@ func (s *Service) DeleteOracle(ctx context.Context, query *pb.ById) (*pb.OracleR
 	}
 	s.cache.Del(query.Id)
 	return &pb.OracleResponse{Success: true}, nil
+}
+
+// ListOracles returns list of oracles given a ListRequest object.
+func (s *Service) ListOracles(ctx context.Context, list *pb.ListRequest) (*pb.OracleListResponse, error) {
+	all := s.oracles.Objects()
+	total := uint64(len(all))
+
+	if list.Page < 1 {
+		list.Page = 1
+	}
+
+	if list.PerPage < 1 {
+		list.PerPage = 1
+	}
+
+	start := (list.Page - 1) * list.PerPage
+	end := start + list.PerPage
+	npages := total / list.PerPage
+	if total%list.PerPage > 0 {
+		npages++
+	}
+
+	// out of range
+	if total <= start {
+		return &pb.OracleListResponse{Total: total, Pages: npages}, nil
+	}
+
+	resp := pb.OracleListResponse{
+		Total:   total,
+		Pages:   npages,
+		Oracles: make([]*pb.Oracle, 0),
+	}
+
+	if total <= end {
+		// partially filled page
+		for _, m := range all[start:] {
+			resp.Oracles = append(resp.Oracles, m.(*pb.Oracle))
+		}
+	} else {
+		// full page
+		for _, m := range all[start:end] {
+			resp.Oracles = append(resp.Oracles, m.(*pb.Oracle))
+		}
+	}
+
+	return &resp, nil
 }

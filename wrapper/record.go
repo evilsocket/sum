@@ -12,7 +12,9 @@ import (
 // the dataset while being evaulated.
 type Record struct {
 	// ID can be used to read the record identifier.
-	ID     uint64
+	ID uint64
+	// Number of elements in the vector data.
+	Size   uint64
 	record *pb.Record
 }
 
@@ -21,6 +23,7 @@ func WrapRecord(record *pb.Record) Record {
 	w := Record{record: record}
 	if record != nil {
 		w.ID = record.Id
+		w.Size = uint64(len(record.Data))
 	}
 	return w
 }

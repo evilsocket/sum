@@ -1,4 +1,4 @@
-package main
+package handlers
 
 import (
 	"context"
@@ -11,26 +11,26 @@ import (
 	"github.com/chzyer/readline"
 )
 
-var deleteRecordHandler = handler{
-	Name:        "DELETE",
-	Mnemonic:    "DELETE or D <ID>",
-	Completer:   readline.PcItem("delete"),
-	Parser:      regexp.MustCompile(`^(?i)(DELETE|D)\s+(\d+)$`),
-	Description: "Delete a vector given its id.",
+var deleteOracleHandler = handler{
+	Name:        "ODELETE",
+	Mnemonic:    "ODELETE or OD <ID>",
+	Completer:   readline.PcItem("odelete"),
+	Parser:      regexp.MustCompile(`^(?i)(ODELETE|OD)\s+(\d+)$`),
+	Description: "Delete an oracle given its <ID>.",
 	Callback: func(cmd string, args []string, reader *readline.Instance, client pb.SumServiceClient) error {
 		id, err := strconv.ParseUint(args[0], 10, 64)
 		if err != nil {
 			return err
 		}
 
-		resp, err := client.DeleteRecord(context.TODO(), &pb.ById{Id: id})
+		resp, err := client.DeleteOracle(context.TODO(), &pb.ById{Id: id})
 		if err != nil {
 			return err
 		} else if resp.Success == false {
 			return fmt.Errorf("%s", resp.Msg)
 		}
 
-		fmt.Printf("record %d successfully deleted.\n", id)
+		fmt.Printf("oracle %d successfully deleted.\n", id)
 
 		return nil
 	},

@@ -6,6 +6,8 @@ import (
 	"io"
 	"os"
 
+	"github.com/evilsocket/sum/cmd/sumcli/handlers"
+
 	pb "github.com/evilsocket/sum/proto"
 
 	"google.golang.org/grpc"
@@ -57,7 +59,7 @@ func main() {
 		HistoryFile:     history,
 		InterruptPrompt: "^C",
 		EOFPrompt:       "exit",
-		AutoComplete:    completers,
+		AutoComplete:    handlers.Completers,
 	})
 	if err != nil {
 		die("%v\n", err)
@@ -65,7 +67,7 @@ func main() {
 	defer reader.Close()
 
 	for _, cmd := range str.SplitBy(*evalString, ";") {
-		if err := dispatchHandler(cmd, reader, client); err != nil {
+		if err := handlers.Dispatch(cmd, reader, client); err != nil {
 			fmt.Printf("%s\n", err)
 		}
 	}
@@ -81,7 +83,7 @@ func main() {
 			break
 		} else {
 			for _, cmd := range str.SplitBy(line, ";") {
-				if err := dispatchHandler(cmd, reader, client); err != nil {
+				if err := handlers.Dispatch(cmd, reader, client); err != nil {
 					fmt.Printf("%s\n", err)
 				}
 			}

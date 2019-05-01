@@ -15,6 +15,7 @@ service SumService {
   rpc CreateOracle(Oracle) returns (OracleResponse) {}
   rpc UpdateOracle(Oracle) returns (OracleResponse) {}
   rpc ReadOracle(ById) returns (OracleResponse) {}
+  rpc ListOracles(ListRequest) returns (OracleListResponse) {}
   rpc FindOracle(ByName) returns (OracleResponse) {}
   rpc DeleteOracle(ById) returns (OracleResponse) {}
   // execute a call to a oracle given its id
@@ -46,6 +47,12 @@ message RecordListResponse {
     repeated Record records = 3;
 }
 
+message OracleListResponse {
+    uint64 total = 1;
+    uint64 pages = 2;
+    repeated Oracle oracles = 3;
+}
+
 message FindResponse {
     bool success = 1;
     string msg = 2;
@@ -61,7 +68,7 @@ message Oracle {
 message OracleResponse {
     bool success = 1;
     string msg = 2;
-    repeated Oracle oracles = 3;
+    Oracle oracle = 3;
 }
 
 message Call {

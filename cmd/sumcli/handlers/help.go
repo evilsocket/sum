@@ -1,4 +1,4 @@
-package main
+package handlers
 
 import (
 	"os"
@@ -18,7 +18,7 @@ var helpHandler = handler{
 	Callback: func(cmd string, args []string, reader *readline.Instance, client pb.SumServiceClient) error {
 		rows := [][]string{}
 
-		for _, h := range handlers {
+		for _, h := range Handlers {
 			rows = append(rows, []string{h.Mnemonic, h.Description})
 		}
 

@@ -1,4 +1,4 @@
-package main
+package handlers
 
 import (
 	"fmt"
@@ -21,22 +21,11 @@ type handler struct {
 	Callback    handlerCb
 }
 
-var handlers = []handler{}
-var completers = (*readline.PrefixCompleter)(nil)
+var Handlers = []handler{}
+var Completers = (*readline.PrefixCompleter)(nil)
 
 func init() {
-	/*
-	   TODO:
-	   	// oracles CRUD
-	   	CreateOracle(ctx context.Context, in *Oracle, opts ...grpc.CallOption) (*OracleResponse, error)
-	   	UpdateOracle(ctx context.Context, in *Oracle, opts ...grpc.CallOption) (*OracleResponse, error)
-	   	ReadOracle(ctx context.Context, in *ById, opts ...grpc.CallOption) (*OracleResponse, error)
-	   	FindOracle(ctx context.Context, in *ByName, opts ...grpc.CallOption) (*OracleResponse, error)
-	   	DeleteOracle(ctx context.Context, in *ById, opts ...grpc.CallOption) (*OracleResponse, error)
-	   	// execute a call to a oracle given its id
-	   	Run(ctx context.Context, in *Call, opts ...grpc.CallOption) (*CallResponse, error)
-	*/
-	handlers = []handler{
+	Handlers = []handler{
 		helpHandler,
 		quitHandler,
 		infoHandler,
@@ -47,17 +36,27 @@ func init() {
 		deleteRecordHandler,
 		listRecordsHandler,
 		findRecordHandler,
+		// oracles CRUD and execution
+		createOracleHandler,
+		readOracleHandler,
+		updateOracleHandler,
+		deleteOracleHandler,
+		findOracleHandler,
+		listOraclesHandler,
+		callOracleHandler,
 	}
 
 	tmp := []readline.PrefixCompleterInterface{}
-	for _, h := range handlers {
-		tmp = append(tmp, h.Completer)
+	for _, h := range Handlers {
+		if h.Completer != nil {
+			tmp = append(tmp, h.Completer)
+		}
 	}
-	completers = readline.NewPrefixCompleter(tmp...)
+	Completers = readline.NewPrefixCompleter(tmp...)
 }
 
-func dispatchHandler(cmd string, reader *readline.Instance, client pb.SumServiceClient) error {
-	for _, handler := range handlers {
+func Dispatch(cmd string, reader *readline.Instance, client pb.SumServiceClient) error {
+	for _, handler := range Handlers {
 		match := false
 		args := []string{}
 

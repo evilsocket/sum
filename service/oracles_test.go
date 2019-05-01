@@ -32,8 +32,8 @@ func TestServiceErrOracleResponse(t *testing.T) {
 		t.Fatal("success should be false")
 	} else if r.Msg != "test 123" {
 		t.Fatalf("unexpected message: %s", r.Msg)
-	} else if r.Oracles != nil {
-		t.Fatalf("unexpected oracles list: %v", r.Oracles)
+	} else if r.Oracle != nil {
+		t.Fatalf("unexpected oracle: %v", r.Oracle)
 	}
 }
 
@@ -47,8 +47,8 @@ func TestServiceCreateOracle(t *testing.T) {
 		t.Fatal(err)
 	} else if !resp.Success {
 		t.Fatalf("expected success response: %v", resp)
-	} else if resp.Oracles != nil {
-		t.Fatalf("unexpected oracles list: %v", resp.Oracles)
+	} else if resp.Oracle != nil {
+		t.Fatalf("unexpected oracle: %v", resp.Oracle)
 	} else if resp.Msg != "1" {
 		t.Fatalf("unexpected response message: %s", resp.Msg)
 	}
@@ -83,8 +83,8 @@ func TestServiceCreateBrokenOracle(t *testing.T) {
 		t.Fatal(err)
 	} else if resp.Success {
 		t.Fatalf("expected error response: %v", resp)
-	} else if resp.Oracles != nil {
-		t.Fatalf("unexpected oracles list: %v", resp.Oracles)
+	} else if resp.Oracle != nil {
+		t.Fatalf("unexpected oracle: %v", resp.Oracle)
 	}
 }
 
@@ -100,8 +100,8 @@ func TestServiceUpdateOracle(t *testing.T) {
 		t.Fatal(err)
 	} else if !resp.Success {
 		t.Fatalf("expected success response: %v", resp)
-	} else if resp.Oracles != nil {
-		t.Fatalf("unexpected oracles list: %v", resp.Oracles)
+	} else if resp.Oracle != nil {
+		t.Fatalf("unexpected oracle: %v", resp.Oracle)
 	} else if stored := svc.oracles.Find(updatedOracle.Id); stored == nil {
 		t.Fatal("expected stored oracle with id 1")
 	} else if !sameOracle(*stored, updatedOracle) {
@@ -137,8 +137,8 @@ func TestServiceUpdateWithBrokenOracle(t *testing.T) {
 		t.Fatal(err)
 	} else if resp.Success {
 		t.Fatalf("expected error response: %v", resp)
-	} else if resp.Oracles != nil {
-		t.Fatalf("unexpected oracles list: %v", resp.Oracles)
+	} else if resp.Oracle != nil {
+		t.Fatalf("unexpected oracle: %v", resp.Oracle)
 	}
 }
 
@@ -153,12 +153,10 @@ func TestServiceReadOracle(t *testing.T) {
 		t.Fatal(err)
 	} else if !resp.Success {
 		t.Fatalf("expected success response: %v", resp)
-	} else if resp.Oracles == nil {
+	} else if resp.Oracle == nil {
 		t.Fatal("expected oracles list")
-	} else if len(resp.Oracles) != 1 {
-		t.Fatalf("unexpected oracles list size: %d", len(resp.Oracles))
-	} else if testOracle.Id = byID.Id; !sameOracle(*resp.Oracles[0], testOracle) {
-		t.Fatalf("oracle does not match: %v", resp.Oracles[0])
+	} else if testOracle.Id = byID.Id; !sameOracle(*resp.Oracle, testOracle) {
+		t.Fatalf("oracle does not match: %v", resp.Oracle)
 	}
 }
 
@@ -172,8 +170,8 @@ func TestServiceReadOracleWithInvalidId(t *testing.T) {
 		t.Fatal(err)
 	} else if resp.Success {
 		t.Fatalf("expected error response: %v", resp)
-	} else if resp.Oracles != nil {
-		t.Fatalf("unexpected oracles list: %v", resp.Oracles)
+	} else if resp.Oracle != nil {
+		t.Fatalf("unexpected oracle: %v", resp.Oracle)
 	} else if resp.Msg != "oracle 666 not found." {
 		t.Fatalf("unexpected message: %s", resp.Msg)
 	}
@@ -195,12 +193,10 @@ func TestServiceFindOracle(t *testing.T) {
 		t.Fatal(err)
 	} else if !resp.Success {
 		t.Fatalf("expected success response: %v", resp)
-	} else if resp.Oracles == nil {
+	} else if resp.Oracle == nil {
 		t.Fatal("expected oracles list")
-	} else if len(resp.Oracles) != testOracles {
-		t.Fatalf("unexpected oracles list size: %v", resp.Oracles)
-	} else if testOracle.Id = byID.Id; !sameOracle(*resp.Oracles[0], testOracle) {
-		t.Fatalf("oracle does not match: %v", resp.Oracles[0])
+	} else if testOracle.Id = byID.Id; !sameOracle(*resp.Oracle, testOracle) {
+		t.Fatalf("oracle does not match: %v", resp.Oracle)
 	}
 }
 
@@ -212,12 +208,10 @@ func TestServiceFindOracleWithInvalidName(t *testing.T) {
 		t.Fatal(err)
 	} else if resp, err := svc.FindOracle(context.TODO(), &pb.ByName{Name: "no way i'm an oracle name :D"}); err != nil {
 		t.Fatal(err)
-	} else if !resp.Success {
+	} else if resp.Success {
 		t.Fatalf("expected success response: %v", resp)
-	} else if resp.Oracles == nil {
-		t.Fatal("expected oracles list")
-	} else if len(resp.Oracles) != 0 {
-		t.Fatalf("unexpected oracles list size: %v", resp.Oracles)
+	} else if resp.Oracle != nil {
+		t.Fatalf("expected oracle: %v", resp.Oracle)
 	}
 }
 
@@ -236,8 +230,8 @@ func TestServiceDeleteOracle(t *testing.T) {
 			t.Fatal(err)
 		} else if !resp.Success {
 			t.Fatalf("expected success response: %v", resp)
-		} else if resp.Oracles != nil {
-			t.Fatalf("unexpected oracles list: %v", resp.Oracles)
+		} else if resp.Oracle != nil {
+			t.Fatalf("unexpected oracle: %v", resp.Oracle)
 		} else if svc.NumOracles() != testOracles-int(id) {
 			t.Fatalf("inconsistent oracles storage size of %d", svc.NumOracles())
 		}
@@ -262,8 +256,8 @@ func TestServiceDeleteOracleWithInvalidId(t *testing.T) {
 		t.Fatal(err)
 	} else if resp.Success {
 		t.Fatalf("expected error response: %v", resp)
-	} else if resp.Oracles != nil {
-		t.Fatalf("unexpected oracles list: %v", resp.Oracles)
+	} else if resp.Oracle != nil {
+		t.Fatalf("unexpected oracle: %v", resp.Oracle)
 	} else if resp.Msg != "Oracle 666 not found." {
 		t.Fatalf("unexpected message: %s", resp.Msg)
 	}
