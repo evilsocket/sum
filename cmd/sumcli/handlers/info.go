@@ -35,7 +35,6 @@ func tos(value reflect.Value) string {
 		}
 		fieldValue = strings.Join(res, " ")
 	default:
-		fmt.Printf("type=%v\n", value.Kind())
 		fieldValue = value.String()
 	}
 
