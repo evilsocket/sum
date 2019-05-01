@@ -49,6 +49,11 @@ func (r *Records) metaIndexCreate(rec *pb.Record) {
 	}
 }
 
+func (r *Records) metaIndexUpdate(rec *pb.Record) {
+	r.metaIndexRemove(rec)
+	r.metaIndexCreate(rec)
+}
+
 func (r *Records) metaIndexRemove(rec *pb.Record) {
 	r.Lock()
 	defer r.Unlock()
@@ -101,6 +106,24 @@ func (r *Records) FindBy(meta string, val string) []*pb.Record {
 	}
 
 	return records
+}
+
+func (r *Records) Create(record *pb.Record) error {
+	if err := r.Index.Create(record); err != nil {
+		return err
+	}
+	// create the meta index for this new record
+	r.metaIndexCreate(record)
+	return nil
+}
+
+func (r *Records) Update(record *pb.Record) error {
+	if err := r.Index.Update(record); err != nil {
+		return err
+	}
+	// update the meta index for this record
+	r.metaIndexUpdate(record)
+	return nil
 }
 
 // Delete removes a stored pb.Record from the index given its identifier,
