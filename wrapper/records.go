@@ -24,13 +24,13 @@ func WrapRecords(records *storage.Records) Records {
 // Find returns a wrapped Record given its identifier.
 // If not found, the resulting record will result as null
 // (record.IsNull() will be true).
-func (w Records) Find(id uint64) Record {
+func (w Records) Find(id uint64) *Record {
 	return WrapRecord(w.records.Find(id))
 }
 
 // All returns a wrapped list of records in the current storage.
-func (w Records) All() []Record {
-	wrapped := make([]Record, 0)
+func (w Records) All() []*Record {
+	wrapped := make([]*Record, 0)
 	w.records.ForEach(func(m proto.Message) error {
 		wrapped = append(wrapped, WrapRecord(m.(*pb.Record)))
 		return nil
@@ -40,8 +40,8 @@ func (w Records) All() []Record {
 
 // AllBut returns a wrapped list of records in the current storage
 // but the one specified.
-func (w Records) AllBut(exclude Record) []Record {
-	wrapped := make([]Record, 0)
+func (w Records) AllBut(exclude *Record) []*Record {
+	wrapped := make([]*Record, 0)
 	w.records.ForEach(func(m proto.Message) error {
 		record := m.(*pb.Record)
 		if record.Id != exclude.record.Id {
@@ -53,8 +53,8 @@ func (w Records) AllBut(exclude Record) []Record {
 }
 
 // CreateRecord creates a new record from raw data.
-func (w Records) CreateRecord(data []float64) Record {
-	r := Record{record: new(pb.Record)}
-	r.record.Data = data
-	return r
+func (w Records) CreateRecord(data []float64) *Record {
+	r := new(pb.Record)
+	r.Data = data
+	return WrapRecord(r)
 }

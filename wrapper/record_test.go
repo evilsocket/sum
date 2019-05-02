@@ -1,6 +1,7 @@
 package wrapper
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -88,6 +89,8 @@ func TestWrappedRecordDot(t *testing.T) {
 	a := WrapRecord(&testRecord)
 	b := WrapRecord(&testRecord)
 
+	fmt.Printf("a=%+v\n", a)
+
 	if dot := a.Dot(b); dot != shouldBe {
 		t.Fatalf("dot product should be %f, got %f", shouldBe, dot)
 	}
@@ -135,7 +138,7 @@ func TestWrappedRecordCosine(t *testing.T) {
 		t.Fatalf("cosine similarity should be %f, got %f", 0.0, cos)
 	}
 
-	b.record.Data = a.record.Data
+	b.SetData(a.record.Data)
 	if cos := a.Cosine(b); cos != 1.0 {
 		t.Fatalf("cosine similarity should be %f, got %f", 1.0, cos)
 	}
