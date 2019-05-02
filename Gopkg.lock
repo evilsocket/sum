@@ -111,6 +111,30 @@
 
 [[projects]]
   branch = "master"
+  digest = "1:a002c56713ef3490b8c91eaf5c4df8c4b1e0ba9868507ed4a71b4c0324a5494d"
+  name = "gonum.org/v1/gonum"
+  packages = [
+    "blas",
+    "blas/blas64",
+    "blas/cblas128",
+    "blas/gonum",
+    "floats",
+    "internal/asm/c128",
+    "internal/asm/c64",
+    "internal/asm/f32",
+    "internal/asm/f64",
+    "internal/cmplx64",
+    "internal/math32",
+    "lapack",
+    "lapack/gonum",
+    "lapack/lapack64",
+    "mat",
+  ]
+  pruneopts = "UT"
+  revision = "9827ae2933ff312f2e68c8d9e9ab5eebd64dcfe9"
+
+[[projects]]
+  branch = "master"
   digest = "1:c3076e7defee87de1236f1814beb588f40a75544c60121e6eb38b3b3721783e2"
   name = "google.golang.org/genproto"
   packages = ["googleapis/rpc/status"]
@@ -185,6 +209,7 @@
     "github.com/robertkrimen/otto/ast",
     "github.com/robertkrimen/otto/parser",
     "golang.org/x/net/context",
+    "gonum.org/v1/gonum/mat",
     "google.golang.org/grpc",
     "google.golang.org/grpc/codes",
     "google.golang.org/grpc/credentials",

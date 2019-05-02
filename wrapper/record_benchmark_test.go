@@ -87,6 +87,10 @@ func BenchmarkWrappedRecordDot100(b *testing.B) {
 	wrappedRecordDotN(b, 100)
 }
 
+func BenchmarkWrappedRecordDot512(b *testing.B) {
+	wrappedRecordDotN(b, 512)
+}
+
 func BenchmarkWrappedRecordDot1024(b *testing.B) {
 	wrappedRecordDotN(b, 1024)
 }

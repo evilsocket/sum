@@ -18,6 +18,10 @@
   name = "google.golang.org/grpc"
   version = "1.11.3"
 
+[[constraint]]
+  name = "gonum.org/v1/gonum"
+  branch = "master"
+
 [prune]
   go-tests = true
   unused-packages = true
