@@ -21,12 +21,17 @@ func tos(value reflect.Value) string {
 	case reflect.String:
 		fieldValue = value.String()
 	case reflect.Int:
+	case reflect.Int8:
+	case reflect.Int16:
 	case reflect.Int32:
 	case reflect.Int64:
+		fieldValue = fmt.Sprintf("%d", value.Int())
 	case reflect.Uint:
+	case reflect.Uint8:
+	case reflect.Uint16:
 	case reflect.Uint32:
 	case reflect.Uint64:
-		fieldValue = fmt.Sprintf("%d", value)
+		fieldValue = fmt.Sprintf("%d", value.Uint())
 	case reflect.Slice:
 		res := []string{}
 		for i := 0; i < value.Len(); i++ {
