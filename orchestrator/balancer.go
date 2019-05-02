@@ -92,58 +92,66 @@ func transfer(fromNode, toNode *NodeInfo, nRecords int64) {
 
 // balance the load among nodes
 func (ms *MuxService) balance() {
+	var totRecords = uint64(len(ms.recId2node))
 	var nNodes = len(ms.nodes)
-	var maxRecords uint64 = 0
-	var maxDelta int64 = 0
 
-	var deltas = make([][]int64, nNodes)
-	var idx2node = make(map[int]*NodeInfo, nNodes)
-	var idx2status = make(map[int]pb.ServerInfo, nNodes)
-
-	for i, n := range ms.nodes {
-		idx2node[i] = n
-		idx2status[i] = n.Status()
-	}
-
-	for i := 0; i < nNodes; i++ {
-		deltas[i] = make([]int64, nNodes)
-	}
-
-	for i := 0; i < nNodes; i++ {
-		for j := i + 1; j < nNodes; j++ {
-			deltas[i][j] = int64(idx2status[j].Records - idx2status[i].Records)
-			deltas[j][i] = -deltas[i][j]
-
-			if deltas[i][j] > maxDelta {
-				maxDelta = deltas[i][j]
-			} else if deltas[j][i] > maxDelta {
-				maxDelta = deltas[j][i]
-			}
-		}
-		if idx2status[i].Records > maxRecords {
-			maxRecords = idx2status[i].Records
-		}
-	}
-
-	// 5% hysteresis
-	threshold := int64(maxRecords / 20)
-
-	if maxDelta <= threshold {
+	if totRecords == 0 || nNodes == 0 {
 		return
 	}
 
-	// balance
+	var targetRecordsPerNode = totRecords / uint64(nNodes)
+	var reminder = int(totRecords % uint64(nNodes))
+	// target amount of records
+	var targets = make([]uint64, nNodes)
+	// nodes that shall enter in the node
+	var deltas = make([]int64, nNodes)
+	var needsBalancing = false
 
-	for i := 0; i < nNodes; i++ {
-		for j := i + 1; j < nNodes; j++ {
-			records := deltas[i][j]
-			if records > threshold || (-records) > threshold {
-				src, dst := j, i
-				if records < 0 {
-					src, dst, records = dst, src, -records
-				}
-				transfer(idx2node[src], idx2node[dst], records/2)
+	for i, n := range ms.nodes {
+		targets[i] = targetRecordsPerNode
+		if i < reminder {
+			targets[i]++
+		}
+		deltas[i] = int64(targets[i]) - int64(n.status.Records)
+
+		// 5% hysteresis
+		if !needsBalancing && deltas[i] > int64(targetRecordsPerNode/20) {
+			needsBalancing = true
+		}
+	}
+
+	if !needsBalancing {
+		return
+	}
+
+	for i, delta := range deltas {
+		// foreach node that need records
+		if delta <= 0 {
+			continue
+		}
+		// consume records from others
+		for j, delta2 := range deltas {
+			// foreach node that shall give records
+			if delta2 >= 0 {
+				continue
 			}
+			nRecords := -delta2
+			if nRecords > delta {
+				nRecords = delta
+			}
+			transfer(ms.nodes[j], ms.nodes[i], nRecords)
+			delta -= nRecords
+			deltas[i] -= nRecords
+			deltas[j] += nRecords
+			if delta == 0 {
+				break
+			}
+		}
+	}
+
+	for i, delta := range deltas {
+		if delta != 0 {
+			log.Warnf("Node %d still have a delta of %d", i, delta)
 		}
 	}
 }

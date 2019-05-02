@@ -13,7 +13,6 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 	"io/ioutil"
-	"math"
 	"net"
 	"os"
 	"path/filepath"
@@ -156,6 +155,23 @@ func spawnOrchestratorErr(port uint32, nodesStr string) (*grpc.Server, *MuxServi
 	return server, ms, nil
 }
 
+func setupEmptyTmpFolder() (string, error) {
+	dir, err := ioutil.TempDir("", "")
+	if err != nil {
+		return "", err
+	}
+
+	for _, childDir := range []string{"data", "oracles"} {
+		err = os.Mkdir(filepath.Join(dir, childDir), 0755)
+		if err != nil {
+			os.RemoveAll(dir)
+			return "", err
+		}
+	}
+
+	return dir, nil
+}
+
 func spawnOrchestrator(t *testing.T, port uint32, nodesStr string) (*grpc.Server, *MuxService) {
 	server, ms, err := spawnOrchestratorErr(port, nodesStr)
 	Nil(t, err)
@@ -167,19 +183,12 @@ func TestDistributedRun(t *testing.T) {
 	timeout = &newTimeout
 	pollPeriod = &newTimeout
 
-	dir1, err := ioutil.TempDir("", "")
+	dir1, err := setupEmptyTmpFolder()
 	Nil(t, err)
 	defer os.RemoveAll(dir1)
-	dir2, err := ioutil.TempDir("", "")
+	dir2, err := setupEmptyTmpFolder()
 	Nil(t, err)
 	defer os.RemoveAll(dir2)
-
-	for _, baseDir := range []string{dir1, dir2} {
-		for _, childDir := range []string{"data", "oracles"} {
-			err = os.Mkdir(filepath.Join(baseDir, childDir), 0755)
-			Nil(t, err)
-		}
-	}
 
 	node1, sum1 := spawnNode(t, 12345, dir1)
 	defer node1.Stop()
@@ -391,6 +400,58 @@ function mergeNodesResults(results) {
 
 	val, ok := res.(float64)
 	True(t, ok)
-	val = math.Trunc(val*1000000) / 1000000 // drop last digits that insert errors due to conversions ( we shall fix this )
-	Equal(t, 1.8, val)
+	InEpsilon(t, 1.8, val, 1e-9)
+}
+
+func TestAddNode(t *testing.T) {
+	ns, err := setupPopulatedNetwork(2, 1)
+	NoError(t, err)
+	defer cleanupNetwork(&ns)
+
+	dir, err := setupEmptyTmpFolder()
+	NoError(t, err)
+
+	node, sum := spawnNode(t, 12348, dir)
+	defer node.Stop()
+
+	Zero(t, sum.NumRecords())
+
+	resp, err := ns.orchestrators[0].svc.AddNode(context.TODO(), &pb.ByAddr{Address: "127.0.0.1:12348"})
+	NoError(t, err)
+	True(t, resp.Success)
+
+	// check balancing
+
+	for _, sumSetup := range ns.nodes {
+		InDelta(t, sum.NumRecords(), sumSetup.svc.NumRecords(), 1)
+	}
+}
+
+func TestListNodes(t *testing.T) {
+	ns, err := setupPopulatedNetwork(3, 1)
+	NoError(t, err)
+	defer cleanupNetwork(&ns)
+
+	resp, err := ns.orchestrators[0].svc.ListNodes(context.TODO(), &pb.Empty{})
+	NoError(t, err)
+	True(t, resp.Success)
+
+	Equal(t, 3, len(resp.Nodes))
+}
+
+func TestDeleteNode(t *testing.T) {
+	ns, err := setupPopulatedNetwork(2, 1)
+	NoError(t, err)
+	defer cleanupNetwork(&ns)
+
+	ms := ns.orchestrators[0].svc
+
+	nRecords := len(ms.recId2node)
+
+	resp, err := ms.DeleteNode(context.TODO(), &pb.ById{Id: 1})
+	NoError(t, err)
+	True(t, resp.Success)
+
+	Equal(t, 1, len(ms.nodes))
+	Equal(t, nRecords, len(ms.recId2node))
 }

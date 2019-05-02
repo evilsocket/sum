@@ -3,7 +3,6 @@ package main
 import (
 	"github.com/evilsocket/sum/service"
 	"github.com/robertkrimen/otto"
-	log "github.com/sirupsen/logrus"
 	"os"
 	"sync"
 	"time"
@@ -75,20 +74,6 @@ func (ms *MuxService) UpdateNodes() {
 	for _, n := range ms.nodes {
 		n.UpdateStatus()
 	}
-}
-
-func (ms *MuxService) AddNode(n *NodeInfo) {
-	ms.nodesLock.Lock()
-	defer ms.nodesLock.Unlock()
-
-	ms.nodes = append(ms.nodes, n)
-
-	if err := ms.solveAllConflictsInTheWorld(); err != nil {
-		log.Errorf("Cannot solve conflicts after adding node %d: %v", n.ID, err)
-	}
-
-	ms.balance()
-	ms.stealOraclesFromNode(n)
 }
 
 func (ms *MuxService) findNextAvailableId() uint64 {

@@ -73,13 +73,11 @@ func TestPeacemaker(t *testing.T) {
 		}
 	}
 
-	// check that record #1 exist with the same data
+	// check that records exist with the same data
 
 	r, exist := recName2record["test"]
 	True(t, exist)
 	Equal(t, testRecord, r)
-
-	// check that record #2 and #3 exist with the same data
 
 	r, exist = recName2record["test1"]
 	True(t, exist)

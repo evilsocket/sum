@@ -76,6 +76,7 @@ func main() {
 	go updater(ctx, ms)
 
 	pb.RegisterSumServiceServer(server, ms)
+	pb.RegisterSumMasterServiceServer(server, ms)
 	reflection.Register(server)
 
 	log.Printf("sumd-orchestrator v%s is listening on %s ...", Version, *listenString)
