@@ -1,7 +1,6 @@
 package wrapper
 
 import (
-	"fmt"
 	"reflect"
 	"testing"
 
@@ -83,13 +82,11 @@ func TestWrappedRecordMetaWithInvalidKey(t *testing.T) {
 }
 
 func TestWrappedRecordDot(t *testing.T) {
-	testRecord.Data = []float64{3, 6, 9}
+	testRecord.Data = []float32{3, 6, 9}
 	shouldBe := 126.0
 
 	a := WrapRecord(&testRecord)
 	b := WrapRecord(&testRecord)
-
-	fmt.Printf("a=%+v\n", a)
 
 	if dot := a.Dot(b); dot != shouldBe {
 		t.Fatalf("dot product should be %f, got %f", shouldBe, dot)
@@ -117,7 +114,7 @@ func TestWrappedRecordDotWithIncompatibleSizes(t *testing.T) {
 }
 
 func TestWrappedRecordMagnitude(t *testing.T) {
-	testRecord.Data = []float64{0, 0, 2}
+	testRecord.Data = []float32{0, 0, 2}
 	shouldBe := 2.0
 	a := WrapRecord(&testRecord)
 	if mag := a.Magnitude(); mag != shouldBe {
@@ -132,8 +129,8 @@ func TestWrappedRecordMagnitudeWithNull(t *testing.T) {
 }
 
 func TestWrappedRecordCosine(t *testing.T) {
-	a := WrapRecord(&pb.Record{Data: []float64{3, 6, 9}})
-	b := WrapRecord(&pb.Record{Data: []float64{0, 0, 0}})
+	a := WrapRecord(&pb.Record{Data: []float32{3, 6, 9}})
+	b := WrapRecord(&pb.Record{Data: []float32{0, 0, 0}})
 	if cos := a.Cosine(b); cos != 0.0 {
 		t.Fatalf("cosine similarity should be %f, got %f", 0.0, cos)
 	}

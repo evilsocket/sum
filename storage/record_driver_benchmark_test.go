@@ -47,7 +47,7 @@ func BenchmarkRecordDriverCopy(b *testing.B) {
 	d := RecordDriver{}
 	dst := pb.Record{}
 	src := pb.Record{
-		Data: []float64{1, 2, 3, 4, 5, 666},
+		Data: []float32{1, 2, 3, 4, 5, 666},
 		Meta: map[string]string{
 			"foo":   "bar",
 			"hello": "world",

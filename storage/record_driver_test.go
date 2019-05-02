@@ -53,7 +53,7 @@ func TestRecordDriverCopy(t *testing.T) {
 		},
 	}
 	dataSrc := pb.Record{
-		Data: []float64{1, 2, 3, 4, 5, 666},
+		Data: []float32{1, 2, 3, 4, 5, 666},
 	}
 
 	if err := d.Copy(&dst, &metaSrc); err != nil {

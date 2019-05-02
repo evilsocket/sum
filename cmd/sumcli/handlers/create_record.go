@@ -36,7 +36,7 @@ func readWithPrompt(reader *readline.Instance, prompt string) (string, error) {
 	return line, nil
 }
 
-func readData(reader *readline.Instance) ([]float64, error) {
+func readData(reader *readline.Instance) ([]float32, error) {
 	raw, err := readWithPrompt(reader, "comma separated values> ")
 	if err != nil {
 		return nil, err
@@ -49,12 +49,12 @@ func readData(reader *readline.Instance) ([]float64, error) {
 		return nil, fmt.Errorf("could not create empty vector")
 	}
 
-	data := make([]float64, len(values))
+	data := make([]float32, len(values))
 	for i, v := range values {
-		if f, err := strconv.ParseFloat(v, 64); err != nil {
+		if f, err := strconv.ParseFloat(v, 32); err != nil {
 			return nil, err
 		} else {
-			data[i] = f
+			data[i] = float32(f)
 		}
 	}
 

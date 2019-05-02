@@ -24,7 +24,7 @@ var (
 	errFound   = errors.New("record found")
 	testRecord = pb.Record{
 		Id:   666,
-		Data: []float64{3, 6, 9},
+		Data: []float32{3, 6, 9},
 		Meta: map[string]string{
 			"foo":    "bar",
 			"some":   "thing",
@@ -33,7 +33,7 @@ var (
 	}
 	testShorterRecord = pb.Record{
 		Id:   777,
-		Data: []float64{1},
+		Data: []float32{1},
 		Meta: map[string]string{},
 	}
 )

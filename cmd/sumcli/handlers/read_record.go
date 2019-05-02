@@ -13,7 +13,7 @@ import (
 	"github.com/chzyer/readline"
 )
 
-func dataAsString(data []float64, limit int) string {
+func dataAsString(data []float32, limit int) string {
 	tot := len(data)
 	num := tot
 	if limit > 0 && limit < tot {

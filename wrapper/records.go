@@ -53,7 +53,7 @@ func (w Records) AllBut(exclude *Record) []*Record {
 }
 
 // CreateRecord creates a new record from raw data.
-func (w Records) CreateRecord(data []float64) *Record {
+func (w Records) CreateRecord(data []float32) *Record {
 	r := new(pb.Record)
 	r.Data = data
 	return WrapRecord(r)

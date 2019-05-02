@@ -15,7 +15,7 @@ var (
 	testCorruptedRecord = testFolder + "/666.dat"
 	updatedRecord       = pb.Record{
 		Id:   555,
-		Data: []float64{0.5, 0.5, 0.5},
+		Data: []float32{0.5, 0.5, 0.5},
 		Meta: map[string]string{"555": "555"},
 	}
 )

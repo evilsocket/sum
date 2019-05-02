@@ -2,11 +2,12 @@ package wrapper
 
 import (
 	"math"
+	"reflect"
 
 	pb "github.com/evilsocket/sum/proto"
 )
 
-var backend = gonum{}
+var backend = blas{}
 
 // Record is the wrapper for a single *pb.Record object used
 // to allow access to specific records to oracles during
@@ -32,7 +33,7 @@ func WrapRecord(record *pb.Record) *Record {
 	return w
 }
 
-func (w *Record) SetData(data []float64) {
+func (w *Record) SetData(data []float32) {
 	w.record.Data = data
 	w.Size = len(data)
 	w.vec = backend.Wrap(w.Size, data)
@@ -55,7 +56,7 @@ func (w *Record) Is(b *Record) bool {
 
 // Get returns the index-th elements of the *pb.Record contained
 // by this wrapper.
-func (w *Record) Get(index int) float64 {
+func (w *Record) Get(index int) float32 {
 	return w.record.Data[index]
 }
 
@@ -67,37 +68,12 @@ func (w *Record) Meta(name string) string {
 
 // Equal returns whether the vectors have the same size and are element-wise equal.
 func (w *Record) Equal(b *Record) bool {
-	return backend.Equal(w.vec, b.vec)
-}
-
-// EqualApprox returns whether the vectors have the same size and contain all equal elements with tolerance for element-wise equality specified by epsilon.
-func (w *Record) EqualApprox(b *Record, epsilon float64) bool {
-	return backend.EqualApprox(w.vec, b.vec, epsilon)
-}
-
-// Max returns the largest element value of the vector.
-func (w *Record) Max() float64 {
-	return backend.Max(w.vec)
-}
-
-// Min returns the smallest element value of the vector.
-func (w *Record) Min() float64 {
-	return backend.Min(w.vec)
-}
-
-// Sum returns the sum of the elements of the vector.
-func (w *Record) Sum() float64 {
-	return backend.Sum(w.vec)
+	return reflect.DeepEqual(w.record.Data, b.record.Data)
 }
 
 // Dot performs the dot product between a vector and another.
 func (w *Record) Dot(b *Record) float64 {
 	return backend.Dot(w.vec, b.vec)
-}
-
-// Det returns the determinant of the record.
-func (w *Record) Det() float64 {
-	return backend.Det(w.vec)
 }
 
 // DotRange performs the dot product between a vector and another using a range of elements.
@@ -115,7 +91,7 @@ func (w *Record) DotSub(b *Record, elems uint) float64 {
 
 // Magnitude returns the magnitude of the vector.
 func (w *Record) Magnitude() float64 {
-	return math.Sqrt(w.Dot(w))
+	return math.Sqrt(float64(w.Dot(w)))
 }
 
 // Cosine returns the cosine similarity between a vector and another.
@@ -158,7 +134,7 @@ func (w *Record) Jaccard(b *Record) float64 {
 
 	for i, va := range w.record.Data {
 		vb := b.record.Data[i]
-		m11 += va * vb
+		m11 += float64(va * vb)
 		if (va + vb) == 1 {
 			m10++
 		}
@@ -179,7 +155,7 @@ func (w *Record) JaccardRange(b *Record, start uint, end uint) float64 {
 	for i := start; i < end; i++ {
 		va := w.record.Data[i]
 		vb := b.record.Data[i]
-		m11 += va * vb
+		m11 += float64(va * vb)
 		if (va + vb) == 1 {
 			m10++
 		}
