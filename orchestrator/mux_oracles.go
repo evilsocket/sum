@@ -5,6 +5,7 @@ import (
 	"fmt"
 	. "github.com/evilsocket/sum/proto"
 	"github.com/evilsocket/sum/storage"
+	"sort"
 )
 
 func (ms *MuxService) CreateOracle(ctx context.Context, arg *Oracle) (*OracleResponse, error) {
@@ -61,7 +62,7 @@ func (ms *MuxService) ReadOracle(ctx context.Context, arg *ById) (*OracleRespons
 	if raccoon, found := ms.raccoons[arg.Id]; !found {
 		return errOracleResponse("oracle %d not found.", arg.Id), nil
 	} else {
-		return &OracleResponse{Success: true, Oracles: []*Oracle{raccoon.AsOracle()}}, nil
+		return &OracleResponse{Success: true, Oracle: raccoon.AsOracle()}, nil
 	}
 }
 
@@ -69,15 +70,65 @@ func (ms *MuxService) FindOracle(ctx context.Context, arg *ByName) (*OracleRespo
 	ms.cageLock.RLock()
 	defer ms.cageLock.RUnlock()
 
-	var res = make([]*Oracle, 0)
-
 	for _, r := range ms.raccoons {
 		if r.Name == arg.Name {
-			res = append(res, r.AsOracle())
+			return &OracleResponse{Success: true, Oracle: r.AsOracle()}, nil
 		}
 	}
 
-	return &OracleResponse{Success: true, Oracles: res}, nil
+	return errOracleResponse("oracle '%s' not found.", arg.Name), nil
+}
+
+func (ms *MuxService) ListOracles(ctx context.Context, list *ListRequest) (*OracleListResponse, error) {
+	ms.cageLock.RLock()
+	defer ms.cageLock.RUnlock()
+
+	sortedIds := make([]uint64, 0, len(ms.raccoons))
+
+	for id := range ms.raccoons {
+		sortedIds = append(sortedIds, id)
+	}
+
+	sort.Slice(sortedIds, func(i, j int) bool { return i < j })
+
+	total := uint64(len(sortedIds))
+
+	if list.Page < 1 {
+		list.Page = 1
+	}
+
+	if list.PerPage < 1 {
+		list.PerPage = 1
+	}
+
+	start := (list.Page - 1) * list.PerPage
+	end := start + list.PerPage
+	npages := total / list.PerPage
+	if total%list.PerPage > 0 {
+		npages++
+	}
+
+	// out of range
+	if total <= start {
+		return &OracleListResponse{Total: total, Pages: npages}, nil
+	}
+
+	resp := OracleListResponse{
+		Total:   total,
+		Pages:   npages,
+		Oracles: make([]*Oracle, 0),
+	}
+
+	if end >= total {
+		end = total - 1
+	}
+
+	for _, id := range sortedIds[start:end] {
+		r := ms.raccoons[id]
+		resp.Oracles = append(resp.Oracles, r.AsOracle())
+	}
+
+	return &resp, nil
 }
 
 func (ms *MuxService) DeleteOracle(ctx context.Context, arg *ById) (*OracleResponse, error) {

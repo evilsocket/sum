@@ -23,10 +23,10 @@ const numBenchRecords = 1024
 
 func genBenchRecord() *pb.Record {
 	rec := &pb.Record{}
-	rec.Data = make([]float64, 0, vectorSize)
+	rec.Data = make([]float32, 0, vectorSize)
 
 	for i := 0; i < vectorSize; i++ {
-		f := rand.Float64()
+		f := rand.Float32()
 		rec.Data = append(rec.Data, f)
 	}
 	return rec

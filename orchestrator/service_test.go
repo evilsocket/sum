@@ -78,11 +78,11 @@ function findSimilar(id, threshold) {
 	raccoon, err := NewAstRaccoon(code)
 	Nil(t, err)
 
-	r := &pb.Record{Id: 1, Meta: map[string]string{"key": "value"}, Data: []float64{0.1, 0.2, 0.3}}
+	r := &pb.Record{Id: 1, Meta: map[string]string{"key": "value"}, Data: []float32{0.1, 0.2, 0.3}}
 	newCode, err := raccoon.PatchCode([]*pb.Record{r, nil})
 	Nil(t, err)
 
-	expected := strings.Replace(code, "records.Find(id)", "records.New('eJziYBSSmDUTBHbaQ+iT9sZgcNleioeLOTu1Uoi1LDGnNBUQAAD//17vD1Y=')", -1)
+	expected := strings.Replace(code, "records.Find(id)", "records.New('eJziYBTiOXvmjO3ZMz52s2bOtJPi4WLOTq0UYi1LzClNBQQAAP//qfgKpw==')", -1)
 	Equal(t, expected, newCode)
 }
 
@@ -92,7 +92,7 @@ func spawnNodeErr(port uint32, dataPath string) (*grpc.Server, *service.Service,
 	if err != nil {
 		return nil, nil, err
 	}
-	svc, err := service.New(dataPath)
+	svc, err := service.New(dataPath, "", "")
 	if err != nil {
 		listener.Close()
 		return nil, nil, err
@@ -202,8 +202,8 @@ func TestDistributedRun(t *testing.T) {
 
 	// create records
 
-	rec1 := &pb.Record{Data: []float64{0.1, 0.2, 0.3}, Meta: map[string]string{"name": "1"}}
-	rec2 := &pb.Record{Data: []float64{0.2, 0.4, 0.6}, Meta: map[string]string{"name": "2"}}
+	rec1 := &pb.Record{Data: []float32{0.1, 0.2, 0.3}, Meta: map[string]string{"name": "1"}}
+	rec2 := &pb.Record{Data: []float32{0.2, 0.4, 0.6}, Meta: map[string]string{"name": "2"}}
 
 	resp, err := ms.CreateRecord(context.Background(), rec1)
 	Nil(t, err)
@@ -318,8 +318,8 @@ func TestMergerFunction(t *testing.T) {
 
 	// create records
 
-	rec1 := &pb.Record{Data: []float64{0.1, 0.2, 0.3}, Meta: map[string]string{"name": "1"}}
-	rec2 := &pb.Record{Data: []float64{0.2, 0.4, 0.6}, Meta: map[string]string{"name": "2"}}
+	rec1 := &pb.Record{Data: []float32{0.1, 0.2, 0.3}, Meta: map[string]string{"name": "1"}}
+	rec2 := &pb.Record{Data: []float32{0.2, 0.4, 0.6}, Meta: map[string]string{"name": "2"}}
 
 	resp, err := ms.CreateRecord(context.Background(), rec1)
 	Nil(t, err)
@@ -400,7 +400,7 @@ function mergeNodesResults(results) {
 
 	val, ok := res.(float64)
 	True(t, ok)
-	InEpsilon(t, 1.8, val, 1e-9)
+	InEpsilon(t, 1.8, val, 1e-6)
 }
 
 func TestAddNode(t *testing.T) {

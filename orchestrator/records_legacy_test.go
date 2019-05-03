@@ -4,7 +4,7 @@ import (
 	"context"
 	pb "github.com/evilsocket/sum/proto"
 	"github.com/evilsocket/sum/storage"
-	"reflect"
+	"github.com/golang/protobuf/proto"
 	"testing"
 )
 
@@ -12,7 +12,7 @@ var (
 	byID          = pb.ById{Id: 1}
 	updatedRecord = pb.Record{
 		Id:   555,
-		Data: []float64{1, 2, 3, 4, 5, 6, 7, 8, 9, 666},
+		Data: []float32{1, 2, 3, 4, 5, 6, 7, 8, 9, 666},
 		Meta: map[string]string{
 			"idk": "idk",
 		},
@@ -88,7 +88,7 @@ func TestServiceUpdateRecord(t *testing.T) {
 		t.Fatalf("unaexpected error %v", err)
 	} else if stored.Record == nil {
 		t.Fatal("expected stored record with id 1")
-	} else if !reflect.DeepEqual(*stored.Record, updatedRecord) {
+	} else if !proto.Equal(stored.Record, &updatedRecord) {
 		t.Fatal("record has not been updated as expected")
 	}
 }
@@ -126,7 +126,7 @@ func TestServiceReadRecord(t *testing.T) {
 		t.Fatalf("expected success response: %v", resp)
 	} else if resp.Record == nil {
 		t.Fatal("expected record pointer")
-	} else if testRecord.Id = byID.Id; !reflect.DeepEqual(*resp.Record, testRecord) {
+	} else if testRecord.Id = byID.Id; !proto.Equal(resp.Record, &testRecord) {
 		t.Fatalf("unexpected record: %v", resp.Record)
 	}
 }
@@ -169,7 +169,7 @@ func TestServiceListRecordsSinglePage(t *testing.T) {
 		t.Fatalf("expected %d total records, got %d", testRecords, len(resp.Records))
 	} else {
 		for _, r := range resp.Records {
-			if testRecord.Id = r.Id; !reflect.DeepEqual(*r, testRecord) {
+			if testRecord.Id = r.Id; !proto.Equal(r, &testRecord) {
 				t.Fatalf("unexpected record: %v", r)
 			}
 		}
@@ -197,7 +197,7 @@ func TestServiceListRecordsMultiPage(t *testing.T) {
 		t.Fatalf("expected %d total records, got %d", 2, len(resp.Records))
 	} else {
 		for _, r := range resp.Records {
-			if testRecord.Id = r.Id; !reflect.DeepEqual(*r, testRecord) {
+			if testRecord.Id = r.Id; !proto.Equal(r, &testRecord) {
 				t.Fatalf("unexpected record: %v", r)
 			}
 		}

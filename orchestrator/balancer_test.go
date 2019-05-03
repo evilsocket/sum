@@ -35,7 +35,7 @@ func TestBalancing(t *testing.T) {
 	node2, sum2 := spawnNode(t, 12346, dir2)
 	defer node2.Stop()
 
-	testRecord := &pb.Record{Data: []float64{0.1, 0.2, 0.3}, Meta: map[string]string{"name": "test"}}
+	testRecord := &pb.Record{Data: []float32{0.1, 0.2, 0.3}, Meta: map[string]string{"name": "test"}}
 
 	for i := 1; i <= 100; i++ {
 		rCopy := &pb.Record{Id: uint64(i), Data: testRecord.Data, Meta: testRecord.Meta}

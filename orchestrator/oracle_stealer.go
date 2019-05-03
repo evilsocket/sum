@@ -36,9 +36,8 @@ func (ms *MuxService) deployAgentSmith(n *NodeInfo, oracleId uint64) error {
 			oracleId, n.ID, getTheFuckingErrorMessage(err, resp))
 	}
 
-	oracle := resp.Oracles[0]
-	// here we can check for duplicates,
-	// but from tests it seems that the expected behaviour is to allow duplicates to exist
+	oracle := resp.Oracle
+	//TODO: check for duplicates.
 
 	if resp1, err := ms.CreateOracle(context.Background(), &Oracle{Code: oracle.Code, Name: oracle.Name}); err != nil || !resp1.Success {
 		return fmt.Errorf("unable to load oracle #%d (%s) from node %d: %v",

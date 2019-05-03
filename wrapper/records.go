@@ -21,11 +21,11 @@ func WrapRecords(records *storage.Records) Records {
 	}
 }
 
-func (_ Records) New(msg string) Record {
+func (_ Records) New(msg string) *Record {
 	if r, err := FromCompressedText(msg); err != nil {
 		panic(err)
 	} else {
-		return *r
+		return r
 	}
 }
 

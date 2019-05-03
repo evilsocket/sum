@@ -37,9 +37,9 @@ func TestPeacemaker(t *testing.T) {
 	node2, sum2 := spawnNode(t, 12346, dir2)
 	defer node2.Stop()
 
-	testRecord := &pb.Record{Id: 1, Data: []float64{0.1, 0.2, 0.3}, Meta: map[string]string{"name": "test"}}
-	testRecord1 := &pb.Record{Id: 2, Data: []float64{0.1, 0.2, 0.3}, Meta: map[string]string{"name": "test1"}}
-	testRecord2 := &pb.Record{Id: 2, Data: []float64{0.2, 0.4, 0.6}, Meta: map[string]string{"name": "test2"}}
+	testRecord := &pb.Record{Id: 1, Data: []float32{0.1, 0.2, 0.3}, Meta: map[string]string{"name": "test"}}
+	testRecord1 := &pb.Record{Id: 2, Data: []float32{0.1, 0.2, 0.3}, Meta: map[string]string{"name": "test1"}}
+	testRecord2 := &pb.Record{Id: 2, Data: []float32{0.2, 0.4, 0.6}, Meta: map[string]string{"name": "test2"}}
 
 	toCreate := map[*service.Service][]*pb.Record{
 		sum1: {testRecord, testRecord1},
@@ -77,7 +77,7 @@ func TestPeacemaker(t *testing.T) {
 
 	r, exist := recName2record["test"]
 	True(t, exist)
-	Equal(t, testRecord, r)
+	Equal(t, testRecord.Data, r.Data)
 
 	r, exist = recName2record["test1"]
 	True(t, exist)
