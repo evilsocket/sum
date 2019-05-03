@@ -106,7 +106,16 @@ func (ms *MuxService) ListRecords(ctx context.Context, arg *ListRequest) (*Recor
 	}
 
 	go func() {
-		for id, n := range ms.recId2node {
+		sortedIds := make([]uint64, 0, len(ms.recId2node))
+
+		for id := range ms.recId2node {
+			sortedIds = append(sortedIds, id)
+		}
+
+		sort.Slice(sortedIds, func(i, j int) bool { return i < j })
+
+		for _, id := range sortedIds[start:end] {
+			n := ms.recId2node[id]
 			workerInputs[n.ID] <- id
 		}
 		for _, ch := range workerInputs {
@@ -138,8 +147,6 @@ func (ms *MuxService) ListRecords(ctx context.Context, arg *ListRequest) (*Recor
 	sort.Slice(resp.Records, func(i, j int) bool {
 		return resp.Records[i].Id < resp.Records[j].Id
 	})
-
-	resp.Records = resp.Records[start:end]
 
 	return resp, nil
 }
