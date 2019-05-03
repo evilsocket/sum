@@ -71,7 +71,7 @@ function findSimilar(id, threshold) {
         }
     });
 
-	var x = record.Find(id);
+	var x = records.Find(id);
 
     return results;
 }`
@@ -121,7 +121,7 @@ func spawnOrchestratorErr(port uint32, nodesStr string) (*grpc.Server, *MuxServi
 	nodes := make([]*NodeInfo, 0)
 
 	for _, n := range strings.Split(nodesStr, ",") {
-		node, err := createNode(n)
+		node, err := createNode(n, "")
 		if err != nil {
 			return nil, nil, err
 		}
@@ -419,6 +419,10 @@ func TestAddNode(t *testing.T) {
 	resp, err := ns.orchestrators[0].svc.AddNode(context.TODO(), &pb.ByAddr{Address: "127.0.0.1:12348"})
 	NoError(t, err)
 	True(t, resp.Success)
+
+	id, err := strconv.ParseUint(resp.Msg, 10, 64)
+	NoError(t, err)
+	Equal(t, uint64(3), id)
 
 	// check balancing
 

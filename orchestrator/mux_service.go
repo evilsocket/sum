@@ -9,10 +9,12 @@ import (
 )
 
 type MuxService struct {
-	// control access to `nodes`
+	// control access to `nodes` and `nextNodeId`
 	nodesLock sync.RWMutex
 	// currently available nodes
 	nodes []*NodeInfo
+	// next node id
+	nextNodeId uint
 	// control access to `nextId`
 	idLock sync.RWMutex
 	// id of the next record
@@ -42,6 +44,7 @@ func NewMuxService(nodes []*NodeInfo) (*MuxService, error) {
 	ms := &MuxService{
 		nextId:        1,
 		nextRaccoonId: 1,
+		nextNodeId:    uint(len(nodes) + 1),
 		recId2node:    make(map[uint64]*NodeInfo),
 		nodes:         nodes[:],
 		raccoons:      make(map[uint64]*astRaccoon),

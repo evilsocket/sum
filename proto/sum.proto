@@ -119,6 +119,7 @@ message ByName {
 
 message ByAddr {
     string address = 1;
+    string cert_file = 2;
 }
 
 message ByMeta {

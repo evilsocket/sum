@@ -5,6 +5,7 @@ import (
 	. "github.com/evilsocket/sum/proto"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"sync"
 )
 
@@ -41,8 +42,19 @@ func (n *NodeInfo) Status() ServerInfo {
 	return n.status
 }
 
-func createNode(node string) (*NodeInfo, error) {
-	conn, err := grpc.Dial(node, grpc.WithInsecure())
+func createNode(node, certFile string) (*NodeInfo, error) {
+	var dialOptions grpc.DialOption
+
+	if certFile != "" {
+		creds, err := credentials.NewClientTLSFromFile(certFile, "")
+		if err != nil {
+			return nil, fmt.Errorf("cannot load certificate file '%s': %v", certFile, err)
+		}
+		dialOptions = grpc.WithTransportCredentials(creds)
+	} else {
+		dialOptions = grpc.WithInsecure()
+	}
+	conn, err := grpc.Dial(node, dialOptions)
 	if err != nil {
 		return nil, fmt.Errorf("unable to dial service at '%s': %v", node, err)
 	}

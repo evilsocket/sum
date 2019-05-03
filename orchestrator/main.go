@@ -8,13 +8,14 @@ import (
 	"google.golang.org/grpc/reflection"
 	"gopkg.in/alecthomas/kingpin.v2"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 )
 
 var (
-	nodesStrings = kingpin.Arg("nodes", "nodes to orchestrate").Required().String()
+	nodesStrings = kingpin.Arg("nodes", "nodes to orchestrate").Default("").String()
 	timeout      = kingpin.Arg("timeout", "communication timeout").Default("3s").Duration()
 	pollPeriod   = kingpin.Arg("pollinterval", "poll interval").Default("500ms").Duration()
 	listenString = kingpin.Arg("listen", "String to create the TCP listener.").Default("127.0.0.1:50051").String()
@@ -35,11 +36,13 @@ func newCommContext() (context.Context, context.CancelFunc) {
 func updater(ctx context.Context, ms *MuxService) {
 	ticker := time.NewTicker(*pollPeriod)
 
-	select {
-	case <-ctx.Done():
-		return
-	case <-ticker.C:
-		ms.UpdateNodes()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			ms.UpdateNodes()
+		}
 	}
 }
 
@@ -55,12 +58,15 @@ func main() {
 
 	nodes := make([]*NodeInfo, 0)
 
-	for _, n := range strings.Split(*nodesStrings, ",") {
-		if node, err := createNode(n); err != nil {
-			log.Fatalf("Unable to create node '%s': %v", n, err)
-		} else {
-			node.ID = uint(len(nodes) + 1)
-			nodes = append(nodes, node)
+	if *nodesStrings != "" {
+		for _, n := range strings.Split(*nodesStrings, ",") {
+			certFile := filepath.Join(*credsPath, "cert.pem")
+			if node, err := createNode(n, certFile); err != nil {
+				log.Fatalf("Unable to create node '%s': %v", n, err)
+			} else {
+				node.ID = uint(len(nodes) + 1)
+				nodes = append(nodes, node)
+			}
 		}
 	}
 

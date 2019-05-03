@@ -12,7 +12,7 @@ func errNodeResponse(format string, args ...interface{}) *NodeResponse {
 }
 
 func (ms *MuxService) AddNode(ctx context.Context, addr *ByAddr) (*NodeResponse, error) {
-	n, err := createNode(addr.Address)
+	n, err := createNode(addr.Address, addr.CertFile)
 	if err != nil {
 		return errNodeResponse("Cannot create node: %v", err), nil
 	}
@@ -20,7 +20,10 @@ func (ms *MuxService) AddNode(ctx context.Context, addr *ByAddr) (*NodeResponse,
 	ms.nodesLock.Lock()
 	defer ms.nodesLock.Unlock()
 
+	n.ID = ms.nextNodeId
 	ms.nodes = append(ms.nodes, n)
+
+	ms.nextNodeId++
 
 	if err := ms.solveAllConflictsInTheWorld(); err != nil {
 		log.Errorf("Cannot solve conflicts after adding node %d: %v", n.ID, err)
@@ -29,10 +32,7 @@ func (ms *MuxService) AddNode(ctx context.Context, addr *ByAddr) (*NodeResponse,
 	ms.balance()
 	ms.stealOraclesFromNode(n)
 
-	st := n.Status()
-	mn := &Node{Id: uint64(n.ID), Name: n.Name, Info: &st}
-
-	return &NodeResponse{Success: true, Nodes: []*Node{mn}}, nil
+	return &NodeResponse{Success: true, Msg: fmt.Sprintf("%d", n.ID)}, nil
 }
 
 func (ms *MuxService) ListNodes(context.Context, *Empty) (*NodeResponse, error) {
@@ -73,6 +73,10 @@ func (ms *MuxService) DeleteNode(ctx context.Context, id *ById) (*NodeResponse, 
 	ms.nodes[l-1] = nil
 	ms.nodes = ms.nodes[:l-1]
 
+	//TODO: balance on the fly
+	if len(ms.nodes) > 0 {
+		transfer(n, ms.nodes[0], int64(len(n.RecordIds)))
+	}
 	ms.balance()
 
 	return &NodeResponse{Success: true}, nil
