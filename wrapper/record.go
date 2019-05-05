@@ -4,10 +4,10 @@ import (
 	"math"
 	"reflect"
 
+	"github.com/evilsocket/sum/backend"
+
 	pb "github.com/evilsocket/sum/proto"
 )
-
-var backend = blas{}
 
 // Record is the wrapper for a single *pb.Record object used
 // to allow access to specific records to oracles during
@@ -20,7 +20,7 @@ type Record struct {
 	Size int
 
 	record *pb.Record
-	vec    Vector
+	vec    backend.Vector
 }
 
 // WrapRecord creates a Record wrapper around a raw *pb.Record object.

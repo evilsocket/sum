@@ -1,4 +1,4 @@
-package wrapper
+package backend
 
 import (
 	"gonum.org/v1/gonum/blas/blas32"
@@ -12,7 +12,11 @@ type blasWrap struct {
 	sz int
 }
 
-func (backend blas) Wrap(size int, data []float32) Vector {
+func (impl blas) Name() string {
+	return "blas32"
+}
+
+func (impl blas) Wrap(size int, data []float32) Vector {
 	return blasWrap{
 		v: blas32.Vector{
 			Inc:  1,
@@ -22,6 +26,6 @@ func (backend blas) Wrap(size int, data []float32) Vector {
 	}
 }
 
-func (backend blas) Dot(a, b Vector) float64 {
+func (impl blas) Dot(a, b Vector) float64 {
 	return float64(blas32.Dot(a.(blasWrap).sz, a.(blasWrap).v, b.(blasWrap).v))
 }
