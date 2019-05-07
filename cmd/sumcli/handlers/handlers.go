@@ -11,14 +11,16 @@ import (
 )
 
 type handlerCb func(cmd string, args []string, reader *readline.Instance, client pb.SumServiceClient) error
+type masterCandlerCb func(cmd string, args []string, reader *readline.Instance, client pb.SumMasterServiceClient) error
 
 type handler struct {
-	Parser      *regexp.Regexp
-	Completer   *readline.PrefixCompleter
-	Name        string
-	Mnemonic    string
-	Description string
-	Callback    handlerCb
+	Parser         *regexp.Regexp
+	Completer      *readline.PrefixCompleter
+	Name           string
+	Mnemonic       string
+	Description    string
+	Callback       handlerCb
+	MasterCallback masterCandlerCb
 }
 
 var Handlers = []handler{}
@@ -44,6 +46,10 @@ func init() {
 		findOracleHandler,
 		listOraclesHandler,
 		callOracleHandler,
+		// nodes management
+		createNodeHandler,
+		listNodesHandler,
+		deleteNodeHandler,
 	}
 
 	tmp := []readline.PrefixCompleterInterface{}
@@ -55,7 +61,9 @@ func init() {
 	Completers = readline.NewPrefixCompleter(tmp...)
 }
 
-func Dispatch(cmd string, reader *readline.Instance, client pb.SumServiceClient) error {
+func (h handler) isMaster() bool { return h.MasterCallback != nil }
+
+func Dispatch(cmd string, reader *readline.Instance, client pb.SumServiceClient, masterClient pb.SumMasterServiceClient) error {
 	for _, handler := range Handlers {
 		match := false
 		args := []string{}
@@ -71,7 +79,11 @@ func Dispatch(cmd string, reader *readline.Instance, client pb.SumServiceClient)
 		}
 
 		if match {
-			return handler.Callback(cmd, args, reader, client)
+			if handler.isMaster() {
+				return handler.MasterCallback(cmd, args, reader, masterClient)
+			} else {
+				return handler.Callback(cmd, args, reader, client)
+			}
 		}
 	}
 
