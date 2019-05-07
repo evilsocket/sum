@@ -76,6 +76,8 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to create MuxService: %v", err)
 	}
+	ms.credsPath = *credsPath
+	ms.address = *listenString
 
 	ctx, cf := context.WithCancel(context.Background())
 	defer cf()

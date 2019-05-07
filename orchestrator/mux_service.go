@@ -38,6 +38,10 @@ type MuxService struct {
 	pid uint64
 	// uid
 	uid uint64
+	// credentials path
+	credsPath string
+	// listening address
+	address string
 }
 
 func NewMuxService(nodes []*NodeInfo) (*MuxService, error) {
