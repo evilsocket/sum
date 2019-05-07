@@ -271,3 +271,43 @@ func TestServiceDeleteRecordWithInvalidId(t *testing.T) {
 		t.Fatalf("unexpected message: %s", resp.Msg)
 	}
 }
+
+func TestService_CreateRecordWithId(t *testing.T) {
+	setupFolders(t)
+	defer teardown(t)
+
+	testRecord.Id = 5
+
+	if svc, err := New(testFolder, "", ""); err != nil {
+		t.Fatal(err)
+	} else if resp, err := svc.CreateRecordWithId(context.TODO(), &testRecord); err != nil {
+		t.Fatal(err)
+	} else if !resp.Success {
+		t.Fatalf("expected success response: %v", resp)
+	} else if resp.Record != nil {
+		t.Fatalf("unexpected record pointer: %v", resp.Record)
+	} else if resp.Msg != "5" {
+		t.Fatalf("unexpected response message: %s", resp.Msg)
+	}
+}
+
+func TestService_CreateRecordWithId_Invalid(t *testing.T) {
+	setup(t, true, true)
+	defer teardown(t)
+
+	svc, err := New(testFolder, "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	testRecord.Id = testRecords
+	if resp, err := svc.CreateRecordWithId(context.TODO(), &testRecord); err != nil {
+		t.Fatal(err)
+	} else if resp.Success {
+		t.Fatalf("expected error response: %v", resp)
+	} else if resp.Record != nil {
+		t.Fatalf("unexpected record pointer: %v", resp.Record)
+	} else if resp.Msg != storage.ErrInvalidID.Error() {
+		t.Fatalf("unexpected response message: %s", resp.Msg)
+	}
+}
