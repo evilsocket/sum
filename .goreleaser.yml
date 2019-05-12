@@ -1,6 +1,28 @@
 builds:
-  - main: ./
+  - main: ./cmd/sumd/main.go
     binary: sumd
+    env:
+      - CGO_ENABLED=0
+    ldflags:
+      - -s -w 
+    goos:
+      - linux
+      - darwin
+      - windows
+      - freebsd
+      - netbsd
+      - openbsd
+    goarch:
+      - 386
+      - amd64
+      - arm
+      - arm64
+      - mips
+      - mipsle
+      - mips64
+      - mips64le
+  - main: ./cmd/sumcli/main.go
+    binary: sumcli
     env:
       - CGO_ENABLED=0
     ldflags:
