@@ -1,4 +1,4 @@
-package main
+package orchestrator
 
 import (
 	"context"
@@ -12,9 +12,7 @@ import (
 )
 
 func TestBalancing(t *testing.T) {
-	newTimeout := time.Minute
-	timeout = &newTimeout
-	pollPeriod = &newTimeout
+	SetCommunicationTimeout(time.Minute)
 
 	dir1, err := ioutil.TempDir("", "")
 	Nil(t, err)

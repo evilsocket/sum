@@ -1,4 +1,4 @@
-package main
+package orchestrator
 
 import (
 	"fmt"
@@ -12,8 +12,11 @@ import (
 // information to work with a specific node
 type NodeInfo struct {
 	sync.RWMutex
-	ID   uint
+	ID uint
+	// Name of this node ( it's address )
 	Name string
+	// Certificate file ( TODO: optionally load it in base64 format )
+	CertFile string
 	// GRPC client to the node's sum service
 	Client SumServiceClient
 	// GRPC client to the node's sum internal service
@@ -51,7 +54,7 @@ func (n *NodeInfo) Status() ServerInfo {
 // create node from a connection string and a certificate file
 // this method connect to the node and create it's respective GRPC clients.
 // it verify the connection by retrieving node's status using the aforementioned clients.
-func createNode(node, certFile string) (*NodeInfo, error) {
+func CreateNode(node, certFile string) (*NodeInfo, error) {
 	var dialOptions grpc.DialOption
 
 	if certFile != "" {
@@ -81,6 +84,7 @@ func createNode(node, certFile string) (*NodeInfo, error) {
 	ni := &NodeInfo{
 		status:         *svcInfo,
 		Name:           node,
+		CertFile:       certFile,
 		Client:         client,
 		InternalClient: internalClient,
 		RecordIds:      make(map[uint64]bool),

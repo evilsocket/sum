@@ -1,6 +1,7 @@
-package main
+package orchestrator
 
 import (
+	"fmt"
 	"github.com/evilsocket/sum/service"
 	"github.com/robertkrimen/otto"
 	"os"
@@ -44,10 +45,12 @@ type MuxService struct {
 	credsPath string
 	// listening address
 	address string
+	// configuration file path
+	configFile string
 }
 
 // create a new MuxService that manage the given nodes
-func NewMuxService(nodes []*NodeInfo) (*MuxService, error) {
+func NewMuxService(nodes []*NodeInfo, credsPath, address string) (*MuxService, error) {
 	ms := &MuxService{
 		nextId:        1,
 		nextRaccoonId: 1,
@@ -59,6 +62,8 @@ func NewMuxService(nodes []*NodeInfo) (*MuxService, error) {
 		started:       time.Now(),
 		pid:           uint64(os.Getpid()),
 		uid:           uint64(os.Getuid()),
+		credsPath:     credsPath,
+		address:       address,
 	}
 
 	if err := ms.solveAllConflictsInTheWorld(); err != nil {
@@ -75,6 +80,29 @@ func NewMuxService(nodes []*NodeInfo) (*MuxService, error) {
 	ms.stealOracles()
 
 	return ms, nil
+}
+
+// create a new MuxService with the configuration from at `configPath`
+func NewMuxServiceFromConfig(configPath, credsPath, address string) (*MuxService, error) {
+	cfg, err := LoadConfig(configPath)
+	if err != nil {
+		return nil, fmt.Errorf("cannot load config from '%s': %v", configPath, err)
+	}
+
+	nodes := make([]*NodeInfo, 0, len(cfg.Nodes))
+	for _, nc := range cfg.Nodes {
+		n, err := CreateNode(nc.Address, nc.CertFile)
+		if err != nil {
+			return nil, err
+		}
+		nodes = append(nodes, n)
+	}
+
+	ms, err := NewMuxService(nodes, credsPath, address)
+	if err == nil {
+		ms.configFile = configPath
+	}
+	return ms, err
 }
 
 // update the managed nodes's status
@@ -105,4 +133,18 @@ func (ms *MuxService) findNextAvailableId() uint64 {
 		}
 		ms.nextId++
 	}
+}
+
+func (ms *MuxService) NumRecords() int {
+	ms.nodesLock.RLock()
+	defer ms.nodesLock.RUnlock()
+
+	return len(ms.recId2node)
+}
+
+func (ms *MuxService) NumOracles() int {
+	ms.cageLock.RLock()
+	defer ms.cageLock.RUnlock()
+
+	return len(ms.raccoons)
 }

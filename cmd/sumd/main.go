@@ -1,8 +1,10 @@
 package main
 
 import (
+	"context"
 	"flag"
 	. "github.com/evilsocket/sum/common"
+	"github.com/evilsocket/sum/orchestrator"
 	"os"
 	"runtime"
 	"time"
@@ -24,15 +26,35 @@ var (
 	logFile      = flag.String("log-file", "", "If filled, sumd will log to this file.")
 	logDebug     = flag.Bool("debug", false, "Enable debug logs.")
 
+	// orchestrator
+
+	masterCfgFile = flag.String("master-cfg", "", "Load sum master configuration and become the master.")
+	timeout       = flag.Duration("timeout", 3*time.Second, "nodes communication timeout")
+	pollPeriod    = flag.Duration("pollinterval", 500*time.Millisecond, "nodes poll interval")
+
+	// stats
+
 	cpuProfile = flag.String("cpu-profile", "", "Write CPU profile to this file.")
 	memProfile = flag.String("mem-profile", "", "Write memory profile to this file.")
 
-	svc     = (*service.Service)(nil)
-	sigChan = (chan os.Signal)(nil)
+	svc       = (*service.Service)(nil)
+	masterSvc = (*orchestrator.MuxService)(nil)
 )
 
 func statsReport() {
 	var m runtime.MemStats
+	var reporter interface {
+		NumRecords() int
+		NumOracles() int
+	}
+
+	if svc != nil {
+		reporter = svc
+	} else if masterSvc != nil {
+		reporter = masterSvc
+	} else {
+		panic("no service has been created")
+	}
 
 	ticker := time.NewTicker(time.Duration(*gcPeriod) * time.Second)
 	for range ticker.C {
@@ -40,8 +62,8 @@ func statsReport() {
 		runtime.ReadMemStats(&m)
 
 		log.Info("records:%d oracles:%d mem:%s numgc:%d",
-			svc.NumRecords(),
-			svc.NumOracles(),
+			reporter.NumRecords(),
+			reporter.NumOracles(),
 			humanize.Bytes(m.Sys),
 			m.NumGC)
 	}
@@ -61,18 +83,34 @@ func main() {
 
 	log.Info("sumd v%s is starting ...", service.Version)
 
-	svc, err = service.New(*dataPath, *credsPath, *listenString)
-	if err != nil {
-		log.Fatal("%v", err)
-	}
-
 	server, listener := SetupGrpcServer(credsPath, listenString, maxMsgSize)
 
-	pb.RegisterSumServiceServer(server, svc)
-	pb.RegisterSumInternalServiceServer(server, svc)
-	reflection.Register(server)
+	if *masterCfgFile != "" {
+
+		orchestrator.SetCommunicationTimeout(*timeout)
+
+		if masterSvc, err = orchestrator.NewMuxServiceFromConfig(*masterCfgFile, *credsPath, *listenString); err != nil {
+			log.Fatal("Cannot start master service: %v", err)
+		}
+
+		pb.RegisterSumMasterServiceServer(server, masterSvc)
+		pb.RegisterSumServiceServer(server, masterSvc)
+
+		ctx, cf := context.WithCancel(context.Background())
+		defer cf()
+
+		go orchestrator.NodeUpdater(ctx, masterSvc, *pollPeriod)
+	} else {
+		if svc, err = service.New(*dataPath, *credsPath, *listenString); err != nil {
+			log.Fatal("%v", err)
+		}
+		pb.RegisterSumInternalServiceServer(server, svc)
+		pb.RegisterSumServiceServer(server, svc)
+	}
 
 	go statsReport()
+
+	reflection.Register(server)
 
 	log.Info("now listening on %s ...", *listenString)
 	if err := server.Serve(listener); err != nil {
