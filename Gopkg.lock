@@ -2,12 +2,39 @@
 
 
 [[projects]]
+  branch = "master"
+  digest = "1:315c5f2f60c76d89b871c73f9bd5fe689cad96597afd50fb9992228ef80bdd34"
+  name = "github.com/alecthomas/template"
+  packages = [
+    ".",
+    "parse",
+  ]
+  pruneopts = "UT"
+  revision = "a0175ee3bccc567396460bf5acd36800cb10c49c"
+
+[[projects]]
+  branch = "master"
+  digest = "1:c198fdc381e898e8fb62b8eb62758195091c313ad18e52a3067366e1dda2fb3c"
+  name = "github.com/alecthomas/units"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "2efee857e7cfd4f3d0138cc3cbb1b4966962b93a"
+
+[[projects]]
   digest = "1:b95738a1e6ace058b5b8544303c0871fc01d224ef0d672f778f696265d0f2917"
   name = "github.com/chzyer/readline"
   packages = ["."]
   pruneopts = "UT"
   revision = "62c6fe6193755f722b8b8788aa7357be55a50ff1"
   version = "v1.4"
+
+[[projects]]
+  digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
+  name = "github.com/davecgh/go-spew"
+  packages = ["spew"]
+  pruneopts = "UT"
+  revision = "8991bc29aa16c548c550c7ff78260e27b9ab7c73"
+  version = "v1.1.1"
 
 [[projects]]
   branch = "master"
@@ -45,6 +72,22 @@
   version = "v1.3.1"
 
 [[projects]]
+  digest = "1:31e761d97c76151dde79e9d28964a812c46efc5baee4085b86f68f0c654450de"
+  name = "github.com/konsorten/go-windows-terminal-sequences"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "f55edac94c9bbba5d6182a4be46d86a2c9b5b50e"
+  version = "v1.0.2"
+
+[[projects]]
+  digest = "1:0028cb19b2e4c3112225cd871870f2d9cf49b9b4276531f03438a88e94be86fe"
+  name = "github.com/pmezard/go-difflib"
+  packages = ["difflib"]
+  pruneopts = "UT"
+  revision = "792786c7400a136282c1664665ae0a8db921c6c2"
+  version = "v1.0.0"
+
+[[projects]]
   branch = "master"
   digest = "1:dbfe572cc258e5bcf54cb650a06d90edd0da04e42ca1ed909cc1d49f00011c63"
   name = "github.com/robertkrimen/otto"
@@ -59,6 +102,25 @@
   ]
   pruneopts = "UT"
   revision = "15f95af6e78dcd2030d8195a138bd88d4f403546"
+
+[[projects]]
+  digest = "1:fd61cf4ae1953d55df708acb6b91492d538f49c305b364a014049914495db426"
+  name = "github.com/sirupsen/logrus"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "8bdbc7bcc01dcbb8ec23dc8a28e332258d25251f"
+  version = "v1.4.1"
+
+[[projects]]
+  digest = "1:5da8ce674952566deae4dbc23d07c85caafc6cfa815b0b3e03e41979cedb8750"
+  name = "github.com/stretchr/testify"
+  packages = [
+    "assert",
+    "require",
+  ]
+  pruneopts = "UT"
+  revision = "ffdc059bfe9ce6a4e144ba849dbedead332c6053"
+  version = "v1.3.0"
 
 [[projects]]
   branch = "master"
@@ -179,6 +241,14 @@
   version = "v1.20.1"
 
 [[projects]]
+  digest = "1:c06d9e11d955af78ac3bbb26bd02e01d2f61f689e1a3bce2ef6fb683ef8a7f2d"
+  name = "gopkg.in/alecthomas/kingpin.v2"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "947dcec5ba9c011838740e680966fd7087a71d0d"
+  version = "v2.2.6"
+
+[[projects]]
   digest = "1:9935525a8c49b8434a0b0a54e1980e94a6fae73aaff45c5d33ba8dff69de123e"
   name = "gopkg.in/sourcemap.v1"
   packages = [
@@ -201,7 +271,10 @@
     "github.com/golang/protobuf/proto",
     "github.com/robertkrimen/otto",
     "github.com/robertkrimen/otto/ast",
+    "github.com/robertkrimen/otto/file",
     "github.com/robertkrimen/otto/parser",
+    "github.com/sirupsen/logrus",
+    "github.com/stretchr/testify/require",
     "golang.org/x/net/context",
     "gonum.org/v1/gonum/blas/blas32",
     "google.golang.org/grpc",
@@ -209,6 +282,7 @@
     "google.golang.org/grpc/credentials",
     "google.golang.org/grpc/reflection",
     "google.golang.org/grpc/status",
+    "gopkg.in/alecthomas/kingpin.v2",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1
