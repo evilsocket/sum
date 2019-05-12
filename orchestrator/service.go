@@ -8,6 +8,7 @@ import (
 	"time"
 )
 
+// get runtime information about the service
 func (ms *MuxService) Info(ctx context.Context, arg *Empty) (*ServerInfo, error) {
 	var m runtime.MemStats
 

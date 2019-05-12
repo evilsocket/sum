@@ -10,6 +10,7 @@ import (
 	"strings"
 )
 
+// create a record from the given argument
 func (ms *MuxService) CreateRecord(ctx context.Context, record *Record) (*RecordResponse, error) {
 	ms.nodesLock.RLock()
 	defer ms.nodesLock.RUnlock()
@@ -52,6 +53,7 @@ func (ms *MuxService) CreateRecord(ctx context.Context, record *Record) (*Record
 	return resp, err
 }
 
+// update a record from the given argument
 func (ms *MuxService) UpdateRecord(ctx context.Context, arg *Record) (*RecordResponse, error) {
 	ms.nodesLock.RLock()
 	defer ms.nodesLock.RUnlock()
@@ -63,6 +65,7 @@ func (ms *MuxService) UpdateRecord(ctx context.Context, arg *Record) (*RecordRes
 	}
 }
 
+// retrieve a record's content by its id
 func (ms *MuxService) ReadRecord(ctx context.Context, arg *ById) (*RecordResponse, error) {
 	ms.nodesLock.RLock()
 	defer ms.nodesLock.RUnlock()
@@ -74,6 +77,7 @@ func (ms *MuxService) ReadRecord(ctx context.Context, arg *ById) (*RecordRespons
 	}
 }
 
+// list records
 func (ms *MuxService) ListRecords(ctx context.Context, arg *ListRequest) (*RecordListResponse, error) {
 	workerInputs := make(map[uint]chan uint64)
 
@@ -129,7 +133,7 @@ func (ms *MuxService) ListRecords(ctx context.Context, arg *ListRequest) (*Recor
 			resp, err := n.Client.ReadRecord(ctx, &ById{Id: id})
 			if err != nil || !resp.Success {
 				errCh <- fmt.Sprintf("Unable to read record %d on node %d: %v",
-					id, n.ID, getTheFuckingErrorMessage(err, resp))
+					id, n.ID, getErrorMessage(err, resp))
 			} else {
 				outCh <- resp.Record
 			}
@@ -151,6 +155,7 @@ func (ms *MuxService) ListRecords(ctx context.Context, arg *ListRequest) (*Recor
 	return resp, nil
 }
 
+// delete a record by its id
 func (ms *MuxService) DeleteRecord(ctx context.Context, arg *ById) (*RecordResponse, error) {
 	ms.nodesLock.RLock()
 	defer ms.nodesLock.RUnlock()
@@ -166,6 +171,7 @@ func (ms *MuxService) DeleteRecord(ctx context.Context, arg *ById) (*RecordRespo
 	}
 }
 
+// find records that meet the given requirements
 func (ms *MuxService) FindRecords(ctx context.Context, arg *ByMeta) (*FindResponse, error) {
 	ms.nodesLock.RLock()
 	defer ms.nodesLock.RUnlock()
@@ -173,7 +179,7 @@ func (ms *MuxService) FindRecords(ctx context.Context, arg *ByMeta) (*FindRespon
 	results, errs := ms.doParallel(func(n *NodeInfo, resultChannel chan<- interface{}, errorChannel chan<- string) {
 		resp, err := n.Client.FindRecords(ctx, arg)
 		if err != nil || !resp.Success {
-			errorChannel <- getTheFuckingErrorMessage(err, resp)
+			errorChannel <- getErrorMessage(err, resp)
 		} else {
 			for _, r := range resp.Records {
 				resultChannel <- r

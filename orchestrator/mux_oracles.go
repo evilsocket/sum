@@ -8,6 +8,7 @@ import (
 	"sort"
 )
 
+// create an oracle form the given argument
 func (ms *MuxService) CreateOracle(ctx context.Context, arg *Oracle) (*OracleResponse, error) {
 	raccoon, err := NewAstRaccoon(arg.Code)
 	if err != nil {
@@ -34,6 +35,7 @@ func (ms *MuxService) CreateOracle(ctx context.Context, arg *Oracle) (*OracleRes
 	return &OracleResponse{Success: true, Msg: fmt.Sprintf("%d", raccoon.ID)}, nil
 }
 
+// update an oracle from the given argument
 func (ms *MuxService) UpdateOracle(ctx context.Context, arg *Oracle) (*OracleResponse, error) {
 	raccoon, err := NewAstRaccoon(arg.Code)
 	if err != nil {
@@ -55,6 +57,7 @@ func (ms *MuxService) UpdateOracle(ctx context.Context, arg *Oracle) (*OracleRes
 	return &OracleResponse{Success: true}, nil
 }
 
+// retrieve an Oracle's content
 func (ms *MuxService) ReadOracle(ctx context.Context, arg *ById) (*OracleResponse, error) {
 	ms.cageLock.RLock()
 	defer ms.cageLock.RUnlock()
@@ -66,6 +69,7 @@ func (ms *MuxService) ReadOracle(ctx context.Context, arg *ById) (*OracleRespons
 	}
 }
 
+// Find an Oracle by it's name
 func (ms *MuxService) FindOracle(ctx context.Context, arg *ByName) (*OracleResponse, error) {
 	ms.cageLock.RLock()
 	defer ms.cageLock.RUnlock()
@@ -79,6 +83,7 @@ func (ms *MuxService) FindOracle(ctx context.Context, arg *ByName) (*OracleRespo
 	return errOracleResponse("oracle '%s' not found.", arg.Name), nil
 }
 
+// List oracles
 func (ms *MuxService) ListOracles(ctx context.Context, list *ListRequest) (*OracleListResponse, error) {
 	ms.cageLock.RLock()
 	defer ms.cageLock.RUnlock()
@@ -131,6 +136,7 @@ func (ms *MuxService) ListOracles(ctx context.Context, list *ListRequest) (*Orac
 	return &resp, nil
 }
 
+// delete the specified oracle
 func (ms *MuxService) DeleteOracle(ctx context.Context, arg *ById) (*OracleResponse, error) {
 	ms.cageLock.Lock()
 	defer ms.cageLock.Unlock()

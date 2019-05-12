@@ -29,10 +29,12 @@ var (
 
 const Version = "1.0.0"
 
+// create a context to communicate with nodes
 func newCommContext() (context.Context, context.CancelFunc) {
 	return context.WithTimeout(context.Background(), *timeout)
 }
 
+// update MuxService's nodes periodically
 func updater(ctx context.Context, ms *MuxService) {
 	ticker := time.NewTicker(*pollPeriod)
 

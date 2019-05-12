@@ -8,6 +8,8 @@ import (
 	"time"
 )
 
+// A Service that multiplexes sum's workload
+// among multiple sum instances
 type MuxService struct {
 	// control access to `nodes` and `nextNodeId`
 	nodesLock sync.RWMutex
@@ -44,6 +46,7 @@ type MuxService struct {
 	address string
 }
 
+// create a new MuxService that manage the given nodes
 func NewMuxService(nodes []*NodeInfo) (*MuxService, error) {
 	ms := &MuxService{
 		nextId:        1,
@@ -74,6 +77,7 @@ func NewMuxService(nodes []*NodeInfo) (*MuxService, error) {
 	return ms, nil
 }
 
+// update the managed nodes's status
 func (ms *MuxService) UpdateNodes() {
 	ms.nodesLock.RLock()
 	defer ms.nodesLock.RUnlock()
@@ -83,6 +87,7 @@ func (ms *MuxService) UpdateNodes() {
 	}
 }
 
+// find the next available node ID
 func (ms *MuxService) findNextAvailableId() uint64 {
 	ms.idLock.Lock()
 	defer ms.idLock.Unlock()

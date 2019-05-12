@@ -7,10 +7,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func errNodeResponse(format string, args ...interface{}) *NodeResponse {
-	return &NodeResponse{Success: false, Msg: fmt.Sprintf(format, args...)}
-}
-
+// add a node to control
 func (ms *MuxService) AddNode(ctx context.Context, addr *ByAddr) (*NodeResponse, error) {
 	n, err := createNode(addr.Address, addr.CertFile)
 	if err != nil {
@@ -35,6 +32,7 @@ func (ms *MuxService) AddNode(ctx context.Context, addr *ByAddr) (*NodeResponse,
 	return &NodeResponse{Success: true, Msg: fmt.Sprintf("%d", n.ID)}, nil
 }
 
+// list all controlled nodes
 func (ms *MuxService) ListNodes(context.Context, *Empty) (*NodeResponse, error) {
 	res := &NodeResponse{Success: true}
 
@@ -50,6 +48,7 @@ func (ms *MuxService) ListNodes(context.Context, *Empty) (*NodeResponse, error) 
 	return res, nil
 }
 
+// delete a specified node
 func (ms *MuxService) DeleteNode(ctx context.Context, id *ById) (*NodeResponse, error) {
 
 	ms.nodesLock.Lock()

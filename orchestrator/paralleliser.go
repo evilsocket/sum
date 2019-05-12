@@ -60,6 +60,7 @@ func doParallel(nodes []*NodeInfo, f func(node *NodeInfo, resultChannel chan<- i
 }
 
 // run `f` in parallel on all the available nodes
+// NB: assumes an held lock on ms.nodesLock
 func (ms *MuxService) doParallel(f func(node *NodeInfo, resultChannel chan<- interface{}, errorChannel chan<- string)) (results []interface{}, errs []string) {
 	// assumes ms.nodesLock is held
 	return doParallel(ms.nodes, f)
