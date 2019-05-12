@@ -2,6 +2,7 @@ package storage
 
 import (
 	"errors"
+	"math/rand"
 	"os"
 	"reflect"
 	"testing"
@@ -162,6 +163,52 @@ func TestIndexCreateRecord(t *testing.T) {
 		t.Fatalf("expected record with id %d", testRecord.Id)
 	} else if r := m.(*pb.Record); !sameRecord(*r, testRecord) {
 		t.Fatal("records should match")
+	}
+}
+
+func TestIndexCreateRecordWithId(t *testing.T) {
+	setupRecords(t, false, false)
+	defer teardownRecords(t)
+
+	i := setupIndex(testFolder)
+	if err := i.Load(); err != nil {
+		t.Fatal(err)
+	} else if i.Size() != 0 {
+		t.Fatalf("expected %d records, got %d", 0, i.Size())
+	}
+
+	for {
+		testRecord.Id = rand.Uint64()
+		if _, found := i.index[testRecord.Id]; !found {
+			break
+		}
+	}
+
+	if err := i.CreateWithId(&testRecord); err != nil {
+		t.Fatal(err)
+	} else if i.Size() != 1 {
+		t.Fatalf("expected %d records, got %d", 1, i.Size())
+	} else if m := i.Find(testRecord.Id); m == nil {
+		t.Fatalf("expected record with id %d", testRecord.Id)
+	} else if r := m.(*pb.Record); !sameRecord(*r, testRecord) {
+		t.Fatal("records should match")
+	}
+}
+
+func TestIndexCreateRecordWithId_InvalidId(t *testing.T) {
+	setupRecords(t, true, false)
+	defer teardownRecords(t)
+
+	i := setupIndex(testFolder)
+	if err := i.Load(); err != nil {
+		t.Fatal(err)
+	} else if i.Size() != testRecords {
+		t.Fatalf("expected %d records, got %d", testRecords, i.Size())
+	}
+	testRecord.Id = testRecords
+
+	if err := i.CreateWithId(&testRecord); err != ErrInvalidID {
+		t.Fatalf("expected invalid id error, got %v", err)
 	}
 }
 

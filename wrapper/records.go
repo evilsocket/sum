@@ -21,6 +21,14 @@ func WrapRecords(records *storage.Records) Records {
 	}
 }
 
+func (_ Records) New(msg string) *Record {
+	if r, err := FromCompressedText(msg); err != nil {
+		panic(err)
+	} else {
+		return r
+	}
+}
+
 // Find returns a wrapped Record given its identifier.
 // If not found, the resulting record will result as null
 // (record.IsNull() will be true).

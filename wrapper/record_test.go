@@ -1,6 +1,8 @@
 package wrapper
 
 import (
+	"github.com/golang/protobuf/proto"
+	. "github.com/stretchr/testify/require"
 	"reflect"
 	"testing"
 
@@ -159,4 +161,15 @@ func TestWrappedRecordCosineWithIncompatibleSizes(t *testing.T) {
 	assertPanic(t, "cosine similarity should panic with vectors of different sizes", func() {
 		WrapRecord(&testRecord).Cosine(WrapRecord(&testShorterRecord))
 	})
+}
+
+func TestSerialization(t *testing.T) {
+	r := &pb.Record{Id: 1, Meta: map[string]string{"key": "value"}, Data: []float32{0.1, 0.2, 0.3}}
+
+	str, err := RecordToCompressedText(r)
+	Nil(t, err)
+	print(str, "\n")
+	r1, err := FromCompressedText(str)
+	Nil(t, err)
+	True(t, proto.Equal(r, r1.record))
 }

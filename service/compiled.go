@@ -26,8 +26,24 @@ func (c *compiled) Is(o pb.Oracle) bool {
 	return c.oracle.Id == o.Id
 }
 
+func dontPanic(err *error) {
+	p := recover()
+	if p == nil {
+		return
+	}
+	switch p.(type) {
+	case string:
+		*err = errors.New(p.(string))
+	case error:
+		*err = p.(error)
+	default:
+		*err = fmt.Errorf("got panic of type %T: %v", p, p)
+	}
+}
+
 func (c *compiled) Run(records *storage.Records, args []string) (ctx *wrapper.Context, raw []byte, err error) {
-	ret, err := func() (otto.Value, error) {
+	ret, err := func() (v otto.Value, err error) {
+		defer dontPanic(&err)
 		var anyValue interface{}
 		// prepare the context that the oracle will be able to use
 		// to signal errors and other specific states or events

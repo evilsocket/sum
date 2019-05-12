@@ -54,6 +54,7 @@ func main() {
 	defer conn.Close()
 
 	client := pb.NewSumServiceClient(conn)
+	masterClient := pb.NewSumMasterServiceClient(conn)
 	reader, err := readline.NewEx(&readline.Config{
 		Prompt:          fmt.Sprintf("sumd@%s %s", *serverAddress, prompt),
 		HistoryFile:     history,
@@ -67,7 +68,7 @@ func main() {
 	defer reader.Close()
 
 	for _, cmd := range str.SplitBy(*evalString, ";") {
-		if err := handlers.Dispatch(cmd, reader, client); err != nil {
+		if err := handlers.Dispatch(cmd, reader, client, masterClient); err != nil {
 			fmt.Printf("%s\n", err)
 		}
 	}
@@ -83,7 +84,7 @@ func main() {
 			break
 		} else {
 			for _, cmd := range str.SplitBy(line, ";") {
-				if err := handlers.Dispatch(cmd, reader, client); err != nil {
+				if err := handlers.Dispatch(cmd, reader, client, masterClient); err != nil {
 					fmt.Printf("%s\n", err)
 				}
 			}

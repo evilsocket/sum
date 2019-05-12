@@ -1,11 +1,11 @@
-package service
+package main
 
 import (
 	"context"
-	"testing"
-
 	pb "github.com/evilsocket/sum/proto"
 	"github.com/evilsocket/sum/storage"
+	"github.com/golang/protobuf/proto"
+	"testing"
 )
 
 var (
@@ -33,7 +33,7 @@ func TestServiceCreateRecord(t *testing.T) {
 	setupFolders(t)
 	defer teardown(t)
 
-	if svc, err := New(testFolder, "", ""); err != nil {
+	if svc, err := NewClient(testFolder); err != nil {
 		t.Fatal(err)
 	} else if resp, err := svc.CreateRecord(context.TODO(), &testRecord); err != nil {
 		t.Fatal(err)
@@ -50,13 +50,13 @@ func TestServiceCreateRecordNotUniqueId(t *testing.T) {
 	setup(t, true, true)
 	defer teardown(t)
 
-	svc, err := New(testFolder, "", "")
+	svc, err := NewClient(testFolder)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// ok this is kinda cheating, but i want full coverage
-	svc.records.NextID(1)
+	network.orchestrators[0].svc.nextId = 1
 	if resp, err := svc.CreateRecord(context.TODO(), &testRecord); err != nil {
 		t.Fatal(err)
 	} else if resp.Success {
@@ -72,7 +72,7 @@ func TestServiceUpdateRecord(t *testing.T) {
 	setup(t, true, true)
 	defer teardown(t)
 
-	svc, err := New(testFolder, "", "")
+	svc, err := NewClient(testFolder)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -84,9 +84,11 @@ func TestServiceUpdateRecord(t *testing.T) {
 		t.Fatalf("expected success response: %v", resp)
 	} else if resp.Record != nil {
 		t.Fatalf("unexpected record pointer: %v", resp.Record)
-	} else if stored := svc.records.Find(updatedRecord.Id); stored == nil {
+	} else if stored, err := svc.ReadRecord(context.TODO(), &pb.ById{Id: updatedRecord.Id}); err != nil {
+		t.Fatalf("unaexpected error %v", err)
+	} else if stored.Record == nil {
 		t.Fatal("expected stored record with id 1")
-	} else if !sameRecord(*stored, updatedRecord) {
+	} else if !proto.Equal(stored.Record, &updatedRecord) {
 		t.Fatal("record has not been updated as expected")
 	}
 }
@@ -95,7 +97,7 @@ func TestServiceUpdateRecordWithInvalidId(t *testing.T) {
 	setup(t, true, true)
 	defer teardown(t)
 
-	svc, err := New(testFolder, "", "")
+	svc, err := NewClient(testFolder)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -116,7 +118,7 @@ func TestServiceReadRecord(t *testing.T) {
 	setup(t, true, true)
 	defer teardown(t)
 
-	if svc, err := New(testFolder, "", ""); err != nil {
+	if svc, err := NewClient(testFolder); err != nil {
 		t.Fatal(err)
 	} else if resp, err := svc.ReadRecord(context.TODO(), &byID); err != nil {
 		t.Fatal(err)
@@ -124,7 +126,7 @@ func TestServiceReadRecord(t *testing.T) {
 		t.Fatalf("expected success response: %v", resp)
 	} else if resp.Record == nil {
 		t.Fatal("expected record pointer")
-	} else if testRecord.Id = byID.Id; !sameRecord(*resp.Record, testRecord) {
+	} else if testRecord.Id = byID.Id; !proto.Equal(resp.Record, &testRecord) {
 		t.Fatalf("unexpected record: %v", resp.Record)
 	}
 }
@@ -133,7 +135,7 @@ func TestServiceReadRecordWithInvalidId(t *testing.T) {
 	setup(t, true, true)
 	defer teardown(t)
 
-	if svc, err := New(testFolder, "", ""); err != nil {
+	if svc, err := NewClient(testFolder); err != nil {
 		t.Fatal(err)
 	} else if resp, err := svc.ReadRecord(context.TODO(), &pb.ById{Id: 666}); err != nil {
 		t.Fatal(err)
@@ -155,7 +157,7 @@ func TestServiceListRecordsSinglePage(t *testing.T) {
 		PerPage: testRecords,
 	}
 
-	if svc, err := New(testFolder, "", ""); err != nil {
+	if svc, err := NewClient(testFolder); err != nil {
 		t.Fatal(err)
 	} else if resp, err := svc.ListRecords(context.TODO(), &list); err != nil {
 		t.Fatal(err)
@@ -167,7 +169,7 @@ func TestServiceListRecordsSinglePage(t *testing.T) {
 		t.Fatalf("expected %d total records, got %d", testRecords, len(resp.Records))
 	} else {
 		for _, r := range resp.Records {
-			if testRecord.Id = r.Id; !sameRecord(*r, testRecord) {
+			if testRecord.Id = r.Id; !proto.Equal(r, &testRecord) {
 				t.Fatalf("unexpected record: %v", r)
 			}
 		}
@@ -183,7 +185,7 @@ func TestServiceListRecordsMultiPage(t *testing.T) {
 		PerPage: 2,
 	}
 
-	if svc, err := New(testFolder, "", ""); err != nil {
+	if svc, err := NewClient(testFolder); err != nil {
 		t.Fatal(err)
 	} else if resp, err := svc.ListRecords(context.TODO(), &list); err != nil {
 		t.Fatal(err)
@@ -195,7 +197,7 @@ func TestServiceListRecordsMultiPage(t *testing.T) {
 		t.Fatalf("expected %d total records, got %d", 2, len(resp.Records))
 	} else {
 		for _, r := range resp.Records {
-			if testRecord.Id = r.Id; !sameRecord(*r, testRecord) {
+			if testRecord.Id = r.Id; !proto.Equal(r, &testRecord) {
 				t.Fatalf("unexpected record: %v", r)
 			}
 		}
@@ -211,7 +213,7 @@ func TestServiceListRecordsInvalidPage(t *testing.T) {
 		PerPage: 2,
 	}
 
-	if svc, err := New(testFolder, "", ""); err != nil {
+	if svc, err := NewClient(testFolder); err != nil {
 		t.Fatal(err)
 	} else if resp, err := svc.ListRecords(context.TODO(), &list); err != nil {
 		t.Fatal(err)
@@ -228,7 +230,7 @@ func TestServiceDeleteRecord(t *testing.T) {
 	setup(t, true, true)
 	defer teardown(t)
 
-	svc, err := New(testFolder, "", "")
+	svc, err := NewClient(testFolder)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -241,17 +243,21 @@ func TestServiceDeleteRecord(t *testing.T) {
 			t.Fatalf("expected success response: %v", resp)
 		} else if resp.Record != nil {
 			t.Fatalf("unexpected record pointer: %v", resp.Record)
-		} else if svc.NumRecords() != testRecords-int(id) {
-			t.Fatalf("inconsistent records storage size of %d", svc.NumRecords())
+		} else if len(network.orchestrators[0].svc.recId2node) != testRecords-int(id) {
+			t.Fatalf("inconsistent records storage size of %d", len(network.orchestrators[0].svc.recId2node))
 		}
 	}
 
-	if svc.NumRecords() != 0 {
-		t.Fatalf("expected empty records storage, found %d instead", svc.NumRecords())
-	} else if doublecheck, err := New(testFolder, "", ""); err != nil {
+	if len(network.orchestrators[0].svc.recId2node) != 0 {
+		t.Fatalf("expected empty records storage, found %d instead", len(network.orchestrators[0].svc.recId2node))
+	}
+
+	teardown(t)
+
+	if _, err := NewClient(testFolder); err != nil {
 		t.Fatal(err)
-	} else if doublecheck.NumRecords() != 0 {
-		t.Fatalf("%d dat files left on disk", doublecheck.NumRecords())
+	} else if len(network.orchestrators[0].svc.recId2node) != 0 {
+		t.Fatalf("%d dat files left on disk", len(network.orchestrators[0].svc.recId2node))
 	}
 }
 
@@ -259,7 +265,7 @@ func TestServiceDeleteRecordWithInvalidId(t *testing.T) {
 	setup(t, true, true)
 	defer teardown(t)
 
-	if svc, err := New(testFolder, "", ""); err != nil {
+	if svc, err := NewClient(testFolder); err != nil {
 		t.Fatal(err)
 	} else if resp, err := svc.DeleteRecord(context.TODO(), &pb.ById{Id: 666}); err != nil {
 		t.Fatal(err)
@@ -269,45 +275,5 @@ func TestServiceDeleteRecordWithInvalidId(t *testing.T) {
 		t.Fatalf("unexpected record pointer: %v", resp.Record)
 	} else if resp.Msg != "record 666 not found." {
 		t.Fatalf("unexpected message: %s", resp.Msg)
-	}
-}
-
-func TestService_CreateRecordWithId(t *testing.T) {
-	setupFolders(t)
-	defer teardown(t)
-
-	testRecord.Id = 5
-
-	if svc, err := New(testFolder, "", ""); err != nil {
-		t.Fatal(err)
-	} else if resp, err := svc.CreateRecordWithId(context.TODO(), &testRecord); err != nil {
-		t.Fatal(err)
-	} else if !resp.Success {
-		t.Fatalf("expected success response: %v", resp)
-	} else if resp.Record != nil {
-		t.Fatalf("unexpected record pointer: %v", resp.Record)
-	} else if resp.Msg != "5" {
-		t.Fatalf("unexpected response message: %s", resp.Msg)
-	}
-}
-
-func TestService_CreateRecordWithId_Invalid(t *testing.T) {
-	setup(t, true, true)
-	defer teardown(t)
-
-	svc, err := New(testFolder, "", "")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	testRecord.Id = testRecords
-	if resp, err := svc.CreateRecordWithId(context.TODO(), &testRecord); err != nil {
-		t.Fatal(err)
-	} else if resp.Success {
-		t.Fatalf("expected error response: %v", resp)
-	} else if resp.Record != nil {
-		t.Fatalf("unexpected record pointer: %v", resp.Record)
-	} else if resp.Msg != storage.ErrInvalidID.Error() {
-		t.Fatalf("unexpected response message: %s", resp.Msg)
 	}
 }

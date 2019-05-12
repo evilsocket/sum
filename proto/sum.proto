@@ -24,6 +24,28 @@ service SumService {
   rpc Info(Empty) returns (ServerInfo) {}
 }
 
+service SumInternalService {
+    rpc CreateRecordWithId(Record) returns (RecordResponse) {}
+}
+
+service SumMasterService {
+    rpc AddNode(ByAddr) returns (NodeResponse) {}
+    rpc ListNodes(Empty) returns (NodeResponse) {}
+    rpc DeleteNode(ById) returns (NodeResponse) {}
+}
+
+message Node {
+    uint64 id = 1;
+    string name = 2;
+    ServerInfo info = 3;
+}
+
+message NodeResponse {
+    bool success = 1;
+    string msg = 2;
+    repeated Node nodes = 3;
+}
+
 message Record {
     uint64 id = 1;
     repeated float data = 2;
@@ -93,6 +115,11 @@ message ById {
 
 message ByName {
     string name = 1;
+}
+
+message ByAddr {
+    string address = 1;
+    string cert_file = 2;
 }
 
 message ByMeta {

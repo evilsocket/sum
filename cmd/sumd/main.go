@@ -2,13 +2,9 @@ package main
 
 import (
 	"flag"
-	"net"
+	. "github.com/evilsocket/sum/common"
 	"os"
-	"os/signal"
-	"path"
 	"runtime"
-	"runtime/pprof"
-	"syscall"
 	"time"
 
 	pb "github.com/evilsocket/sum/proto"
@@ -16,8 +12,6 @@ import (
 
 	"github.com/dustin/go-humanize"
 	"github.com/evilsocket/islazy/log"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/reflection"
 )
 
@@ -37,67 +31,6 @@ var (
 	sigChan = (chan os.Signal)(nil)
 )
 
-func doCleanup() {
-	log.Info("shutting down ...")
-
-	if *cpuProfile != "" {
-		log.Info("saving cpu profile to %s ...", *cpuProfile)
-		pprof.StopCPUProfile()
-	}
-
-	if *memProfile != "" {
-		log.Info("saving memory profile to %s ...", *memProfile)
-		f, err := os.Create(*memProfile)
-		if err != nil {
-			log.Info("could not create memory profile: %s", err)
-			return
-		}
-		defer f.Close()
-		runtime.GC() // get up-to-date statistics
-		if err := pprof.WriteHeapProfile(f); err != nil {
-			log.Info("could not write memory profile: %s", err)
-		}
-	}
-}
-
-func setupSignals() {
-	if *cpuProfile != "" {
-		if f, err := os.Create(*cpuProfile); err != nil {
-			log.Fatal("%v", err)
-		} else if err := pprof.StartCPUProfile(f); err != nil {
-			log.Fatal("%v", err)
-		}
-	}
-
-	sigChan = make(chan os.Signal, 1)
-	signal.Notify(sigChan,
-		syscall.SIGHUP,
-		syscall.SIGINT,
-		syscall.SIGTERM,
-		syscall.SIGQUIT)
-	go func() {
-		sig := <-sigChan
-		log.Info("got signal %v", sig)
-		doCleanup()
-		os.Exit(0)
-	}()
-}
-
-func setupLogging() {
-	log.OnFatal = log.ExitOnFatal
-	if *logFile != "" {
-		log.Output = *logFile
-	}
-
-	if *logDebug {
-		log.Level = log.DEBUG
-	}
-
-	if err := log.Open(); err != nil {
-		panic(err)
-	}
-}
-
 func statsReport() {
 	var m runtime.MemStats
 
@@ -115,34 +48,28 @@ func statsReport() {
 }
 
 func main() {
+	var err error
+
 	flag.Parse()
 
-	setupSignals()
-	setupLogging()
-	defer log.Close()
+	StartProfiling(cpuProfile)
+
+	SetupSignals(func(_ os.Signal) { DoCleanup(cpuProfile, memProfile) })
+
+	SetupLogging(logFile, logDebug)
+	defer TeardownLogging()
 
 	log.Info("sumd v%s is starting ...", service.Version)
-
-	crtFile := path.Join(*credsPath, "cert.pem")
-	keyFile := path.Join(*credsPath, "key.pem")
-	creds, err := credentials.NewServerTLSFromFile(crtFile, keyFile)
-	if err != nil {
-		log.Fatal("failed to load credentials from %s: %v", *credsPath, err)
-	}
-
-	listener, err := net.Listen("tcp", *listenString)
-	if err != nil {
-		log.Fatal("failed to create listener: %v", err)
-	}
 
 	svc, err = service.New(*dataPath, *credsPath, *listenString)
 	if err != nil {
 		log.Fatal("%v", err)
 	}
 
-	grpc.MaxMsgSize(*maxMsgSize)
-	server := grpc.NewServer(grpc.Creds(creds))
+	server, listener := SetupGrpcServer(credsPath, listenString, maxMsgSize)
+
 	pb.RegisterSumServiceServer(server, svc)
+	pb.RegisterSumInternalServiceServer(server, svc)
 	reflection.Register(server)
 
 	go statsReport()

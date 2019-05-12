@@ -165,6 +165,22 @@ func (i *Index) Create(record proto.Message) error {
 	return nil
 }
 
+func (i *Index) CreateWithId(record proto.Message) error {
+	i.Lock()
+	defer i.Unlock()
+
+	recID := i.driver.GetID(record)
+	if _, found := i.index[recID]; found {
+		return ErrInvalidID
+	} else if err := Flush(record, i.pathForID(recID)); err != nil {
+		return err
+	}
+
+	i.index[recID] = record
+
+	return nil
+}
+
 // Update changes the contents of a stored object given a protobuf
 // message with its identifier and the new values to use. This operation
 // will flush the record on disk.
