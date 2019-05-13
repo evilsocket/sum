@@ -1,4 +1,4 @@
-package main
+package orchestrator
 
 import (
 	"fmt"
@@ -7,8 +7,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// I really hate this "success" in the response
-func getTheFuckingErrorMessage(err error, response proto.Message) string {
+// Get the error message from either a GRPC error or a application-level one
+func getErrorMessage(err error, response proto.Message) string {
 	if err != nil {
 		return err.Error()
 	}
@@ -37,6 +37,7 @@ func getTheFuckingErrorMessage(err error, response proto.Message) string {
 	panic("no errors dude")
 }
 
+// transfer a record from one node to another
 func transferOne(fromNode, toNode *NodeInfo, recordId uint64) {
 	ctx, cf := newCommContext()
 	defer cf()
@@ -44,12 +45,12 @@ func transferOne(fromNode, toNode *NodeInfo, recordId uint64) {
 	record, err := fromNode.Client.ReadRecord(ctx, &pb.ById{Id: recordId})
 
 	if err != nil || !record.Success {
-		log.Errorf("Cannot read record %d from node %d: %v", recordId, fromNode.ID, getTheFuckingErrorMessage(err, record))
+		log.Errorf("Cannot read record %d from node %d: %v", recordId, fromNode.ID, getErrorMessage(err, record))
 		return
 	}
 
 	if record2, err := fromNode.Client.DeleteRecord(ctx, &pb.ById{Id: recordId}); err != nil || !record2.Success {
-		log.Errorf("Cannot delete record %d from node %d: %v", recordId, fromNode.ID, getTheFuckingErrorMessage(err, record2))
+		log.Errorf("Cannot delete record %d from node %d: %v", recordId, fromNode.ID, getErrorMessage(err, record2))
 		return
 	}
 
@@ -58,10 +59,10 @@ func transferOne(fromNode, toNode *NodeInfo, recordId uint64) {
 	newRecord, err := toNode.InternalClient.CreateRecordWithId(ctx, record.Record)
 
 	if err != nil || !newRecord.Success {
-		log.Errorf("Unable to create record on node %d: %v", toNode.ID, getTheFuckingErrorMessage(err, newRecord))
+		log.Errorf("Unable to create record on node %d: %v", toNode.ID, getErrorMessage(err, newRecord))
 		// restore
 		if newRecord, err = fromNode.InternalClient.CreateRecordWithId(ctx, record.Record); err != nil || !newRecord.Success {
-			log.Errorf("Unable to create record on node %d: %v", fromNode.ID, getTheFuckingErrorMessage(err, newRecord))
+			log.Errorf("Unable to create record on node %d: %v", fromNode.ID, getErrorMessage(err, newRecord))
 			log.Errorf("Record %d lost ( %s )", record.Record.Id, record.Record.Meta)
 		} else {
 			log.Infof("Record %d restored on node %d", recordId, fromNode.ID)

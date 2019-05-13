@@ -1,4 +1,4 @@
-package main
+package orchestrator
 
 import (
 	"context"
@@ -14,6 +14,7 @@ func (ms *MuxService) stealOracles() {
 	}
 }
 
+// steal an oracle form another node
 func (ms *MuxService) stealOraclesFromNode(n *NodeInfo) {
 	n.RLock()
 	defer n.RUnlock()
@@ -33,7 +34,7 @@ func (ms *MuxService) deployAgentSmith(n *NodeInfo, oracleId uint64) error {
 	resp, err := n.Client.ReadOracle(ctx, &ById{Id: oracleId})
 	if err != nil || !resp.Success {
 		return fmt.Errorf("unable to read oracle #%d from node %d: %v",
-			oracleId, n.ID, getTheFuckingErrorMessage(err, resp))
+			oracleId, n.ID, getErrorMessage(err, resp))
 	}
 
 	oracle := resp.Oracle
@@ -41,10 +42,10 @@ func (ms *MuxService) deployAgentSmith(n *NodeInfo, oracleId uint64) error {
 
 	if resp1, err := ms.CreateOracle(context.Background(), &Oracle{Code: oracle.Code, Name: oracle.Name}); err != nil || !resp1.Success {
 		return fmt.Errorf("unable to load oracle #%d (%s) from node %d: %v",
-			oracleId, oracle.Name, n.ID, getTheFuckingErrorMessage(err, resp1))
+			oracleId, oracle.Name, n.ID, getErrorMessage(err, resp1))
 	} else if resp2, err := n.Client.DeleteOracle(ctx, &ById{Id: oracleId}); err != nil || !resp2.Success {
 		log.Warnf("cannot delete oracle #%d (%s) from node %d: %v",
-			oracleId, oracle.Name, n.ID, getTheFuckingErrorMessage(err, resp2))
+			oracleId, oracle.Name, n.ID, getErrorMessage(err, resp2))
 	}
 
 	return nil

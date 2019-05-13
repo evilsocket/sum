@@ -1,4 +1,4 @@
-package main
+package orchestrator
 
 import (
 	"bytes"
@@ -27,7 +27,7 @@ func init() {
 }
 
 func TestCreateOracle(t *testing.T) {
-	ms, err := NewMuxService([]*NodeInfo{})
+	ms, err := NewMuxService([]*NodeInfo{}, "", "")
 	Nil(t, err)
 
 	arg := &pb.Oracle{}
@@ -120,13 +120,15 @@ func spawnNode(t *testing.T, port uint32, dataPath string) (*grpc.Server, *servi
 func spawnOrchestratorErr(port uint32, nodesStr string) (*grpc.Server, *MuxService, error) {
 	nodes := make([]*NodeInfo, 0)
 
-	for _, n := range strings.Split(nodesStr, ",") {
-		node, err := createNode(n, "")
-		if err != nil {
-			return nil, nil, err
+	if nodesStr != "" {
+		for _, n := range strings.Split(nodesStr, ",") {
+			node, err := CreateNode(n, "")
+			if err != nil {
+				return nil, nil, err
+			}
+			node.ID = uint(len(nodes) + 1)
+			nodes = append(nodes, node)
 		}
-		node.ID = uint(len(nodes) + 1)
-		nodes = append(nodes, node)
 	}
 
 	addr := fmt.Sprintf("localhost:%d", port)
@@ -135,13 +137,13 @@ func spawnOrchestratorErr(port uint32, nodesStr string) (*grpc.Server, *MuxServi
 		return nil, nil, err
 	}
 
-	ms, err := NewMuxService(nodes)
+	ms, err := NewMuxService(nodes, "", addr)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	ctx, cf := context.WithCancel(context.Background())
-	go updater(ctx, ms)
+	go NodeUpdater(ctx, ms, time.Second)
 
 	server := grpc.NewServer()
 	pb.RegisterSumServiceServer(server, ms)
@@ -179,9 +181,7 @@ func spawnOrchestrator(t *testing.T, port uint32, nodesStr string) (*grpc.Server
 }
 
 func TestDistributedRun(t *testing.T) {
-	newTimeout := time.Second
-	timeout = &newTimeout
-	pollPeriod = &newTimeout
+	SetCommunicationTimeout(time.Second)
 
 	dir1, err := setupEmptyTmpFolder()
 	Nil(t, err)
@@ -288,9 +288,7 @@ function findDoubles(id) {
 }
 
 func TestMergerFunction(t *testing.T) {
-	newTimeout := time.Second
-	timeout = &newTimeout
-	pollPeriod = &newTimeout
+	SetCommunicationTimeout(time.Second)
 
 	dir1, err := ioutil.TempDir("", "")
 	Nil(t, err)

@@ -1,4 +1,4 @@
-package main
+package orchestrator
 
 import (
 	"bytes"
@@ -17,11 +17,19 @@ import (
 	"sync"
 )
 
+// run an oracle with the given arguments and get its results back
+// in this implementation the original oracle is patched and sent down
+// to the nodes. It is then run in parallel and its results merged together.
+// Because of this merging, if the oracle returns a scalar a merging function is needed.
+// To declare a merging function just declare a function whose name begin with
+// "merge". Please remember that the first function shall be the oracle.
 func (ms *MuxService) Run(ctx context.Context, arg *Call) (*CallResponse, error) {
 
 	// NB: always keep this order of locking
 	ms.nodesLock.RLock()
 	defer ms.nodesLock.RUnlock()
+	ms.recordsLock.RLock()
+	defer ms.recordsLock.RUnlock()
 	ms.cageLock.RLock()
 	defer ms.cageLock.RUnlock()
 
@@ -51,7 +59,7 @@ func (ms *MuxService) Run(ctx context.Context, arg *Call) (*CallResponse, error)
 		record, err := node.Client.ReadRecord(ctx, &ById{Id: recId})
 		if err != nil || !record.Success {
 			return errCallResponse("Unable to retrieve record %d form node %d: %v",
-				recId, node.ID, getTheFuckingErrorMessage(err, record)), nil
+				recId, node.ID, getErrorMessage(err, record)), nil
 		}
 		resolvedRecords[i] = record.Record
 	}
@@ -74,7 +82,7 @@ func (ms *MuxService) Run(ctx context.Context, arg *Call) (*CallResponse, error)
 			resp, err := n.Client.DeleteOracle(ctx, &ById{Id: oId})
 			if err != nil || !resp.Success {
 				log.Warnf("Unable to delete temporary oracle %d on node %d: %v",
-					oId, n.ID, getTheFuckingErrorMessage(err, resp))
+					oId, n.ID, getErrorMessage(err, resp))
 			}
 		}
 	}()
@@ -82,7 +90,7 @@ func (ms *MuxService) Run(ctx context.Context, arg *Call) (*CallResponse, error)
 	results, errs := ms.doParallel(func(n *NodeInfo, okChan chan<- interface{}, errChan chan<- string) {
 		resp, err := n.Client.CreateOracle(ctx, newOracle)
 		if err != nil || !resp.Success {
-			errChan <- getTheFuckingErrorMessage(err, resp)
+			errChan <- getErrorMessage(err, resp)
 			return
 		}
 		oId, err := strconv.ParseUint(resp.Msg, 10, 64)
@@ -97,7 +105,7 @@ func (ms *MuxService) Run(ctx context.Context, arg *Call) (*CallResponse, error)
 		}()
 		resp1, err := n.Client.Run(ctx, &Call{OracleId: oId, Args: arg.Args})
 		if err != nil || !resp1.Success {
-			errChan <- getTheFuckingErrorMessage(err, resp1)
+			errChan <- getErrorMessage(err, resp1)
 			return
 		}
 		if resp1.Data.Compressed {
@@ -130,6 +138,7 @@ func (ms *MuxService) Run(ctx context.Context, arg *Call) (*CallResponse, error)
 	}
 }
 
+// merge results together
 func (ms *MuxService) merge(raccoon *astRaccoon, results []interface{}) (interface{}, error) {
 	if raccoon.MergerFunction == nil {
 		return ms.defaultMerger(results)
@@ -165,6 +174,7 @@ func (ms *MuxService) merge(raccoon *astRaccoon, results []interface{}) (interfa
 	}
 }
 
+// default merger for maps and arrays
 func (_ *MuxService) defaultMerger(results []interface{}) (mergedResults interface{}, _ error) {
 	var resultType *reflect.Type
 

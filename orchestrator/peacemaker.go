@@ -1,4 +1,4 @@
-package main
+package orchestrator
 
 import (
 	"context"
@@ -58,6 +58,7 @@ func (ms *MuxService) solveAllConflictsInTheWorld() error {
 	}
 }
 
+// solves a conflict between multiple nodes over a single record
 func (ms *MuxService) solveConflict(rId uint64, nodes []*NodeInfo) error {
 	var mapLock sync.Mutex
 	var records = make(map[*NodeInfo]*pb.Record)
@@ -134,10 +135,11 @@ func (ms *MuxService) solveConflict(rId uint64, nodes []*NodeInfo) error {
 	}
 }
 
+// delete a record from the given nodes
 func (ms *MuxService) deleteRecordFromNodes(rId uint64, nodes []*NodeInfo) error {
 	for _, n := range nodes {
 		if resp, err := n.Client.DeleteRecord(context.Background(), &pb.ById{Id: rId}); err != nil || !resp.Success {
-			return fmt.Errorf("unable to delete record %d on node %d: %v", rId, n.ID, getTheFuckingErrorMessage(err, resp))
+			return fmt.Errorf("unable to delete record %d on node %d: %v", rId, n.ID, getErrorMessage(err, resp))
 		}
 		delete(n.RecordIds, rId)
 	}
@@ -145,18 +147,19 @@ func (ms *MuxService) deleteRecordFromNodes(rId uint64, nodes []*NodeInfo) error
 	return nil
 }
 
+// change record ID on a specified node
 func (ms *MuxService) changeRecordIdOnNode(r *pb.Record, n *NodeInfo) error {
 	rId := r.Id
 	r.Id = ms.findNextAvailableId()
 
 	if resp, err := n.Client.DeleteRecord(context.Background(), &pb.ById{Id: rId}); err != nil || !resp.Success {
-		return fmt.Errorf("unable to delete record %d on node %d: %v", rId, n.ID, getTheFuckingErrorMessage(err, resp))
+		return fmt.Errorf("unable to delete record %d on node %d: %v", rId, n.ID, getErrorMessage(err, resp))
 	}
 
 	delete(n.RecordIds, rId)
 
 	if resp, err := n.InternalClient.CreateRecordWithId(context.Background(), r); err != nil || !resp.Success {
-		return fmt.Errorf("unable to create record %d on node %d: %v", r.Id, n.ID, getTheFuckingErrorMessage(err, resp))
+		return fmt.Errorf("unable to create record %d on node %d: %v", r.Id, n.ID, getErrorMessage(err, resp))
 	}
 
 	log.Infof("Record %d has been changed to record %d on node %d", rId, r.Id, n.ID)
@@ -167,6 +170,7 @@ func (ms *MuxService) changeRecordIdOnNode(r *pb.Record, n *NodeInfo) error {
 	return nil
 }
 
+// join multiple errors together
 func errorsToString(ary []error) string {
 	errs := make([]string, len(ary))
 	for i, e := range ary {

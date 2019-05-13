@@ -1,6 +1,7 @@
-package main
+package orchestrator
 
 import (
+	"fmt"
 	"github.com/evilsocket/sum/service"
 	"github.com/robertkrimen/otto"
 	"os"
@@ -8,6 +9,8 @@ import (
 	"time"
 )
 
+// A Service that multiplexes sum's workload
+// among multiple sum instances
 type MuxService struct {
 	// control access to `nodes` and `nextNodeId`
 	nodesLock sync.RWMutex
@@ -19,6 +22,8 @@ type MuxService struct {
 	idLock sync.RWMutex
 	// id of the next record
 	nextId uint64
+	// control access to `recId2node`
+	recordsLock sync.RWMutex
 	// map a record to its containing node
 	recId2node map[uint64]*NodeInfo
 	// control access to `raccoons`
@@ -42,9 +47,12 @@ type MuxService struct {
 	credsPath string
 	// listening address
 	address string
+	// configuration file path
+	configFile string
 }
 
-func NewMuxService(nodes []*NodeInfo) (*MuxService, error) {
+// create a new MuxService that manage the given nodes
+func NewMuxService(nodes []*NodeInfo, credsPath, address string) (*MuxService, error) {
 	ms := &MuxService{
 		nextId:        1,
 		nextRaccoonId: 1,
@@ -56,6 +64,8 @@ func NewMuxService(nodes []*NodeInfo) (*MuxService, error) {
 		started:       time.Now(),
 		pid:           uint64(os.Getpid()),
 		uid:           uint64(os.Getuid()),
+		credsPath:     credsPath,
+		address:       address,
 	}
 
 	if err := ms.solveAllConflictsInTheWorld(); err != nil {
@@ -74,6 +84,30 @@ func NewMuxService(nodes []*NodeInfo) (*MuxService, error) {
 	return ms, nil
 }
 
+// create a new MuxService with the configuration from at `configPath`
+func NewMuxServiceFromConfig(configPath, credsPath, address string) (*MuxService, error) {
+	cfg, err := LoadConfig(configPath)
+	if err != nil {
+		return nil, fmt.Errorf("cannot load config from '%s': %v", configPath, err)
+	}
+
+	nodes := make([]*NodeInfo, 0, len(cfg.Nodes))
+	for _, nc := range cfg.Nodes {
+		n, err := CreateNode(nc.Address, nc.CertFile)
+		if err != nil {
+			return nil, err
+		}
+		nodes = append(nodes, n)
+	}
+
+	ms, err := NewMuxService(nodes, credsPath, address)
+	if err == nil {
+		ms.configFile = configPath
+	}
+	return ms, err
+}
+
+// update the managed nodes's status
 func (ms *MuxService) UpdateNodes() {
 	ms.nodesLock.RLock()
 	defer ms.nodesLock.RUnlock()
@@ -83,6 +117,7 @@ func (ms *MuxService) UpdateNodes() {
 	}
 }
 
+// find the next available node ID
 func (ms *MuxService) findNextAvailableId() uint64 {
 	ms.idLock.Lock()
 	defer ms.idLock.Unlock()
@@ -100,4 +135,18 @@ func (ms *MuxService) findNextAvailableId() uint64 {
 		}
 		ms.nextId++
 	}
+}
+
+func (ms *MuxService) NumRecords() int {
+	ms.recordsLock.RLock()
+	defer ms.recordsLock.RUnlock()
+
+	return len(ms.recId2node)
+}
+
+func (ms *MuxService) NumOracles() int {
+	ms.cageLock.RLock()
+	defer ms.cageLock.RUnlock()
+
+	return len(ms.raccoons)
 }

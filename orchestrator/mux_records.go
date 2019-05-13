@@ -1,4 +1,4 @@
-package main
+package orchestrator
 
 import (
 	"context"
@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-func (ms *MuxService) CreateRecord(ctx context.Context, record *Record) (*RecordResponse, error) {
+func (ms *MuxService) findLessLoadedNode() *NodeInfo {
 	ms.nodesLock.RLock()
 	defer ms.nodesLock.RUnlock()
 
@@ -24,6 +24,16 @@ func (ms *MuxService) CreateRecord(ctx context.Context, record *Record) (*Record
 			targetNode = n
 		}
 	}
+
+	return targetNode
+}
+
+// create a record from the given argument
+func (ms *MuxService) CreateRecord(ctx context.Context, record *Record) (*RecordResponse, error) {
+	ms.recordsLock.Lock()
+	defer ms.recordsLock.Unlock()
+
+	targetNode := ms.findLessLoadedNode()
 
 	if targetNode == nil {
 		return errRecordResponse("No nodes available, try later"), nil
@@ -52,9 +62,10 @@ func (ms *MuxService) CreateRecord(ctx context.Context, record *Record) (*Record
 	return resp, err
 }
 
+// update a record from the given argument
 func (ms *MuxService) UpdateRecord(ctx context.Context, arg *Record) (*RecordResponse, error) {
-	ms.nodesLock.RLock()
-	defer ms.nodesLock.RUnlock()
+	ms.recordsLock.RLock()
+	defer ms.recordsLock.RUnlock()
 
 	if n, found := ms.recId2node[arg.Id]; !found {
 		return errRecordResponse("%v", storage.ErrRecordNotFound), nil
@@ -63,9 +74,10 @@ func (ms *MuxService) UpdateRecord(ctx context.Context, arg *Record) (*RecordRes
 	}
 }
 
+// retrieve a record's content by its id
 func (ms *MuxService) ReadRecord(ctx context.Context, arg *ById) (*RecordResponse, error) {
-	ms.nodesLock.RLock()
-	defer ms.nodesLock.RUnlock()
+	ms.recordsLock.RLock()
+	defer ms.recordsLock.RUnlock()
 
 	if n, found := ms.recId2node[arg.Id]; !found {
 		return errRecordResponse("record %d not found.", arg.Id), nil
@@ -74,11 +86,14 @@ func (ms *MuxService) ReadRecord(ctx context.Context, arg *ById) (*RecordRespons
 	}
 }
 
+// list records
 func (ms *MuxService) ListRecords(ctx context.Context, arg *ListRequest) (*RecordListResponse, error) {
 	workerInputs := make(map[uint]chan uint64)
 
 	ms.nodesLock.RLock()
 	defer ms.nodesLock.RUnlock()
+	ms.recordsLock.RLock()
+	defer ms.recordsLock.RUnlock()
 
 	for _, n := range ms.nodes {
 		n.RLock()
@@ -129,7 +144,7 @@ func (ms *MuxService) ListRecords(ctx context.Context, arg *ListRequest) (*Recor
 			resp, err := n.Client.ReadRecord(ctx, &ById{Id: id})
 			if err != nil || !resp.Success {
 				errCh <- fmt.Sprintf("Unable to read record %d on node %d: %v",
-					id, n.ID, getTheFuckingErrorMessage(err, resp))
+					id, n.ID, getErrorMessage(err, resp))
 			} else {
 				outCh <- resp.Record
 			}
@@ -151,29 +166,36 @@ func (ms *MuxService) ListRecords(ctx context.Context, arg *ListRequest) (*Recor
 	return resp, nil
 }
 
+// delete a record by its id
 func (ms *MuxService) DeleteRecord(ctx context.Context, arg *ById) (*RecordResponse, error) {
-	ms.nodesLock.RLock()
-	defer ms.nodesLock.RUnlock()
+	ms.recordsLock.Lock()
+	defer ms.recordsLock.Unlock()
 
 	if n, found := ms.recId2node[arg.Id]; !found {
 		return errRecordResponse("record %d not found.", arg.Id), nil
 	} else if resp, err := n.Client.DeleteRecord(ctx, arg); err != nil {
 		return resp, err
 	} else {
+		n.Lock()
+		defer n.Unlock()
+
 		delete(n.RecordIds, arg.Id)
 		delete(ms.recId2node, arg.Id)
 		return &RecordResponse{Success: true}, nil
 	}
 }
 
+// find records that meet the given requirements
 func (ms *MuxService) FindRecords(ctx context.Context, arg *ByMeta) (*FindResponse, error) {
 	ms.nodesLock.RLock()
 	defer ms.nodesLock.RUnlock()
+	ms.recordsLock.RLock()
+	defer ms.recordsLock.RUnlock()
 
 	results, errs := ms.doParallel(func(n *NodeInfo, resultChannel chan<- interface{}, errorChannel chan<- string) {
 		resp, err := n.Client.FindRecords(ctx, arg)
 		if err != nil || !resp.Success {
-			errorChannel <- getTheFuckingErrorMessage(err, resp)
+			errorChannel <- getErrorMessage(err, resp)
 		} else {
 			for _, r := range resp.Records {
 				resultChannel <- r

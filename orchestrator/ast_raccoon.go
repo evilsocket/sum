@@ -1,4 +1,4 @@
-package main
+package orchestrator
 
 import (
 	"errors"
@@ -24,6 +24,7 @@ type astRaccoon struct {
 	MergerFunction     *ast.FunctionLiteral
 }
 
+// Create a new astRaccoon
 func NewAstRaccoon(source string) (*astRaccoon, error) {
 	function, mergerFunction, err := parseAst(source)
 	if err != nil {
@@ -41,6 +42,7 @@ func NewAstRaccoon(source string) (*astRaccoon, error) {
 	return a, nil
 }
 
+// Parse the given JS code to extract first and merger functions
 func parseAst(code string) (oracleFunction, mergerFunction *ast.FunctionLiteral, err error) {
 	functionList := make([]*ast.FunctionLiteral, 0)
 
@@ -81,6 +83,8 @@ func parseAst(code string) (oracleFunction, mergerFunction *ast.FunctionLiteral,
 	return
 }
 
+// Patch the code managed by this astRaccoon with the given records.
+// Records are positional, the index identify which parameter has been resolved to that record.
 func (a *astRaccoon) PatchCode(records []*Record) (newCode string, err error) {
 	var compressed = make([]string, len(records))
 	shift := file.Idx(0)
@@ -128,15 +132,17 @@ func (a *astRaccoon) PatchCode(records []*Record) (newCode string, err error) {
 	return
 }
 
+// Get the source code of a given node
 func (a *astRaccoon) getSource(n ast.Node) string {
 	idx0 := n.Idx0() - 1
 	idx1 := n.Idx1() - 1
 	return a.src[idx0:idx1]
 }
 
+// Analyse a node of the AST and determine if it must be patched or not
 func (a *astRaccoon) Enter(n ast.Node) ast.Visitor {
 	if len(a.parameters) == 0 {
-		return a
+		return nil
 	}
 
 	// search for a call expression with 1 argument
@@ -181,12 +187,16 @@ func (a *astRaccoon) Enter(n ast.Node) ast.Visitor {
 	return nil // do not descend further into the AST
 }
 
+// Needed to implement the otto.ast.Visitor interface
 func (a *astRaccoon) Exit(n ast.Node) {}
 
+// Check if the given index corresponds to a parameter that is used to lookup a record.
+// i.e. if the i-th parameter is used as argument for `records.Find`
 func (a *astRaccoon) IsParameterPositionARecordLookup(i int) bool {
 	return a.parametersToLookup[i]
 }
 
+// Return an Oracle representing this astRaccoon
 func (a *astRaccoon) AsOracle() *Oracle {
 	return &Oracle{Id: a.ID, Name: a.Name, Code: a.src}
 }

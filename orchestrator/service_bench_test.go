@@ -1,4 +1,4 @@
-package main
+package orchestrator
 
 import (
 	"context"
@@ -76,9 +76,7 @@ func setupNetwork(numNodes, numOrchestrators int) (setup networkSetup, err error
 		panic("Orchestrator required for multiple nodes")
 	}
 
-	newTimeout := time.Second
-	timeout = &newTimeout
-	pollPeriod = &newTimeout
+	SetCommunicationTimeout(time.Second)
 
 	var dir string
 	nodesStr := &strings.Builder{}
