@@ -3,10 +3,17 @@ package main
 import (
 	"context"
 	"flag"
-	. "github.com/evilsocket/sum/common"
 	"github.com/evilsocket/sum/orchestrator"
+	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
+	"net"
 	"os"
+	"os/signal"
+	"path"
 	"runtime"
+	"runtime/pprof"
+	"syscall"
 	"time"
 
 	pb "github.com/evilsocket/sum/proto"
@@ -74,16 +81,16 @@ func main() {
 
 	flag.Parse()
 
-	StartProfiling(cpuProfile)
+	startProfiling(cpuProfile)
 
-	SetupSignals(func(_ os.Signal) { DoCleanup(cpuProfile, memProfile) })
+	setupSignals(func(_ os.Signal) { doCleanup(cpuProfile, memProfile) })
 
-	SetupLogging(logFile, logDebug)
-	defer TeardownLogging()
+	setupLogging(logFile, logDebug)
+	defer teardownLogging()
 
 	log.Info("sumd v%s is starting ...", service.Version)
 
-	server, listener := SetupGrpcServer(credsPath, listenString, maxMsgSize)
+	server, listener := setupGrpcServer(credsPath, listenString, maxMsgSize)
 
 	if *masterCfgFile != "" {
 
@@ -116,4 +123,103 @@ func main() {
 	if err := server.Serve(listener); err != nil {
 		log.Fatal("failed to serve: %v", err)
 	}
+}
+
+func startProfiling(cpuProfile *string) {
+	if *cpuProfile == "" {
+		return
+	}
+
+	if f, err := os.Create(*cpuProfile); err != nil {
+		log.Fatal("%v", err)
+	} else if err := pprof.StartCPUProfile(f); err != nil {
+		log.Fatal("%v", err)
+	}
+}
+
+func setupSignals(handlers ...func(os.Signal)) {
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan,
+		syscall.SIGHUP,
+		syscall.SIGINT,
+		syscall.SIGTERM,
+		syscall.SIGQUIT)
+	go func() {
+		sig := <-sigChan
+		log.Info("got signal %v", sig)
+		for _, handler := range handlers {
+			handler(sig)
+		}
+
+		os.Exit(0)
+	}()
+}
+
+func doCleanup(cpuProfile, memProfile *string) {
+	log.Info("shutting down ...")
+
+	if *cpuProfile != "" {
+		log.Info("saving cpu profile to %s ...", *cpuProfile)
+		pprof.StopCPUProfile()
+	}
+
+	if *memProfile != "" {
+		log.Info("saving memory profile to %s ...", *memProfile)
+		f, err := os.Create(*memProfile)
+		if err != nil {
+			log.Info("could not create memory profile: %s", err)
+			return
+		}
+		defer f.Close()
+		runtime.GC() // get up-to-date statistics
+		if err := pprof.WriteHeapProfile(f); err != nil {
+			log.Info("could not write memory profile: %s", err)
+		}
+	}
+}
+
+func setupLogging(logFile *string, logDebug *bool) {
+	log.OnFatal = log.ExitOnFatal
+	if *logFile != "" {
+		log.Output = *logFile
+
+		f, err := os.Open(*logFile)
+		if err != nil {
+			panic(err)
+		}
+
+		logrus.SetOutput(f)
+	}
+
+	if *logDebug {
+		log.Level = log.DEBUG
+		logrus.SetLevel(logrus.DebugLevel)
+	}
+
+	if err := log.Open(); err != nil {
+		panic(err)
+	}
+}
+
+func teardownLogging() {
+	log.Close()
+}
+
+func setupGrpcServer(credsPath, listenString *string, maxMsgSize *int) (*grpc.Server, net.Listener) {
+	crtFile := path.Join(*credsPath, "cert.pem")
+	keyFile := path.Join(*credsPath, "key.pem")
+	creds, err := credentials.NewServerTLSFromFile(crtFile, keyFile)
+	if err != nil {
+		log.Fatal("failed to load credentials from %s: %v", *credsPath, err)
+	}
+
+	listener, err := net.Listen("tcp", *listenString)
+	if err != nil {
+		log.Fatal("failed to create listener: %v", err)
+	}
+
+	grpc.MaxMsgSize(*maxMsgSize)
+	server := grpc.NewServer(grpc.Creds(creds))
+
+	return server, listener
 }
