@@ -13,7 +13,7 @@ import (
 
 // A Service that multiplexes sum's workload
 // among multiple sum instances
-type MuxService struct {
+type Service struct {
 	// control access to `nodes` and `nextNodeId`
 	nodesLock sync.RWMutex
 	// currently available nodes
@@ -53,9 +53,9 @@ type MuxService struct {
 	configFile string
 }
 
-// create a new MuxService that manage the given nodes
-func NewMuxService(nodes []*NodeInfo, credsPath, address string) (*MuxService, error) {
-	ms := &MuxService{
+// create a new Service that manage the given nodes
+func NewService(nodes []*NodeInfo, credsPath, address string) (*Service, error) {
+	ms := &Service{
 		nextId:        1,
 		nextRaccoonId: 1,
 		nextNodeId:    uint(len(nodes) + 1),
@@ -86,8 +86,8 @@ func NewMuxService(nodes []*NodeInfo, credsPath, address string) (*MuxService, e
 	return ms, nil
 }
 
-// create a new MuxService with the configuration from at `configPath`
-func NewMuxServiceFromConfig(configPath, credsPath, address string) (*MuxService, error) {
+// create a new Service with the configuration from at `configPath`
+func NewServiceFromConfig(configPath, credsPath, address string) (*Service, error) {
 	cfg, err := LoadConfig(configPath)
 	if err != nil {
 		return nil, fmt.Errorf("cannot load config from '%s': %v", configPath, err)
@@ -102,7 +102,7 @@ func NewMuxServiceFromConfig(configPath, credsPath, address string) (*MuxService
 		nodes = append(nodes, n)
 	}
 
-	ms, err := NewMuxService(nodes, credsPath, address)
+	ms, err := NewService(nodes, credsPath, address)
 	if err == nil {
 		ms.configFile = configPath
 	}
@@ -110,7 +110,7 @@ func NewMuxServiceFromConfig(configPath, credsPath, address string) (*MuxService
 }
 
 // update the managed nodes's status
-func (ms *MuxService) UpdateNodes() {
+func (ms *Service) UpdateNodes() {
 	ms.nodesLock.RLock()
 	defer ms.nodesLock.RUnlock()
 
@@ -120,7 +120,7 @@ func (ms *MuxService) UpdateNodes() {
 }
 
 // find the next available node ID
-func (ms *MuxService) findNextAvailableId() uint64 {
+func (ms *Service) findNextAvailableId() uint64 {
 	ms.idLock.Lock()
 	defer ms.idLock.Unlock()
 
@@ -139,14 +139,14 @@ func (ms *MuxService) findNextAvailableId() uint64 {
 	}
 }
 
-func (ms *MuxService) NumRecords() int {
+func (ms *Service) NumRecords() int {
 	ms.recordsLock.RLock()
 	defer ms.recordsLock.RUnlock()
 
 	return len(ms.recId2node)
 }
 
-func (ms *MuxService) NumOracles() int {
+func (ms *Service) NumOracles() int {
 	ms.cageLock.RLock()
 	defer ms.cageLock.RUnlock()
 

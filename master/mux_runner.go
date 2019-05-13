@@ -25,7 +25,7 @@ import (
 // Because of this merging, if the oracle returns a scalar a merging function is needed.
 // To declare a merging function just declare a function whose name begin with
 // "merge". Please remember that the first function shall be the oracle.
-func (ms *MuxService) Run(ctx context.Context, arg *Call) (*CallResponse, error) {
+func (ms *Service) Run(ctx context.Context, arg *Call) (*CallResponse, error) {
 
 	// NB: always keep this order of locking
 	ms.nodesLock.RLock()
@@ -141,7 +141,7 @@ func (ms *MuxService) Run(ctx context.Context, arg *Call) (*CallResponse, error)
 }
 
 // merge results together
-func (ms *MuxService) merge(raccoon *astRaccoon, results []interface{}) (interface{}, error) {
+func (ms *Service) merge(raccoon *astRaccoon, results []interface{}) (interface{}, error) {
 	if raccoon.MergerFunction == nil {
 		return ms.defaultMerger(results)
 	}
@@ -177,7 +177,7 @@ func (ms *MuxService) merge(raccoon *astRaccoon, results []interface{}) (interfa
 }
 
 // default merger for maps and arrays
-func (_ *MuxService) defaultMerger(results []interface{}) (mergedResults interface{}, _ error) {
+func (_ *Service) defaultMerger(results []interface{}) (mergedResults interface{}, _ error) {
 	var resultType *reflect.Type
 
 	mergedResults = nil

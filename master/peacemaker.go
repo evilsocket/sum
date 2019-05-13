@@ -17,7 +17,7 @@ import (
 // peacemaker will find collision and apply a fix:
 //  - leave the record only on one node when they are the same
 //  - change the record id when different
-func (ms *MuxService) solveAllConflictsInTheWorld() error {
+func (ms *Service) solveAllConflictsInTheWorld() error {
 	// maps record's ID to its contending nodes
 	var conflicts = make(map[uint64][]*NodeInfo)
 
@@ -59,7 +59,7 @@ func (ms *MuxService) solveAllConflictsInTheWorld() error {
 }
 
 // solves a conflict between multiple nodes over a single record
-func (ms *MuxService) solveConflict(rId uint64, nodes []*NodeInfo) error {
+func (ms *Service) solveConflict(rId uint64, nodes []*NodeInfo) error {
 	var mapLock sync.Mutex
 	var records = make(map[*NodeInfo]*pb.Record)
 
@@ -136,7 +136,7 @@ func (ms *MuxService) solveConflict(rId uint64, nodes []*NodeInfo) error {
 }
 
 // delete a record from the given nodes
-func (ms *MuxService) deleteRecordFromNodes(rId uint64, nodes []*NodeInfo) error {
+func (ms *Service) deleteRecordFromNodes(rId uint64, nodes []*NodeInfo) error {
 	for _, n := range nodes {
 		if resp, err := n.Client.DeleteRecord(context.Background(), &pb.ById{Id: rId}); err != nil || !resp.Success {
 			return fmt.Errorf("unable to delete record %d on node %d: %v", rId, n.ID, getErrorMessage(err, resp))
@@ -148,7 +148,7 @@ func (ms *MuxService) deleteRecordFromNodes(rId uint64, nodes []*NodeInfo) error
 }
 
 // change record ID on a specified node
-func (ms *MuxService) changeRecordIdOnNode(r *pb.Record, n *NodeInfo) error {
+func (ms *Service) changeRecordIdOnNode(r *pb.Record, n *NodeInfo) error {
 	rId := r.Id
 	r.Id = ms.findNextAvailableId()
 

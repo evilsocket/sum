@@ -30,7 +30,7 @@ func init() {
 }
 
 func TestCreateOracle(t *testing.T) {
-	ms, err := NewMuxService([]*NodeInfo{}, "", "")
+	ms, err := NewService([]*NodeInfo{}, "", "")
 	Nil(t, err)
 
 	arg := &pb.Oracle{}
@@ -120,7 +120,7 @@ func spawnNode(t *testing.T, port uint32, dataPath string) (*grpc.Server, *servi
 	return server, svc
 }
 
-func spawnOrchestratorErr(port uint32, nodesStr string) (*grpc.Server, *MuxService, error) {
+func spawnOrchestratorErr(port uint32, nodesStr string) (*grpc.Server, *Service, error) {
 	nodes := make([]*NodeInfo, 0)
 
 	if nodesStr != "" {
@@ -140,7 +140,7 @@ func spawnOrchestratorErr(port uint32, nodesStr string) (*grpc.Server, *MuxServi
 		return nil, nil, err
 	}
 
-	ms, err := NewMuxService(nodes, "", addr)
+	ms, err := NewService(nodes, "", addr)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -177,7 +177,7 @@ func setupEmptyTmpFolder() (string, error) {
 	return dir, nil
 }
 
-func spawnOrchestrator(t *testing.T, port uint32, nodesStr string) (*grpc.Server, *MuxService) {
+func spawnOrchestrator(t *testing.T, port uint32, nodesStr string) (*grpc.Server, *Service) {
 	server, ms, err := spawnOrchestratorErr(port, nodesStr)
 	Nil(t, err)
 	return server, ms

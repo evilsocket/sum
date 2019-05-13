@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-func (ms *MuxService) findLessLoadedNode() *NodeInfo {
+func (ms *Service) findLessLoadedNode() *NodeInfo {
 	ms.nodesLock.RLock()
 	defer ms.nodesLock.RUnlock()
 
@@ -29,7 +29,7 @@ func (ms *MuxService) findLessLoadedNode() *NodeInfo {
 }
 
 // create a record from the given argument
-func (ms *MuxService) CreateRecord(ctx context.Context, record *Record) (*RecordResponse, error) {
+func (ms *Service) CreateRecord(ctx context.Context, record *Record) (*RecordResponse, error) {
 	ms.recordsLock.Lock()
 	defer ms.recordsLock.Unlock()
 
@@ -63,7 +63,7 @@ func (ms *MuxService) CreateRecord(ctx context.Context, record *Record) (*Record
 }
 
 // update a record from the given argument
-func (ms *MuxService) UpdateRecord(ctx context.Context, arg *Record) (*RecordResponse, error) {
+func (ms *Service) UpdateRecord(ctx context.Context, arg *Record) (*RecordResponse, error) {
 	ms.recordsLock.RLock()
 	defer ms.recordsLock.RUnlock()
 
@@ -75,7 +75,7 @@ func (ms *MuxService) UpdateRecord(ctx context.Context, arg *Record) (*RecordRes
 }
 
 // retrieve a record's content by its id
-func (ms *MuxService) ReadRecord(ctx context.Context, arg *ById) (*RecordResponse, error) {
+func (ms *Service) ReadRecord(ctx context.Context, arg *ById) (*RecordResponse, error) {
 	ms.recordsLock.RLock()
 	defer ms.recordsLock.RUnlock()
 
@@ -87,7 +87,7 @@ func (ms *MuxService) ReadRecord(ctx context.Context, arg *ById) (*RecordRespons
 }
 
 // list records
-func (ms *MuxService) ListRecords(ctx context.Context, arg *ListRequest) (*RecordListResponse, error) {
+func (ms *Service) ListRecords(ctx context.Context, arg *ListRequest) (*RecordListResponse, error) {
 	workerInputs := make(map[uint]chan uint64)
 
 	ms.nodesLock.RLock()
@@ -167,7 +167,7 @@ func (ms *MuxService) ListRecords(ctx context.Context, arg *ListRequest) (*Recor
 }
 
 // delete a record by its id
-func (ms *MuxService) DeleteRecord(ctx context.Context, arg *ById) (*RecordResponse, error) {
+func (ms *Service) DeleteRecord(ctx context.Context, arg *ById) (*RecordResponse, error) {
 	ms.recordsLock.Lock()
 	defer ms.recordsLock.Unlock()
 
@@ -186,7 +186,7 @@ func (ms *MuxService) DeleteRecord(ctx context.Context, arg *ById) (*RecordRespo
 }
 
 // find records that meet the given requirements
-func (ms *MuxService) FindRecords(ctx context.Context, arg *ByMeta) (*FindResponse, error) {
+func (ms *Service) FindRecords(ctx context.Context, arg *ByMeta) (*FindResponse, error) {
 	ms.nodesLock.RLock()
 	defer ms.nodesLock.RUnlock()
 	ms.recordsLock.RLock()

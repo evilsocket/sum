@@ -8,7 +8,7 @@ import (
 )
 
 // add a node to control
-func (ms *MuxService) AddNode(ctx context.Context, addr *ByAddr) (*NodeResponse, error) {
+func (ms *Service) AddNode(ctx context.Context, addr *ByAddr) (*NodeResponse, error) {
 	n, err := CreateNode(addr.Address, addr.CertFile)
 	if err != nil {
 		return errNodeResponse("Cannot create node: %v", err), nil
@@ -37,7 +37,7 @@ func (ms *MuxService) AddNode(ctx context.Context, addr *ByAddr) (*NodeResponse,
 }
 
 // list all controlled nodes
-func (ms *MuxService) ListNodes(context.Context, *Empty) (*NodeResponse, error) {
+func (ms *Service) ListNodes(context.Context, *Empty) (*NodeResponse, error) {
 	res := &NodeResponse{Success: true}
 
 	ms.nodesLock.RLock()
@@ -53,7 +53,7 @@ func (ms *MuxService) ListNodes(context.Context, *Empty) (*NodeResponse, error) 
 }
 
 // delete a specified node
-func (ms *MuxService) DeleteNode(ctx context.Context, id *ById) (*NodeResponse, error) {
+func (ms *Service) DeleteNode(ctx context.Context, id *ById) (*NodeResponse, error) {
 	ms.nodesLock.Lock()
 	defer ms.nodesLock.Unlock()
 

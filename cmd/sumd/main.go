@@ -27,6 +27,7 @@ import (
 )
 
 var (
+	// node/slave
 	listenString = flag.String("listen", "127.0.0.1:50051", "String to create the TCP listener.")
 	credsPath    = flag.String("creds", "/etc/sumd/creds", "Path to the key.pem and cert.pem files to use for TLS based authentication.")
 	dataPath     = flag.String("datapath", "/var/lib/sumd", "Sum data folder.")
@@ -36,18 +37,16 @@ var (
 	logDebug     = flag.Bool("debug", false, "Enable debug logs.")
 
 	// master
+	masterCfgFile = flag.String("master", "", "Load sum master configuration and become the master.")
+	timeout       = flag.Duration("timeout", 10*time.Minute, "nodes communication timeout")
+	pollPeriod    = flag.Duration("poll", 1*time.Second, "nodes poll interval")
 
-	masterCfgFile = flag.String("master-cfg", "", "Load sum master configuration and become the master.")
-	timeout       = flag.Duration("timeout", 3*time.Second, "nodes communication timeout")
-	pollPeriod    = flag.Duration("pollinterval", 500*time.Millisecond, "nodes poll interval")
-
-	// stats
-
+	// profiling
 	cpuProfile = flag.String("cpu-profile", "", "Write CPU profile to this file.")
 	memProfile = flag.String("mem-profile", "", "Write memory profile to this file.")
 
-	svc       = (*node.Service)(nil)
-	masterSvc = (*master.MuxService)(nil)
+	nodeSvc   = (*node.Service)(nil)
+	masterSvc = (*master.Service)(nil)
 )
 
 func statsReport() {
@@ -57,8 +56,8 @@ func statsReport() {
 		NumOracles() int
 	}
 
-	if svc != nil {
-		reporter = svc
+	if nodeSvc != nil {
+		reporter = nodeSvc
 	} else if masterSvc != nil {
 		reporter = masterSvc
 	} else {
@@ -90,16 +89,20 @@ func main() {
 	setupLogging(logFile, logDebug)
 	defer teardownLogging()
 
-	log.Info("sumd v%s is starting ...", node.Version)
+	mode := "node/slave"
+	if *masterCfgFile != "" {
+		mode = "master"
+	}
+
+	log.Info("sumd v%s is starting as %s ...", node.Version, mode)
 
 	server, listener := setupGrpcServer(credsPath, listenString, maxMsgSize)
 
 	if *masterCfgFile != "" {
-
 		master.SetCommunicationTimeout(*timeout)
 
-		if masterSvc, err = master.NewMuxServiceFromConfig(*masterCfgFile, *credsPath, *listenString); err != nil {
-			log.Fatal("Cannot start master service: %v", err)
+		if masterSvc, err = master.NewServiceFromConfig(*masterCfgFile, *credsPath, *listenString); err != nil {
+			log.Fatal("cannot start master service: %v", err)
 		}
 
 		pb.RegisterSumMasterServiceServer(server, masterSvc)
@@ -110,11 +113,11 @@ func main() {
 
 		go master.NodeUpdater(ctx, masterSvc, *pollPeriod)
 	} else {
-		if svc, err = node.New(*dataPath, *credsPath, *listenString); err != nil {
+		if nodeSvc, err = node.New(*dataPath, *credsPath, *listenString); err != nil {
 			log.Fatal("%v", err)
 		}
-		pb.RegisterSumInternalServiceServer(server, svc)
-		pb.RegisterSumServiceServer(server, svc)
+		pb.RegisterSumInternalServiceServer(server, nodeSvc)
+		pb.RegisterSumServiceServer(server, nodeSvc)
 	}
 
 	go statsReport()

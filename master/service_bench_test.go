@@ -53,7 +53,7 @@ type nodeSetup struct {
 
 type orchestratorSetup struct {
 	server            *grpc.Server
-	svc               *MuxService
+	svc               *Service
 	updaterCancelFunc context.CancelFunc
 }
 

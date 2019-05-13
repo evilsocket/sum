@@ -8,14 +8,14 @@ import (
 )
 
 // steal oracles from underlying nodes
-func (ms *MuxService) stealOracles() {
+func (ms *Service) stealOracles() {
 	for _, n := range ms.nodes {
 		ms.stealOraclesFromNode(n)
 	}
 }
 
 // steal an oracle form another node
-func (ms *MuxService) stealOraclesFromNode(n *NodeInfo) {
+func (ms *Service) stealOraclesFromNode(n *NodeInfo) {
 	n.RLock()
 	defer n.RUnlock()
 
@@ -27,7 +27,7 @@ func (ms *MuxService) stealOraclesFromNode(n *NodeInfo) {
 }
 
 // send agent Smith to absorb the oracle
-func (ms *MuxService) deployAgentSmith(n *NodeInfo, oracleId uint64) error {
+func (ms *Service) deployAgentSmith(n *NodeInfo, oracleId uint64) error {
 	ctx, cf := newCommContext()
 	defer cf()
 

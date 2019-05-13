@@ -97,7 +97,7 @@ func transfer(fromNode, toNode *NodeInfo, nRecords int64) {
 }
 
 // balance the load among nodes
-func (ms *MuxService) balance() {
+func (ms *Service) balance() {
 	var totRecords = uint64(len(ms.recId2node))
 	var nNodes = len(ms.nodes)
 

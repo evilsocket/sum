@@ -9,7 +9,7 @@ import (
 )
 
 // create an oracle form the given argument
-func (ms *MuxService) CreateOracle(ctx context.Context, arg *Oracle) (*OracleResponse, error) {
+func (ms *Service) CreateOracle(ctx context.Context, arg *Oracle) (*OracleResponse, error) {
 	raccoon, err := NewAstRaccoon(arg.Code)
 	if err != nil {
 		return errOracleResponse("Error parsing the code: %v", err), nil
@@ -36,7 +36,7 @@ func (ms *MuxService) CreateOracle(ctx context.Context, arg *Oracle) (*OracleRes
 }
 
 // update an oracle from the given argument
-func (ms *MuxService) UpdateOracle(ctx context.Context, arg *Oracle) (*OracleResponse, error) {
+func (ms *Service) UpdateOracle(ctx context.Context, arg *Oracle) (*OracleResponse, error) {
 	raccoon, err := NewAstRaccoon(arg.Code)
 	if err != nil {
 		return errOracleResponse("Error parsing the code: %v", err), nil
@@ -58,7 +58,7 @@ func (ms *MuxService) UpdateOracle(ctx context.Context, arg *Oracle) (*OracleRes
 }
 
 // retrieve an Oracle's content
-func (ms *MuxService) ReadOracle(ctx context.Context, arg *ById) (*OracleResponse, error) {
+func (ms *Service) ReadOracle(ctx context.Context, arg *ById) (*OracleResponse, error) {
 	ms.cageLock.RLock()
 	defer ms.cageLock.RUnlock()
 
@@ -70,7 +70,7 @@ func (ms *MuxService) ReadOracle(ctx context.Context, arg *ById) (*OracleRespons
 }
 
 // Find an Oracle by it's name
-func (ms *MuxService) FindOracle(ctx context.Context, arg *ByName) (*OracleResponse, error) {
+func (ms *Service) FindOracle(ctx context.Context, arg *ByName) (*OracleResponse, error) {
 	ms.cageLock.RLock()
 	defer ms.cageLock.RUnlock()
 
@@ -84,7 +84,7 @@ func (ms *MuxService) FindOracle(ctx context.Context, arg *ByName) (*OracleRespo
 }
 
 // List oracles
-func (ms *MuxService) ListOracles(ctx context.Context, list *ListRequest) (*OracleListResponse, error) {
+func (ms *Service) ListOracles(ctx context.Context, list *ListRequest) (*OracleListResponse, error) {
 	ms.cageLock.RLock()
 	defer ms.cageLock.RUnlock()
 
@@ -137,7 +137,7 @@ func (ms *MuxService) ListOracles(ctx context.Context, list *ListRequest) (*Orac
 }
 
 // delete the specified oracle
-func (ms *MuxService) DeleteOracle(ctx context.Context, arg *ById) (*OracleResponse, error) {
+func (ms *Service) DeleteOracle(ctx context.Context, arg *ById) (*OracleResponse, error) {
 	ms.cageLock.Lock()
 	defer ms.cageLock.Unlock()
 

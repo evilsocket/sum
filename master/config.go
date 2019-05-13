@@ -28,7 +28,7 @@ func LoadConfig(configFile string) (*Config, error) {
 	}
 }
 
-func (ms *MuxService) updateConfig() {
+func (ms *Service) updateConfig() {
 	if ms.configFile == "" {
 		return
 	}
