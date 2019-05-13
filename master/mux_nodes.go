@@ -54,7 +54,6 @@ func (ms *MuxService) ListNodes(context.Context, *Empty) (*NodeResponse, error) 
 
 // delete a specified node
 func (ms *MuxService) DeleteNode(ctx context.Context, id *ById) (*NodeResponse, error) {
-
 	ms.nodesLock.Lock()
 	defer ms.nodesLock.Unlock()
 

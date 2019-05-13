@@ -2,8 +2,11 @@ package master
 
 import (
 	"fmt"
-	pb "github.com/evilsocket/sum/proto"
+
 	"github.com/golang/protobuf/proto"
+
+	pb "github.com/evilsocket/sum/proto"
+
 	"github.com/evilsocket/islazy/log"
 )
 
@@ -45,12 +48,12 @@ func transferOne(fromNode, toNode *NodeInfo, recordId uint64) {
 	record, err := fromNode.Client.ReadRecord(ctx, &pb.ById{Id: recordId})
 
 	if err != nil || !record.Success {
-		log.Error("Cannot read record %d from node %d: %v", recordId, fromNode.ID, getErrorMessage(err, record))
+		log.Error("cannot read record %d from node %d: %v", recordId, fromNode.ID, getErrorMessage(err, record))
 		return
 	}
 
 	if record2, err := fromNode.Client.DeleteRecord(ctx, &pb.ById{Id: recordId}); err != nil || !record2.Success {
-		log.Error("Cannot delete record %d from node %d: %v", recordId, fromNode.ID, getErrorMessage(err, record2))
+		log.Error("cannot delete record %d from node %d: %v", recordId, fromNode.ID, getErrorMessage(err, record2))
 		return
 	}
 
@@ -59,13 +62,13 @@ func transferOne(fromNode, toNode *NodeInfo, recordId uint64) {
 	newRecord, err := toNode.InternalClient.CreateRecordWithId(ctx, record.Record)
 
 	if err != nil || !newRecord.Success {
-		log.Error("Unable to create record on node %d: %v", toNode.ID, getErrorMessage(err, newRecord))
+		log.Error("unable to create record on node %d: %v", toNode.ID, getErrorMessage(err, newRecord))
 		// restore
 		if newRecord, err = fromNode.InternalClient.CreateRecordWithId(ctx, record.Record); err != nil || !newRecord.Success {
-			log.Error("Unable to create record on node %d: %v", fromNode.ID, getErrorMessage(err, newRecord))
-			log.Error("Record %d lost ( %s )", record.Record.Id, record.Record.Meta)
+			log.Error("unable to create record on node %d: %v", fromNode.ID, getErrorMessage(err, newRecord))
+			log.Error("record %d lost ( %s )", record.Record.Id, record.Record.Meta)
 		} else {
-			log.Info("Record %d restored on node %d", recordId, fromNode.ID)
+			log.Info("record %d restored on node %d", recordId, fromNode.ID)
 			fromNode.RecordIds[recordId] = true
 		}
 	} else {
@@ -81,6 +84,8 @@ func transfer(fromNode, toNode *NodeInfo, nRecords int64) {
 	toNode.Lock()
 	defer fromNode.Unlock()
 	defer toNode.Unlock()
+
+	log.Info("transferring %d records: %s -> %s ...", nRecords, fromNode.ID, fromNode.ID)
 
 	for id := range fromNode.RecordIds {
 		transferOne(fromNode, toNode, id)
@@ -125,6 +130,8 @@ func (ms *MuxService) balance() {
 		return
 	}
 
+	log.Info("balancing %d deltas ...", len(deltas))
+
 	for i, delta := range deltas {
 		// foreach node that need records
 		if delta <= 0 {
@@ -152,7 +159,7 @@ func (ms *MuxService) balance() {
 
 	for i, delta := range deltas {
 		if delta != 0 {
-			log.Warning("Node %d still have a delta of %d", i, delta)
+			log.Warning("node %d still has a delta of %d", i, delta)
 		}
 	}
 }
