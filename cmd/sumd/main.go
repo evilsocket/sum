@@ -12,10 +12,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/evilsocket/sum/orchestrator"
+	"github.com/evilsocket/sum/master"
+	node "github.com/evilsocket/sum/node/service"
 
 	pb "github.com/evilsocket/sum/proto"
-	"github.com/evilsocket/sum/service"
 
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
@@ -35,7 +35,7 @@ var (
 	logFile      = flag.String("log-file", "", "If filled, sumd will log to this file.")
 	logDebug     = flag.Bool("debug", false, "Enable debug logs.")
 
-	// orchestrator
+	// master
 
 	masterCfgFile = flag.String("master-cfg", "", "Load sum master configuration and become the master.")
 	timeout       = flag.Duration("timeout", 3*time.Second, "nodes communication timeout")
@@ -46,8 +46,8 @@ var (
 	cpuProfile = flag.String("cpu-profile", "", "Write CPU profile to this file.")
 	memProfile = flag.String("mem-profile", "", "Write memory profile to this file.")
 
-	svc       = (*service.Service)(nil)
-	masterSvc = (*orchestrator.MuxService)(nil)
+	svc       = (*node.Service)(nil)
+	masterSvc = (*master.MuxService)(nil)
 )
 
 func statsReport() {
@@ -90,15 +90,15 @@ func main() {
 	setupLogging(logFile, logDebug)
 	defer teardownLogging()
 
-	log.Info("sumd v%s is starting ...", service.Version)
+	log.Info("sumd v%s is starting ...", node.Version)
 
 	server, listener := setupGrpcServer(credsPath, listenString, maxMsgSize)
 
 	if *masterCfgFile != "" {
 
-		orchestrator.SetCommunicationTimeout(*timeout)
+		master.SetCommunicationTimeout(*timeout)
 
-		if masterSvc, err = orchestrator.NewMuxServiceFromConfig(*masterCfgFile, *credsPath, *listenString); err != nil {
+		if masterSvc, err = master.NewMuxServiceFromConfig(*masterCfgFile, *credsPath, *listenString); err != nil {
 			log.Fatal("Cannot start master service: %v", err)
 		}
 
@@ -108,9 +108,9 @@ func main() {
 		ctx, cf := context.WithCancel(context.Background())
 		defer cf()
 
-		go orchestrator.NodeUpdater(ctx, masterSvc, *pollPeriod)
+		go master.NodeUpdater(ctx, masterSvc, *pollPeriod)
 	} else {
-		if svc, err = service.New(*dataPath, *credsPath, *listenString); err != nil {
+		if svc, err = node.New(*dataPath, *credsPath, *listenString); err != nil {
 			log.Fatal("%v", err)
 		}
 		pb.RegisterSumInternalServiceServer(server, svc)

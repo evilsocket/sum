@@ -11,7 +11,7 @@ GRPC_PROTOC=/opt/google/protoc/bin/protoc
 
 SUMD_DATAPATH=/tmp/sumd
 
-PACKAGES=storage wrapper service
+PACKAGES=node/storage node/wrapper node/service master
 
 #
 # Main actions
