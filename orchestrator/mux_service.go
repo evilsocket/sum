@@ -22,6 +22,8 @@ type MuxService struct {
 	idLock sync.RWMutex
 	// id of the next record
 	nextId uint64
+	// control access to `recId2node`
+	recordsLock sync.RWMutex
 	// map a record to its containing node
 	recId2node map[uint64]*NodeInfo
 	// control access to `raccoons`
@@ -136,8 +138,8 @@ func (ms *MuxService) findNextAvailableId() uint64 {
 }
 
 func (ms *MuxService) NumRecords() int {
-	ms.nodesLock.RLock()
-	defer ms.nodesLock.RUnlock()
+	ms.recordsLock.RLock()
+	defer ms.recordsLock.RUnlock()
 
 	return len(ms.recId2node)
 }

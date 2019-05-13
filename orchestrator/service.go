@@ -16,6 +16,8 @@ func (ms *MuxService) Info(ctx context.Context, arg *Empty) (*ServerInfo, error)
 
 	ms.nodesLock.RLock()
 	defer ms.nodesLock.RUnlock()
+	ms.recordsLock.RLock()
+	defer ms.recordsLock.RUnlock()
 	ms.cageLock.RLock()
 	defer ms.cageLock.RUnlock()
 

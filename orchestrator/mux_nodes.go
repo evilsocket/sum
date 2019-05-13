@@ -16,6 +16,8 @@ func (ms *MuxService) AddNode(ctx context.Context, addr *ByAddr) (*NodeResponse,
 
 	ms.nodesLock.Lock()
 	defer ms.nodesLock.Unlock()
+	ms.recordsLock.Lock()
+	defer ms.recordsLock.Unlock()
 
 	n.ID = ms.nextNodeId
 	ms.nodes = append(ms.nodes, n)

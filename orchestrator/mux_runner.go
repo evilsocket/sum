@@ -28,6 +28,8 @@ func (ms *MuxService) Run(ctx context.Context, arg *Call) (*CallResponse, error)
 	// NB: always keep this order of locking
 	ms.nodesLock.RLock()
 	defer ms.nodesLock.RUnlock()
+	ms.recordsLock.RLock()
+	defer ms.recordsLock.RUnlock()
 	ms.cageLock.RLock()
 	defer ms.cageLock.RUnlock()
 
