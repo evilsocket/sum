@@ -85,7 +85,7 @@ func transfer(fromNode, toNode *NodeInfo, nRecords int64) {
 	defer fromNode.Unlock()
 	defer toNode.Unlock()
 
-	log.Info("transferring %d records: %s -> %s ...", nRecords, fromNode.ID, fromNode.ID)
+	log.Info("transferring %d records: %s -> %s ...", nRecords, fromNode.Name, fromNode.Name)
 
 	for id := range fromNode.RecordIds {
 		transferOne(fromNode, toNode, id)
