@@ -8,7 +8,7 @@ import (
 	"fmt"
 	pb "github.com/evilsocket/sum/proto"
 	"github.com/evilsocket/sum/service"
-	log "github.com/sirupsen/logrus"
+	"github.com/evilsocket/islazy/log"
 	. "github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -104,7 +104,7 @@ func spawnNodeErr(port uint32, dataPath string) (*grpc.Server, *service.Service,
 
 	go func() {
 		if err := server.Serve(listener); err != nil {
-			log.Errorf("Failed to serve gRPC server: %v", err)
+			log.Error("Failed to serve gRPC server: %v", err)
 		}
 	}()
 

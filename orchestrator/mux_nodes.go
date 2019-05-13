@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	. "github.com/evilsocket/sum/proto"
-	log "github.com/sirupsen/logrus"
+	"github.com/evilsocket/islazy/log"
 )
 
 // add a node to control
@@ -25,7 +25,7 @@ func (ms *MuxService) AddNode(ctx context.Context, addr *ByAddr) (*NodeResponse,
 	ms.nextNodeId++
 
 	if err := ms.solveAllConflictsInTheWorld(); err != nil {
-		log.Errorf("Cannot solve conflicts after adding node %d: %v", n.ID, err)
+		log.Error("Cannot solve conflicts after adding node %d: %v", n.ID, err)
 	} else {
 		go ms.updateConfig()
 	}

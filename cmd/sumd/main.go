@@ -3,10 +3,6 @@ package main
 import (
 	"context"
 	"flag"
-	"github.com/evilsocket/sum/orchestrator"
-	"github.com/sirupsen/logrus"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 	"net"
 	"os"
 	"os/signal"
@@ -16,12 +12,18 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/evilsocket/sum/orchestrator"
+
 	pb "github.com/evilsocket/sum/proto"
 	"github.com/evilsocket/sum/service"
 
+	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/reflection"
+
 	"github.com/dustin/go-humanize"
 	"github.com/evilsocket/islazy/log"
-	"google.golang.org/grpc/reflection"
 )
 
 var (

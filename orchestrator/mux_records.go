@@ -5,7 +5,7 @@ import (
 	"fmt"
 	. "github.com/evilsocket/sum/proto"
 	"github.com/evilsocket/sum/storage"
-	log "github.com/sirupsen/logrus"
+	"github.com/evilsocket/islazy/log"
 	"sort"
 	"strings"
 )
@@ -152,7 +152,7 @@ func (ms *MuxService) ListRecords(ctx context.Context, arg *ListRequest) (*Recor
 	})
 
 	for _, err := range errs {
-		log.Errorf("%s", err)
+		log.Error("%s", err)
 	}
 
 	for _, res := range results {

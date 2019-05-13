@@ -5,9 +5,7 @@ import (
 	"time"
 )
 
-const Version = "1.0.0"
-
-var timeout = 3 * time.Second
+var timeout = 10 * time.Minute
 
 // create a context to communicate with nodes
 func newCommContext() (context.Context, context.CancelFunc) {

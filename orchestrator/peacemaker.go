@@ -7,7 +7,7 @@ import (
 	"fmt"
 	pb "github.com/evilsocket/sum/proto"
 	"github.com/golang/protobuf/proto"
-	log "github.com/sirupsen/logrus"
+	"github.com/evilsocket/islazy/log"
 	"strings"
 	"sync"
 )
@@ -162,7 +162,7 @@ func (ms *MuxService) changeRecordIdOnNode(r *pb.Record, n *NodeInfo) error {
 		return fmt.Errorf("unable to create record %d on node %d: %v", r.Id, n.ID, getErrorMessage(err, resp))
 	}
 
-	log.Infof("Record %d has been changed to record %d on node %d", rId, r.Id, n.ID)
+	log.Info("Record %d has been changed to record %d on node %d", rId, r.Id, n.ID)
 
 	n.RecordIds[r.Id] = true
 	ms.recId2node[r.Id] = n

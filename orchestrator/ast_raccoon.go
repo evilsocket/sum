@@ -8,7 +8,7 @@ import (
 	"github.com/robertkrimen/otto/ast"
 	"github.com/robertkrimen/otto/file"
 	"github.com/robertkrimen/otto/parser"
-	log "github.com/sirupsen/logrus"
+	"github.com/evilsocket/islazy/log"
 	"strings"
 )
 
@@ -73,7 +73,7 @@ func parseAst(code string) (oracleFunction, mergerFunction *ast.FunctionLiteral,
 		}
 
 		if len(decl.ParameterList.List) != 1 {
-			log.Warnf("Function %s is not a merger function as it does not take 1 argument", decl.Name.Name)
+			log.Warning("Function %s is not a merger function as it does not take 1 argument", decl.Name.Name)
 			continue
 		}
 

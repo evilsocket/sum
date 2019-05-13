@@ -2,10 +2,13 @@ package orchestrator
 
 import (
 	"context"
-	. "github.com/evilsocket/sum/proto"
 	"os"
 	"runtime"
 	"time"
+
+	. "github.com/evilsocket/sum/proto"
+
+	"github.com/evilsocket/sum/service"
 )
 
 // get runtime information about the service
@@ -22,7 +25,7 @@ func (ms *MuxService) Info(ctx context.Context, arg *Empty) (*ServerInfo, error)
 	defer ms.cageLock.RUnlock()
 
 	return &ServerInfo{
-		Version:    Version,
+		Version:    service.Version,
 		Uptime:     uint64(time.Since(ms.started).Seconds()),
 		Pid:        ms.pid,
 		Uid:        ms.uid,

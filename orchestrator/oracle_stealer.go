@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	. "github.com/evilsocket/sum/proto"
-	log "github.com/sirupsen/logrus"
+	"github.com/evilsocket/islazy/log"
 )
 
 // steal oracles from underlying nodes
@@ -21,7 +21,7 @@ func (ms *MuxService) stealOraclesFromNode(n *NodeInfo) {
 
 	for i := uint64(0); i < n.status.Oracles; i++ {
 		if err := ms.deployAgentSmith(n, i+1); err != nil {
-			log.Errorf("Failed to absorb oracle: %v", err)
+			log.Error("Failed to absorb oracle: %v", err)
 		}
 	}
 }
@@ -44,7 +44,7 @@ func (ms *MuxService) deployAgentSmith(n *NodeInfo, oracleId uint64) error {
 		return fmt.Errorf("unable to load oracle #%d (%s) from node %d: %v",
 			oracleId, oracle.Name, n.ID, getErrorMessage(err, resp1))
 	} else if resp2, err := n.Client.DeleteOracle(ctx, &ById{Id: oracleId}); err != nil || !resp2.Success {
-		log.Warnf("cannot delete oracle #%d (%s) from node %d: %v",
+		log.Warning("cannot delete oracle #%d (%s) from node %d: %v",
 			oracleId, oracle.Name, n.ID, getErrorMessage(err, resp2))
 	}
 

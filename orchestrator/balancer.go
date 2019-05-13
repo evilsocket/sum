@@ -4,7 +4,7 @@ import (
 	"fmt"
 	pb "github.com/evilsocket/sum/proto"
 	"github.com/golang/protobuf/proto"
-	log "github.com/sirupsen/logrus"
+	"github.com/evilsocket/islazy/log"
 )
 
 // Get the error message from either a GRPC error or a application-level one
@@ -45,12 +45,12 @@ func transferOne(fromNode, toNode *NodeInfo, recordId uint64) {
 	record, err := fromNode.Client.ReadRecord(ctx, &pb.ById{Id: recordId})
 
 	if err != nil || !record.Success {
-		log.Errorf("Cannot read record %d from node %d: %v", recordId, fromNode.ID, getErrorMessage(err, record))
+		log.Error("Cannot read record %d from node %d: %v", recordId, fromNode.ID, getErrorMessage(err, record))
 		return
 	}
 
 	if record2, err := fromNode.Client.DeleteRecord(ctx, &pb.ById{Id: recordId}); err != nil || !record2.Success {
-		log.Errorf("Cannot delete record %d from node %d: %v", recordId, fromNode.ID, getErrorMessage(err, record2))
+		log.Error("Cannot delete record %d from node %d: %v", recordId, fromNode.ID, getErrorMessage(err, record2))
 		return
 	}
 
@@ -59,13 +59,13 @@ func transferOne(fromNode, toNode *NodeInfo, recordId uint64) {
 	newRecord, err := toNode.InternalClient.CreateRecordWithId(ctx, record.Record)
 
 	if err != nil || !newRecord.Success {
-		log.Errorf("Unable to create record on node %d: %v", toNode.ID, getErrorMessage(err, newRecord))
+		log.Error("Unable to create record on node %d: %v", toNode.ID, getErrorMessage(err, newRecord))
 		// restore
 		if newRecord, err = fromNode.InternalClient.CreateRecordWithId(ctx, record.Record); err != nil || !newRecord.Success {
-			log.Errorf("Unable to create record on node %d: %v", fromNode.ID, getErrorMessage(err, newRecord))
-			log.Errorf("Record %d lost ( %s )", record.Record.Id, record.Record.Meta)
+			log.Error("Unable to create record on node %d: %v", fromNode.ID, getErrorMessage(err, newRecord))
+			log.Error("Record %d lost ( %s )", record.Record.Id, record.Record.Meta)
 		} else {
-			log.Infof("Record %d restored on node %d", recordId, fromNode.ID)
+			log.Info("Record %d restored on node %d", recordId, fromNode.ID)
 			fromNode.RecordIds[recordId] = true
 		}
 	} else {
@@ -152,7 +152,7 @@ func (ms *MuxService) balance() {
 
 	for i, delta := range deltas {
 		if delta != 0 {
-			log.Warnf("Node %d still have a delta of %d", i, delta)
+			log.Warning("Node %d still have a delta of %d", i, delta)
 		}
 	}
 }

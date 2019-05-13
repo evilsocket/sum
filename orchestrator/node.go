@@ -3,7 +3,7 @@ package orchestrator
 import (
 	"fmt"
 	. "github.com/evilsocket/sum/proto"
-	log "github.com/sirupsen/logrus"
+	"github.com/evilsocket/islazy/log"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"sync"
@@ -34,7 +34,7 @@ func (n *NodeInfo) UpdateStatus() {
 	srvInfo, err := n.Client.Info(ctx, &Empty{})
 
 	if err != nil {
-		log.Errorf("Unable to update node '%s' status: %v", n.Name, err)
+		log.Error("Unable to update node '%s' status: %v", n.Name, err)
 		return
 	}
 

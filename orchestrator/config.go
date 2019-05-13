@@ -2,7 +2,7 @@ package orchestrator
 
 import (
 	"encoding/json"
-	log "github.com/sirupsen/logrus"
+	"github.com/evilsocket/islazy/log"
 	"io/ioutil"
 )
 
@@ -44,8 +44,8 @@ func (ms *MuxService) updateConfig() {
 	}
 
 	if data, err := json.Marshal(&cfg); err != nil {
-		log.Errorf("Cannot serialise configuration: %v", err)
+		log.Error("Cannot serialise configuration: %v", err)
 	} else if err = ioutil.WriteFile(ms.configFile, data, 0644); err != nil {
-		log.Errorf("Cannot save configuration: %v", err)
+		log.Error("Cannot save configuration: %v", err)
 	}
 }

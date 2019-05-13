@@ -9,7 +9,7 @@ import (
 	. "github.com/evilsocket/sum/proto"
 	"github.com/evilsocket/sum/service"
 	"github.com/evilsocket/sum/wrapper"
-	log "github.com/sirupsen/logrus"
+	"github.com/evilsocket/islazy/log"
 	"io/ioutil"
 	"reflect"
 	"strconv"
@@ -81,7 +81,7 @@ func (ms *MuxService) Run(ctx context.Context, arg *Call) (*CallResponse, error)
 		for n, oId := range node2oracleId {
 			resp, err := n.Client.DeleteOracle(ctx, &ById{Id: oId})
 			if err != nil || !resp.Success {
-				log.Warnf("Unable to delete temporary oracle %d on node %d: %v",
+				log.Warning("Unable to delete temporary oracle %d on node %d: %v",
 					oId, n.ID, getErrorMessage(err, resp))
 			}
 		}
