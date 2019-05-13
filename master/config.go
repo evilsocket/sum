@@ -2,13 +2,14 @@ package master
 
 import (
 	"encoding/json"
-	"github.com/evilsocket/islazy/log"
 	"io/ioutil"
+
+	"github.com/evilsocket/islazy/log"
 )
 
 type NodeConfig struct {
 	Address  string `json:"address"`
-	CertFile string `json:"cert_file,omitempty"`
+	CertFile string `json:"credentials,omitempty"`
 }
 
 type Config struct {
@@ -44,8 +45,8 @@ func (ms *MuxService) updateConfig() {
 	}
 
 	if data, err := json.Marshal(&cfg); err != nil {
-		log.Error("Cannot serialise configuration: %v", err)
+		log.Error("cannot save configuration: %v", err)
 	} else if err = ioutil.WriteFile(ms.configFile, data, 0644); err != nil {
-		log.Error("Cannot save configuration: %v", err)
+		log.Error("cannot save configuration: %v", err)
 	}
 }
