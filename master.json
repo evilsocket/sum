@@ -1,18 +1,1 @@
-{
-  "nodes": [{
-    "address": "localhost:1000",
-    "credentials": "/etc/sumd/creds/cert.pem"
-  }, {
-    "address": "localhost:1001",
-    "credentials": "/etc/sumd/creds/cert.pem"
-  }, {
-    "address": "localhost:1002",
-    "credentials": "/etc/sumd/creds/cert.pem"
-  }, {
-    "address": "localhost:1003",
-    "credentials": "/etc/sumd/creds/cert.pem"
-  }, {
-    "address": "localhost:1004",
-    "credentials": "/etc/sumd/creds/cert.pem"
-  }]
-}
+{"nodes":[{"address":"localhost:1000","credentials":"/etc/sumd/creds/cert.pem"},{"address":"localhost:1001","credentials":"/etc/sumd/creds/cert.pem"},{"address":"localhost:1002","credentials":"/etc/sumd/creds/cert.pem"},{"address":"localhost:1003","credentials":"/etc/sumd/creds/cert.pem"},{"address":"localhost:1004","credentials":"/etc/sumd/creds/cert.pem"},{"address":"localhost:1005","credentials":"/etc/sumd/creds/cert.pem"}]}
