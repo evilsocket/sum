@@ -16,7 +16,7 @@ Download the [latest binary release](https://github.com/evilsocket/sum/releases/
 	sudo mkdir -p /etc/sumd/creds
 	sudo openssl req -x509 -newkey rsa:4096 -keyout /etc/sumd/creds/key.pem -out /etc/sumd/creds/cert.pem -days 365 -nodes -subj '/CN=localhost'
 
-Proceed to install the `sumd`, `sumcli` and `sumcluster' binaries:
+Proceed to install the `sumd`, `sumcli` and `sumcluster` binaries:
 
     cd /path/to/extracted/sum
 	sudo mkdir -p /var/lib/sumd/data
