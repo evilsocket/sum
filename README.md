@@ -16,13 +16,15 @@ Download the [latest binary release](https://github.com/evilsocket/sum/releases/
 	sudo mkdir -p /etc/sumd/creds
 	sudo openssl req -x509 -newkey rsa:4096 -keyout /etc/sumd/creds/key.pem -out /etc/sumd/creds/cert.pem -days 365 -nodes -subj '/CN=localhost'
 
-Proceed to install the `sumd` binary as a systemd service:
+Proceed to install the `sumd`, `sumcli` and `sumcluster' binaries:
 
-    cd /path/to/extracted/sumd
+    cd /path/to/extracted/sum
 	sudo mkdir -p /var/lib/sumd/data
 	sudo mkdir -p /var/lib/sumd/oracles
-	sudo mv sumd /usr/local/bin/
-	sudo mv sumcli /usr/local/bin/
+	sudo mv {sumd,sumcli,sumcluster} /usr/local/bin/
+
+To install a single `sumd` node as systemd service:
+
 	sudo mv sumd.service /etc/systemd/system/
 	sudo systemctl daemon-reload
 
@@ -32,11 +34,56 @@ Install [gRPC go bindings](https://grpc.io/docs/quickstart/go/) and then:
 
     go get github.com/evilsocket/sum
     cd $GOPATH/src/github.com/evilsocket/sum
-    make deps
-    make sumd
+    make
     sudo make install
 
-## Usage
+## Server Usage
+
+Run a single node:
+
+    sudo sumd -listen "localhost:50051" -creds /etc/sumd/creds -datapath /var/lib/sumd
+
+To run a master with a few pre configured nodes:
+
+    sudo sumd -listen "localhost:50051" -master master.json
+
+Where `master.json` contains the list of the nodes that this master administers:
+
+```json
+{
+	"nodes": [{
+		"address": "localhost:1000",
+		"credentials": "/etc/sumd/creds/cert.pem"
+	}, {
+		"address": "localhost:1001",
+		"credentials": "/etc/sumd/creds/cert.pem"
+	}, {
+		"address": "localhost:1002",
+		"credentials": "/etc/sumd/creds/cert.pem"
+	}, {
+		"address": "localhost:1003",
+		"credentials": "/etc/sumd/creds/cert.pem"
+	}, {
+		"address": "localhost:1004",
+		"credentials": "/etc/sumd/creds/cert.pem"
+	}, {
+		"address": "localhost:1005",
+		"credentials": "/etc/sumd/creds/cert.pem"
+	}, {
+		"address": "localhost:1006",
+		"credentials": "/etc/sumd/creds/cert.pem"
+	}, {
+		"address": "localhost:1007",
+		"credentials": "/etc/sumd/creds/cert.pem"
+	}]
+}
+```
+
+To use the `sumcluster` utility to spawn a specific number of workers (by default one per logical CPU), each one in a separate datapath and one master process:
+
+    sudo sumcluster
+
+## Client Usage
 
 You can access your sum instance by using the `sumcli` client, run `sumcli -eval "help; q"` to print a list of available commands. Moreover, to have an idea of how the client side works, take a look at [the example python client code](https://github.com/evilsocket/sumpy/blob/master/example.py) that will create a few vectors on the server, define an oracle, call it for every vector and print the similarities the server returned.
 
