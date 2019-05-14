@@ -33,21 +33,19 @@ proto/sum.pb.go:
 	@${GRPC_PROTOC} -I. --go_out=plugins=grpc:. proto/sum.proto
 
 sumcli: client_deps
-	@go build -o sumcli cmd/sumcli/*.go
+	@mkdir -p dist
+	@go build -o dist/sumcli cmd/sumcli/*.go
 
 sumcluster: 
-	@go build -o sumcluster cmd/sumcluster/*.go
+	@mkdir -p dist
+	@go build -o dist/sumcluster cmd/sumcluster/*.go
 
 sumd: server_deps sumcli sumcluster
-	@go build -o sumd cmd/sumd/*.go
-
-run: reset_env sumd
-	@./sumd -datapath "${SUMD_DATAPATH}"
+	@mkdir -p dist
+	@go build -o dist/sumd cmd/sumd/*.go
 
 clean:
-	@rm -rf sumd
-	@rm -rf sumcli
-	@rm -rf sumcluster
+	@rm -rf dist
 	@rm -rf *.profile
 	@rm -rf *.profile.html
 	@rm -rf "${SUMD_DATAPATH}"
@@ -61,11 +59,12 @@ install_certificate:
 	@mkdir -p /etc/sumd/creds
 	@openssl req -x509 -newkey rsa:4096 -keyout /etc/sumd/creds/key.pem -out /etc/sumd/creds/cert.pem -days 365 -nodes -subj '/CN=localhost'
 
-install: install_certificate sumd sumcli
+install:
 	@mkdir -p /var/lib/sumd/data
 	@mkdir -p /var/lib/sumd/oracles
-	@cp sumd /usr/local/bin/
-	@cp sumcli /usr/local/bin/
+	@cp dist/{sumd,sumcli,sumcluster} /usr/local/bin/
+
+install_service: install
 	@cp sumd.service /etc/systemd/system/
 	@systemctl daemon-reload
 
