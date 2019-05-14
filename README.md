@@ -37,11 +37,11 @@ Install [gRPC go bindings](https://grpc.io/docs/quickstart/go/) and then:
     make
     sudo make install
 
-#### Run a Node
+## Run a Node
 
     sudo sumd -listen "localhost:50051" -creds /etc/sumd/creds -datapath /var/lib/sumd
 
-#### Run a Master
+## Run a Master
 
     sudo sumd -listen "localhost:50051" -master master.json
 
@@ -77,13 +77,13 @@ Where `master.json` contains the list of the nodes that this master administers:
 }
 ```
 
-#### Start a Cluster
+## Start a Cluster
 
 To use the `sumcluster` utility to spawn a specific number of workers (by default one per logical CPU), each one in a separate datapath and one master process:
 
     sudo sumcluster
 
-#### Client
+## Client
 
 You can access your sum instance by using the `sumcli` client, run `sumcli -eval "help; q"` to print a list of available commands. Moreover, to have an idea of how the client side works, take a look at [the example python client code](https://github.com/evilsocket/sumpy/blob/master/example.py) that will create a few vectors on the server, define an oracle, call it for every vector and print the similarities the server returned.
 
