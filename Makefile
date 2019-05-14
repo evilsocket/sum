@@ -16,7 +16,7 @@ PACKAGES=node/storage node/wrapper node/service master
 #
 # Main actions
 #
-all: sumd clients test codecov benchmark docker
+all: sumd sumcli sumcluster
 
 server_deps: deps proto/sum.pb.go
 client_deps: deps proto/sum.pb.go
