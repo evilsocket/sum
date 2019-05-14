@@ -92,11 +92,12 @@ func NewMuxServiceFromConfig(configPath, credsPath, address string) (*MuxService
 	}
 
 	nodes := make([]*NodeInfo, 0, len(cfg.Nodes))
-	for _, nc := range cfg.Nodes {
+	for i, nc := range cfg.Nodes {
 		n, err := CreateNode(nc.Address, nc.CertFile)
 		if err != nil {
 			return nil, err
 		}
+		n.ID = uint(i + 1)
 		nodes = append(nodes, n)
 	}
 
