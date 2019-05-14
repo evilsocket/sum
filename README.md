@@ -41,7 +41,7 @@ To run the tests:
 
 To run the benchmarks:
 
-    make benchmark:
+    make benchmark
 
 To compile and install:
 
