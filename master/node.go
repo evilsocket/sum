@@ -2,8 +2,8 @@ package master
 
 import (
 	"fmt"
-	. "github.com/evilsocket/sum/proto"
 	"github.com/evilsocket/islazy/log"
+	. "github.com/evilsocket/sum/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"sync"
@@ -95,6 +95,8 @@ func CreateNode(node, certFile string) (*NodeInfo, error) {
 	if svcInfo.Records%1024 > 0 {
 		pages++
 	}
+
+	log.Info("bootstrapping %d pages of data from %s ...", pages, ni.Name)
 	for i := 0; i < pages; i++ {
 		resp, err := client.ListRecords(ctx, &ListRequest{Page: uint64(i + 1), PerPage: 1024})
 		if err != nil {

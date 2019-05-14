@@ -8,6 +8,7 @@ import (
 
 	"github.com/evilsocket/sum/node/service"
 
+	"github.com/evilsocket/islazy/log"
 	"github.com/robertkrimen/otto"
 )
 
@@ -114,6 +115,7 @@ func (ms *Service) UpdateNodes() {
 	ms.nodesLock.RLock()
 	defer ms.nodesLock.RUnlock()
 
+	log.Debug("updating %d nodes ...", len(ms.nodes))
 	for _, n := range ms.nodes {
 		n.UpdateStatus()
 	}

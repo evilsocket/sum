@@ -35,7 +35,10 @@ proto/sum.pb.go:
 sumcli: client_deps
 	@go build -o sumcli cmd/sumcli/*.go
 
-sumd: server_deps sumcli
+sumcluster: 
+	@go build -o sumcluster cmd/sumcluster/*.go
+
+sumd: server_deps sumcli sumcluster
 	@go build -o sumd cmd/sumd/*.go
 
 run: reset_env sumd
@@ -44,6 +47,7 @@ run: reset_env sumd
 clean:
 	@rm -rf sumd
 	@rm -rf sumcli
+	@rm -rf sumcluster
 	@rm -rf *.profile
 	@rm -rf *.profile.html
 	@rm -rf "${SUMD_DATAPATH}"
