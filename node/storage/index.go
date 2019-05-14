@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	
+
 	"github.com/golang/protobuf/proto"
 
 	"github.com/evilsocket/islazy/log"

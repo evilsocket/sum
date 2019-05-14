@@ -109,6 +109,11 @@ func (r *Records) FindBy(meta string, val string) []*pb.Record {
 }
 
 func (r *Records) Create(record *pb.Record) error {
+	// if the shape was not provide, it is 1d
+	if record.Shape == nil {
+		record.Shape = []uint64{uint64(len(record.Data))}
+	}
+
 	if err := r.Index.Create(record); err != nil {
 		return err
 	}

@@ -27,7 +27,7 @@ func (d RecordDriver) SetID(m proto.Message, id uint64) {
 	m.(*pb.Record).Id = id
 }
 
-// Copy copies the Meta and Data fields, if filled, from the
+// Copy copies the Shape, Meta and Data fields, if filled, from the
 // source object to the destination one.
 func (d RecordDriver) Copy(mdst proto.Message, msrc proto.Message) error {
 	dst := mdst.(*pb.Record)
@@ -37,6 +37,9 @@ func (d RecordDriver) Copy(mdst proto.Message, msrc proto.Message) error {
 	}
 	if src.Data != nil {
 		dst.Data = src.Data
+	}
+	if src.Shape != nil {
+		dst.Shape = src.Shape
 	}
 	return nil
 }
