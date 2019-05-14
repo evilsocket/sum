@@ -7,7 +7,7 @@
 [![GoDoc](https://godoc.org/github.com/evilsocket/sum?status.svg)](https://godoc.org/github.com/evilsocket/sum) 
 [![Release](https://img.shields.io/github/release/evilsocket/sum.svg?style=flat-square)](https://github.com/evilsocket/sum/releases/latest) 
 
-Sum is a specialized database server for linear algebra and machine learning.
+Sum is a database server for linear algebra and machine learning, providing data persistency, fast in-memory operators with multiple backends (only `blas32` supported at the moment, `cuda` soon) and a scripting engine to access all of this with ease.
 
 ## Installation
 
