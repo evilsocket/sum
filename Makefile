@@ -46,6 +46,7 @@ sumd: server_deps sumcli sumcluster
 
 clean:
 	@rm -rf dist
+	@rm -rf proto/sum.pb.go
 	@rm -rf *.profile
 	@rm -rf *.profile.html
 	@rm -rf "${SUMD_DATAPATH}"

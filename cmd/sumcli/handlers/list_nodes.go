@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/chzyer/readline"
+	"github.com/dustin/go-humanize"
 )
 
 var listNodesHandler = handler{
@@ -26,8 +27,13 @@ var listNodesHandler = handler{
 
 		columns := []string{
 			"id",
+			"pid",
 			"name",
+			"os/arch",
+			"ver",
 			"records",
+			"uptime",
+			"backend",
 			"mem",
 		}
 		rows := [][]string{}
@@ -35,9 +41,14 @@ var listNodesHandler = handler{
 		for _, n := range resp.Nodes {
 			row := []string{
 				fmt.Sprintf("%d", n.Id),
+				fmt.Sprintf("%d", n.Info.Pid),
 				n.Name,
+				fmt.Sprintf("%s/%s", n.Info.Os, n.Info.Arch),
+				n.Info.Version,
 				fmt.Sprintf("%d", n.Info.Records),
-				fmt.Sprintf("%d", n.Info.Alloc),
+				fmt.Sprintf("%d", n.Info.Uptime),
+				n.Info.Backend,
+				humanize.Bytes(n.Info.Sys),
 			}
 			rows = append(rows, row)
 		}

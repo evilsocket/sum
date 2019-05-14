@@ -10,8 +10,9 @@ import (
 	"sync"
 	"time"
 
-	pb "github.com/evilsocket/sum/proto"
+	"github.com/evilsocket/sum/node/backend"
 	"github.com/evilsocket/sum/node/storage"
+	pb "github.com/evilsocket/sum/proto"
 
 	"github.com/evilsocket/islazy/log"
 	"github.com/golang/protobuf/proto"
@@ -106,6 +107,7 @@ func (s *Service) Info(ctx context.Context, dummy *pb.Empty) (*pb.ServerInfo, er
 	runtime.ReadMemStats(&m)
 
 	return &pb.ServerInfo{
+		Backend:    backend.Name(),
 		Version:    Version,
 		Os:         runtime.GOOS,
 		Arch:       runtime.GOARCH,
