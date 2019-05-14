@@ -75,14 +75,18 @@ install_service: install
 golint:
 	@go get github.com/golang/lint/golint
 
-# Go 1.9 doesn't support test coverage on multiple packages, while
-# Go 1.10 does, let's keep it 1.9 compatible in order not to break
-# travis
-test: server_deps golint
-	@echo "mode: atomic" > coverage.profile
+lint: golint
 	@for pkg in $(PACKAGES); do \
 		go vet ./$$pkg ; \
 		golint -set_exit_status ./$$pkg ; \
+	done
+
+# Go 1.9 doesn't support test coverage on multiple packages, while
+# Go 1.10 does, let's keep it 1.9 compatible in order not to break
+# travis
+test: server_deps 
+	@echo "mode: atomic" > coverage.profile
+	@for pkg in $(PACKAGES); do \
 		go test -race ./$$pkg -coverprofile=$$pkg.profile -covermode=atomic; \
 		tail -n +2 $$pkg.profile >> coverage.profile && rm $$pkg.profile ; \
 	done

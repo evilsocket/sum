@@ -34,6 +34,17 @@ Install [gRPC go bindings](https://grpc.io/docs/quickstart/go/) and then:
 
     go get github.com/evilsocket/sum
     cd $GOPATH/src/github.com/evilsocket/sum
+
+To run the tests:
+
+    make tests
+
+To run the benchmarks:
+
+    make benchmark:
+
+To compile and install:
+
     make
     sudo make install
 
