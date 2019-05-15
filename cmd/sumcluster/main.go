@@ -101,10 +101,10 @@ func checkClient(addr string) (bool, error) {
 
 func waitClient(addr string) error {
 	for logged := false; ; {
-		if ok, _ := checkClient(addr); ok == true {
+		if ok, err := checkClient(addr); ok == true {
 			break
 		} else if logged == false {
-			log.Debug("waiting for %s ...", addr)
+			log.Info("waiting for %s (%s) ...", addr, err)
 			logged = true
 		}
 	}
