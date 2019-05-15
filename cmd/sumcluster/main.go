@@ -105,8 +105,8 @@ func waitClient(addr string) error {
 		if ok, err := checkClient(addr); ok == true {
 			break
 		} else if logged == false {
-			log.Info("waiting for %s (%s) ...", addr, err)
-			// logged = true
+			log.Debug("waiting for %s (%s) ...", addr, err)
+			logged = true
 		}
 	}
 
