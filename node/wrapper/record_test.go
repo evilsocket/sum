@@ -1,13 +1,20 @@
 package wrapper
 
 import (
-	"github.com/golang/protobuf/proto"
-	. "github.com/stretchr/testify/require"
 	"reflect"
 	"testing"
 
+	"github.com/golang/protobuf/proto"
+	. "github.com/stretchr/testify/require"
+
 	pb "github.com/evilsocket/sum/proto"
+
+	"github.com/evilsocket/islazy/log"
 )
+
+func init() {
+	log.Level = log.ERROR
+}
 
 func assertPanic(t *testing.T, msg string, f func()) {
 	defer func() {
@@ -117,6 +124,18 @@ func TestWrappedRecordDotWithNull(t *testing.T) {
 	assertPanic(t, "dot product should panic with null wrapped record", func() {
 		WrapRecord(nil).Dot(WrapRecord(&testRecord))
 	})
+}
+
+func TestWrappedRecordDotRange(t *testing.T) {
+	testRecord.Data = []float32{3, 6, 9, 1, 2, 3, 4, 5, 666}
+	shouldBe := 126.0
+
+	a := WrapRecord(&testRecord)
+	b := WrapRecord(&testRecord)
+
+	if dot := a.DotRange(b, 0, 3); dot != shouldBe {
+		t.Fatalf("dot product should be %f, got %f", shouldBe, dot)
+	}
 }
 
 func TestWrappedRecordDotWithIncompatibleSizes(t *testing.T) {
