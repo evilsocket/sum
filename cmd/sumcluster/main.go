@@ -28,8 +28,8 @@ var (
 	certPath      = flag.String("creds", "/etc/sumd/creds/cert.pem", "Path to the cert.pem file to use for TLS based authentication.")
 	basePort      = flag.Int("base-port", 1000, "Port to start to bind slave processes to.")
 	numNodes      = flag.Int("num-nodes", -1, "Number of slave processes to create or -1 to spawn one per logical CPU.")
-
-	masterConfig = master.Config{}
+	dataPath      = flag.String("datapath", "/var/lib/sumd_%02d", "Datapath format of the cluster nodes.")
+	masterConfig  = master.Config{}
 )
 
 type childOutputWriter struct {
@@ -133,7 +133,7 @@ func main() {
 	masterConfig.Nodes = make([]master.NodeConfig, 0)
 	for port := start; port < end; port++ {
 		address := fmt.Sprintf("localhost:%d", port)
-		dataPath := fmt.Sprintf("/var/lib/sumd_%02d", port-start)
+		dataPath := fmt.Sprintf(*dataPath, port-start)
 
 		if err := checkDatapath(dataPath); err != nil {
 			panic(err)
@@ -165,7 +165,8 @@ func main() {
 	}
 
 	log.Info("spawing master process ...")
-	if err := run(fmt.Sprintf("master %s", *masterAddress), "sumd", "--listen", *masterAddress, "--master", *masterFile); err != nil {
+	name := fmt.Sprintf("master %s", *masterAddress)
+	if err := run(name, "sumd", "--listen", *masterAddress, "--master", *masterFile); err != nil {
 		panic(err)
 	}
 }
