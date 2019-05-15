@@ -138,6 +138,18 @@ func TestWrappedRecordDotRange(t *testing.T) {
 	}
 }
 
+func TestWrappedRecordDotSub(t *testing.T) {
+	testRecord.Data = []float32{3, 6, 9, 1, 2, 3, 4, 5, 666}
+	shouldBe := 126.0
+
+	a := WrapRecord(&testRecord)
+	b := WrapRecord(&testRecord)
+
+	if dot := a.DotSub(b, 3); dot != shouldBe {
+		t.Fatalf("dot product should be %f, got %f", shouldBe, dot)
+	}
+}
+
 func TestWrappedRecordDotWithIncompatibleSizes(t *testing.T) {
 	assertPanic(t, "dot product should panic with vectors of different sizes", func() {
 		WrapRecord(&testRecord).Dot(WrapRecord(&testShorterRecord))
