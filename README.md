@@ -94,6 +94,24 @@ To use the `sumcluster` utility to spawn a specific number of workers (by defaul
 
     sudo sumcluster
 
+If you want to run the nodes bound to localhost, but the master bound to another ip or domain, you need to create two set of certificates. First, create one for the slave nodes:
+
+    sudo mkdir -p /etc/sumd/creds/localhost
+    sudo openssl req -x509 -newkey rsa:4096 -keyout /etc/sumd/creds/localhost/key.pem -out /etc/sumd/creds/localhost/cert.pem -days 365 -nodes -subj '/CN=localhost'
+
+And then another for the master node, serving from `domain.com`:
+
+    sudo mkdir -p /etc/sumd/creds
+    sudo openssl req -x509 -newkey rsa:4096 -keyout /etc/sumd/creds/key.pem -out /etc/sumd/creds/cert.pem -days 365 -nodes -subj '/CN=domain.com'
+
+You can now start the cluster with:
+
+    sumcluster -address "domain.com:50051" -creds /etc/sumd/creds/localhost/cert.pem
+
+And connect to it with a client:
+
+    sumcli -address domain.com:50051 -name domain.com -cert /path/to/cert.pem -eval "info; nlist; q"
+
 ## Client
 
 You can access your sum instance by using the `sumcli` client, run `sumcli -eval "help; q"` to print a list of available commands. Moreover, to have an idea of how the client side works, take a look at [the example python client code](https://github.com/evilsocket/sumpy/blob/master/example.py) that will create a few vectors on the server, define an oracle, call it for every vector and print the similarities the server returned.
