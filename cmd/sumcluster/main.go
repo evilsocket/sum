@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"time"
 
@@ -140,7 +141,7 @@ func main() {
 		}
 
 		go func(addr string, path string) {
-			if err := run(fmt.Sprintf("node %s", addr), "sumd", "--listen", addr, "--datapath", path, "--creds", *credsPath); err != nil {
+			if err := run(fmt.Sprintf("node %s", addr), "sumd", "--listen", addr, "--datapath", path, "--creds", filepath.Dir(*certPath)); err != nil {
 				panic(err)
 			}
 		}(address, dataPath)
