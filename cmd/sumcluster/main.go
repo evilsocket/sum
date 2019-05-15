@@ -140,7 +140,7 @@ func main() {
 		}
 
 		go func(addr string, path string) {
-			if err := run(fmt.Sprintf("node %s", addr), "sumd", "--listen", addr, "--datapath", path); err != nil {
+			if err := run(fmt.Sprintf("node %s", addr), "sumd", "--listen", addr, "--datapath", path, "--creds", *credsPath); err != nil {
 				panic(err)
 			}
 		}(address, dataPath)
