@@ -4,9 +4,7 @@ import (
 	"context"
 	pb "github.com/evilsocket/sum/proto"
 	. "github.com/stretchr/testify/require"
-	"io/ioutil"
 	"os"
-	"path/filepath"
 	"testing"
 	"time"
 )
@@ -14,19 +12,12 @@ import (
 func TestBalancing(t *testing.T) {
 	SetCommunicationTimeout(time.Minute)
 
-	dir1, err := ioutil.TempDir("", "")
+	dir1, err := setupEmptyTmpFolder()
 	Nil(t, err)
 	defer os.RemoveAll(dir1)
-	dir2, err := ioutil.TempDir("", "")
+	dir2, err := setupEmptyTmpFolder()
 	Nil(t, err)
 	defer os.RemoveAll(dir2)
-
-	for _, baseDir := range []string{dir1, dir2} {
-		for _, childDir := range []string{"data", "oracles"} {
-			err = os.Mkdir(filepath.Join(baseDir, childDir), 0755)
-			Nil(t, err)
-		}
-	}
 
 	node1, sum1 := spawnNode(t, 12345, dir1)
 	defer node1.Stop()

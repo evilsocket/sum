@@ -181,6 +181,39 @@ func (i *Index) CreateWithId(record proto.Message) error {
 	return nil
 }
 
+func (i *Index) CreateManyWIthId(records []proto.Message) (err error) {
+	rollbackOnError := func(e *error) {
+		if *e == nil {
+			return
+		}
+		// rollback
+		for _, record := range records {
+			id := i.driver.GetID(record)
+			delete(i.index, id)
+			os.Remove(i.pathForID(id))
+		}
+	}
+
+	i.Lock()
+	defer i.Unlock()
+
+	defer rollbackOnError(&err)
+
+	for _, record := range records {
+		id := i.driver.GetID(record)
+		if _, found := i.index[id]; found {
+			err = ErrInvalidID
+			break
+		} else if err = Flush(record, i.pathForID(id)); err != nil {
+			break
+		}
+
+		i.index[id] = record
+	}
+
+	return
+}
+
 // Update changes the contents of a stored object given a protobuf
 // message with its identifier and the new values to use. This operation
 // will flush the record on disk.
@@ -228,4 +261,24 @@ func (i *Index) Delete(id uint64) proto.Message {
 	os.Remove(i.pathForID(id))
 
 	return record
+}
+
+// Delete multiple records at once
+func (i *Index) DeleteMany(ids []uint64) []proto.Message {
+	res := make([]proto.Message, 0, len(ids))
+
+	i.Lock()
+	defer i.Unlock()
+
+	for _, id := range ids {
+		record, found := i.index[id]
+		if !found {
+			continue
+		}
+		delete(i.index, id)
+		os.Remove(i.pathForID(id))
+		res = append(res, record)
+	}
+
+	return res
 }

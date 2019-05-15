@@ -16,6 +16,7 @@ var (
 		Meta: map[string]string{
 			"idk": "idk",
 		},
+		Shape: []uint64{10},
 	}
 )
 

@@ -37,6 +37,13 @@ func (s *Service) CreateRecordWithId(ctx context.Context, record *pb.Record) (*p
 	return &pb.RecordResponse{Success: true, Msg: fmt.Sprintf("%d", record.Id)}, nil
 }
 
+func (s *Service) CreateRecordsWithId(ctx context.Context, records *pb.Records) (*pb.RecordResponse, error) {
+	if err := s.records.CreateManyWIthId(records.Records); err != nil {
+		return errRecordResponse("%v", err), nil
+	}
+	return &pb.RecordResponse{Success: true}, nil
+}
+
 // UpdateRecord updates the contents of a record with the ones of a raw *pb.Record
 // object given its identifier.
 func (s *Service) UpdateRecord(ctx context.Context, record *pb.Record) (*pb.RecordResponse, error) {
@@ -112,6 +119,11 @@ func (s *Service) DeleteRecord(ctx context.Context, query *pb.ById) (*pb.RecordR
 	if record == nil {
 		return errRecordResponse("record %d not found.", query.Id), nil
 	}
+	return &pb.RecordResponse{Success: true}, nil
+}
+
+func (s *Service) DeleteRecords(ctx context.Context, ids *pb.RecordIds) (*pb.RecordResponse, error) {
+	s.records.DeleteMany(ids.Ids)
 	return &pb.RecordResponse{Success: true}, nil
 }
 

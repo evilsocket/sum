@@ -26,6 +26,8 @@ service SumService {
 
 service SumInternalService {
     rpc CreateRecordWithId(Record) returns (RecordResponse) {}
+    rpc CreateRecordsWithId(Records) returns (RecordResponse) {}
+    rpc DeleteRecords(RecordIds) returns (RecordResponse) {}
 }
 
 service SumMasterService {
@@ -51,6 +53,14 @@ message Record {
     repeated float data = 2;
     repeated uint64 shape = 3;
     map<string, string> meta = 4;
+}
+
+message Records {
+    repeated Record records = 1;
+}
+
+message RecordIds {
+    repeated uint64 ids = 1;
 }
 
 message RecordResponse {

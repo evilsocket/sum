@@ -311,3 +311,54 @@ func TestService_CreateRecordWithId_Invalid(t *testing.T) {
 		t.Fatalf("unexpected response message: %s", resp.Msg)
 	}
 }
+
+func TestService_CreateRecordsWithId(t *testing.T) {
+	setupFolders(t)
+	defer teardown(t)
+
+	arg := &pb.Records{Records: make([]*pb.Record, 0)}
+
+	for i := 0; i < 5; i++ {
+		rec := &pb.Record{Id: uint64(i + 1)}
+		rec.Data = testRecord.Data
+		rec.Meta = testRecord.Meta
+		arg.Records = append(arg.Records, rec)
+	}
+
+	svc, err := New(testFolder, "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if resp, err := svc.CreateRecordsWithId(context.TODO(), arg); err != nil {
+		t.Fatal(err)
+	} else if !resp.Success {
+		t.Fatalf("expected success response: %v", resp)
+	} else if svc.NumRecords() != 5 {
+		t.Fatalf("Unexpected amount of records: expected %d, got %d", 5, svc.NumRecords())
+	}
+}
+
+func TestService_DeleteRecords(t *testing.T) {
+	setup(t, true, true)
+	defer teardown(t)
+
+	svc, err := New(testFolder, "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	arg := &pb.RecordIds{Ids: make([]uint64, 0)}
+
+	for i := 0; i < testRecords; i++ {
+		arg.Ids = append(arg.Ids, uint64(i+1))
+	}
+
+	if resp, err := svc.DeleteRecords(context.TODO(), arg); err != nil {
+		t.Fatal(err)
+	} else if !resp.Success {
+		t.Fatalf("expected success response: %v", resp)
+	} else if svc.NumRecords() != 0 {
+		t.Fatalf("Unexpected amount of records: expected %d, got %d", 0, svc.NumRecords())
+	}
+}
