@@ -94,7 +94,7 @@ func main() {
 		mode = "master"
 	}
 
-	log.Info("sumd v%s is starting as %s on %s ...", node.Version, mode, *listenString)
+	log.Info("sumd v%s is starting as %s on %s (%s) ...", node.Version, mode, *listenString, *credsPath)
 
 	server, listener := setupGrpcServer(credsPath, listenString, maxMsgSize)
 
