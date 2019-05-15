@@ -83,6 +83,16 @@ func TestWrappedRecordMetaWithInvalidKey(t *testing.T) {
 	}
 }
 
+func TestWrappedRecordEqual(t *testing.T) {
+	a := WrapRecord(&testRecord)
+	b := WrapRecord(&testShorterRecord)
+	if a.Equal(a) == false {
+		t.Fatalf("expecting true")
+	} else if a.Equal(b) || b.Equal(a) {
+		t.Fatalf("expecting false")
+	}
+}
+
 func TestWrappedRecordDot(t *testing.T) {
 	testRecord.Data = []float32{3, 6, 9}
 	shouldBe := 126.0
