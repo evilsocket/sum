@@ -123,10 +123,10 @@ func runNode(idx int, addr string, path string) {
 	}
 	name := fmt.Sprintf("node %s", addr)
 	args := []string{
-		"--listen", addr,
-		"--datapath", path,
-		"--creds", filepath.Dir(*certPath),
-		"--max-msg-size", fmt.Sprintf("%d", *maxMsgSize),
+		"-listen", addr,
+		"-datapath", path,
+		"-creds", filepath.Dir(*certPath),
+		"-max-msg-size", fmt.Sprintf("%d", *maxMsgSize),
 	}
 
 	go func() {
@@ -139,8 +139,9 @@ func runNode(idx int, addr string, path string) {
 func runMaster() {
 	name := fmt.Sprintf("master %s", *masterAddress)
 	args := []string{
-		"--listen", *masterAddress,
-		"--master", *masterFile,
+		"-listen", *masterAddress,
+		"-master", *masterFile,
+		"-max-msg-size", fmt.Sprintf("%d", *maxMsgSize),
 	}
 	if err := run(name, "sumd", args...); err != nil {
 		panic(err)
