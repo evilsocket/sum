@@ -30,14 +30,14 @@ func (ms *Service) findLessLoadedNode() *NodeInfo {
 
 // create a record from the given argument
 func (ms *Service) CreateRecord(ctx context.Context, record *Record) (*RecordResponse, error) {
-	ms.recordsLock.Lock()
-	defer ms.recordsLock.Unlock()
-
 	targetNode := ms.findLessLoadedNode()
 
 	if targetNode == nil {
 		return errRecordResponse("No nodes available, try later"), nil
 	}
+
+	ms.recordsLock.Lock()
+	defer ms.recordsLock.Unlock()
 
 	// for targetNode.status.Records++
 	targetNode.Lock()
@@ -213,4 +213,159 @@ func (ms *Service) FindRecords(ctx context.Context, arg *ByMeta) (*FindResponse,
 	}
 
 	return &FindResponse{Success: true, Records: records}, nil
+}
+
+// internal interface ( masters can be slave nodes as well )
+
+// create a record with a given ID
+func (ms *Service) CreateRecordWithId(ctx context.Context, in *Record) (*RecordResponse, error) {
+	ms.recordsLock.Lock()
+	defer ms.recordsLock.Unlock()
+
+	if _, exists := ms.recId2node[in.Id]; exists {
+		return errRecordResponse("%v", storage.ErrInvalidID), nil
+	}
+
+	n := ms.findLessLoadedNode()
+	if n == nil {
+		return errRecordResponse("No nodes available, try later"), nil
+	}
+
+	n.Lock()
+	defer n.Unlock()
+
+	resp, err := n.InternalClient.CreateRecordWithId(ctx, in)
+	if err == nil && resp.Success {
+		n.RecordIds[in.Id] = true
+		n.status.Records++
+		ms.recId2node[in.Id] = n
+	}
+	return resp, err
+}
+
+// create multiple records with their preassigned IDs
+func (ms *Service) CreateRecordsWithId(ctx context.Context, in *Records) (*RecordResponse, error) {
+	ms.nodesLock.RLock()
+	defer ms.nodesLock.RUnlock()
+	ms.recordsLock.Lock()
+	defer ms.recordsLock.Unlock()
+
+	if len(ms.nodes) == 0 {
+		return errRecordResponse("No nodes available, try later"), nil
+	}
+
+	for _, r := range in.Records {
+		if _, exists := ms.recId2node[r.Id]; exists {
+			return errRecordResponse("%v", storage.ErrInvalidID), nil
+		}
+	}
+
+	perNode := len(in.Records) / len(ms.nodes)
+	remainder := len(in.Records) % len(ms.nodes)
+
+	creator := func(n *NodeInfo, records []*Record) error {
+		n.Lock()
+		defer n.Unlock()
+
+		log.Debug("Master[%s]: creating %d records on node %s", ms.address, len(in.Records), n.Name)
+
+		if resp, err := n.InternalClient.CreateRecordsWithId(ctx, &Records{Records: records}); err != nil || !resp.Success {
+			return fmt.Errorf("%s", getErrorMessage(err, resp))
+		} else {
+			for _, r := range in.Records {
+				n.RecordIds[r.Id] = true
+				n.status.Records++
+				ms.recId2node[r.Id] = n
+			}
+		}
+		return nil
+	}
+
+	start := 0
+	end := 0
+	var successfulNode *NodeInfo
+	var lastErr error
+
+	for i, n := range ms.nodes {
+		end += perNode
+		if i < remainder {
+			end++
+		}
+		if lastErr = creator(n, in.Records[start:end]); lastErr != nil {
+			log.Error("Unable to create records on node %d: %v", n.ID, lastErr)
+		} else {
+			successfulNode = n
+			start = end
+		}
+	}
+
+	if successfulNode == nil {
+		return errRecordResponse("Cannot create records on nodes: last error = %v", lastErr), nil
+	}
+
+	// last creation failed ( and previous ones potentially )
+	if start != end {
+		if err := creator(successfulNode, in.Records[start:end]); err != nil {
+			// rollback
+
+			arg := &RecordIds{Ids: make([]uint64, 0, len(in.Records))}
+
+			for _, r := range in.Records {
+				arg.Ids = append(arg.Ids, r.Id)
+			}
+
+			// best effort
+			ms.DeleteRecords(ctx, arg)
+
+			return errRecordResponse("Unable to create records on fallback node %d: %v", successfulNode.ID, err), nil
+		}
+	}
+
+	ms.balance()
+
+	return &RecordResponse{Success: true}, nil
+}
+
+func (ms *Service) DeleteRecords(ctx context.Context, in *RecordIds) (*RecordResponse, error) {
+	result := &RecordResponse{Success: true}
+	node2ids := make(map[*NodeInfo][]uint64)
+
+	ms.recordsLock.Lock()
+	defer ms.recordsLock.Unlock()
+
+	for _, id := range in.Ids {
+		if n, exists := ms.recId2node[id]; exists {
+			node2ids[n] = append(node2ids[n], id)
+		}
+	}
+
+	for n, ids := range node2ids {
+		arg := &RecordIds{Ids: ids}
+
+		func() {
+			n.Lock()
+			defer n.Unlock()
+
+			resp, err := n.InternalClient.DeleteRecords(ctx, arg)
+			if err != nil || !resp.Success {
+				result.Success = false
+				result.Msg = getErrorMessage(err, resp)
+				return
+			}
+
+			for _, id := range ids {
+				delete(n.RecordIds, id)
+				delete(ms.recId2node, id)
+				n.status.Records--
+			}
+		}()
+
+		if !result.Success {
+			break
+		}
+	}
+
+	ms.balance()
+
+	return result, nil
 }

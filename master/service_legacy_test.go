@@ -164,6 +164,23 @@ func NewClient(_ string) (pb.SumServiceClient, error) {
 	}
 }
 
+func NewInternalClient(_ string) (pb.SumInternalServiceClient, error) {
+	if ns, err := setupNetwork(1, 1); err != nil {
+		return nil, err
+	} else {
+		conn, err := grpc.Dial("localhost:12346", grpc.WithInsecure())
+		if err != nil {
+			cleanupNetwork(&ns)
+			return nil, err
+		}
+
+		network = &ns
+		client := pb.NewSumInternalServiceClient(conn)
+
+		return client, nil
+	}
+}
+
 func TestServiceErrCallResponse(t *testing.T) {
 	if r := errCallResponse("test %d", 123); r.Success {
 		t.Fatal("success should be false")

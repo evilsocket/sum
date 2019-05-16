@@ -95,7 +95,7 @@ func spawnNodeErr(port uint32, dataPath string) (*grpc.Server, *service.Service,
 	if err != nil {
 		return nil, nil, err
 	}
-	svc, err := service.New(dataPath, "", "")
+	svc, err := service.New(dataPath, "", addr)
 	if err != nil {
 		listener.Close()
 		return nil, nil, err
@@ -150,6 +150,7 @@ func spawnOrchestratorErr(port uint32, nodesStr string) (*grpc.Server, *Service,
 
 	server := grpc.NewServer()
 	pb.RegisterSumServiceServer(server, ms)
+	pb.RegisterSumInternalServiceServer(server, ms)
 	reflection.Register(server)
 
 	go func() {
@@ -459,4 +460,8 @@ func TestDeleteNode(t *testing.T) {
 
 	Equal(t, 1, len(ms.nodes))
 	Equal(t, nRecords, len(ms.recId2node))
+
+	for _, n := range ms.recId2node {
+		NotEqual(t, uint(1), n.ID)
+	}
 }

@@ -106,6 +106,7 @@ func main() {
 		}
 
 		pb.RegisterSumMasterServiceServer(server, masterSvc)
+		pb.RegisterSumInternalServiceServer(server, masterSvc)
 		pb.RegisterSumServiceServer(server, masterSvc)
 
 		ctx, cf := context.WithCancel(context.Background())

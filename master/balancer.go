@@ -41,7 +41,7 @@ func getErrorMessage(err error, response proto.Message) string {
 }
 
 // transfer nRecords from a node to another
-func transfer(fromNode, toNode *NodeInfo, nRecords int64) {
+func (ms *Service) transfer(fromNode, toNode *NodeInfo, nRecords int64) {
 	log.Info("transferring %d records: %s -> %s ...", nRecords, fromNode.Name, toNode.Name)
 
 	fromNode.Lock()
@@ -58,6 +58,8 @@ func transfer(fromNode, toNode *NodeInfo, nRecords int64) {
 		return
 	}
 
+	log.Debug("Master[%s]: got %d records from node %s", ms.address, len(list.Records), fromNode.Name)
+
 	resp, err := toNode.InternalClient.CreateRecordsWithId(ctx, &pb.Records{Records: list.Records})
 
 	if err != nil || !resp.Success {
@@ -65,10 +67,14 @@ func transfer(fromNode, toNode *NodeInfo, nRecords int64) {
 		return
 	}
 
+	log.Debug("Master[%s]: created %d records on node %s", ms.address, len(list.Records), toNode.Name)
+
 	delReq := &pb.RecordIds{Ids: make([]uint64, 0, nRecords)}
+	toNode.status.Records += uint64(nRecords)
 
 	for _, r := range list.Records {
 		toNode.RecordIds[r.Id] = true
+		ms.recId2node[r.Id] = toNode
 		delReq.Ids = append(delReq.Ids, r.Id)
 	}
 
@@ -79,6 +85,10 @@ func transfer(fromNode, toNode *NodeInfo, nRecords int64) {
 		// keep going anyway
 	}
 
+	log.Debug("Master[%s]: deleted %d records from node %s", ms.address, len(delReq.Ids), fromNode.Name)
+
+	fromNode.status.Records -= uint64(nRecords)
+
 	for _, r := range list.Records {
 		delete(fromNode.RecordIds, r.Id)
 	}
@@ -86,6 +96,7 @@ func transfer(fromNode, toNode *NodeInfo, nRecords int64) {
 
 // balance the load among nodes
 func (ms *Service) balance() {
+	log.Debug("Master[%s]: balancing...", ms.address)
 	var totRecords = uint64(len(ms.recId2node))
 	var nNodes = len(ms.nodes)
 
@@ -135,7 +146,10 @@ func (ms *Service) balance() {
 			if nRecords > delta {
 				nRecords = delta
 			}
-			transfer(ms.nodes[j], ms.nodes[i], nRecords)
+			if nRecords == 0 {
+				continue
+			}
+			ms.transfer(ms.nodes[j], ms.nodes[i], nRecords)
 			delta -= nRecords
 			deltas[i] -= nRecords
 			deltas[j] += nRecords

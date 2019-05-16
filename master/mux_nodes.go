@@ -3,8 +3,8 @@ package master
 import (
 	"context"
 	"fmt"
-	. "github.com/evilsocket/sum/proto"
 	"github.com/evilsocket/islazy/log"
+	. "github.com/evilsocket/sum/proto"
 )
 
 // add a node to control
@@ -56,6 +56,8 @@ func (ms *Service) ListNodes(context.Context, *Empty) (*NodeResponse, error) {
 func (ms *Service) DeleteNode(ctx context.Context, id *ById) (*NodeResponse, error) {
 	ms.nodesLock.Lock()
 	defer ms.nodesLock.Unlock()
+	ms.recordsLock.Lock()
+	defer ms.recordsLock.Unlock()
 
 	var i int
 	var n *NodeInfo
@@ -78,10 +80,10 @@ func (ms *Service) DeleteNode(ctx context.Context, id *ById) (*NodeResponse, err
 	go ms.updateConfig()
 
 	//TODO: balance on the fly
-	if len(ms.nodes) > 0 {
-		transfer(n, ms.nodes[0], int64(len(n.RecordIds)))
+	if len(ms.nodes) > 0 && len(n.RecordIds) > 0 {
+		ms.transfer(n, ms.nodes[0], int64(len(n.RecordIds)))
+		ms.balance()
 	}
-	ms.balance()
 
 	return &NodeResponse{Success: true}, nil
 }
