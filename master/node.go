@@ -53,7 +53,7 @@ func (n *NodeInfo) Status() ServerInfo {
 
 // create node from a connection string and a certificate file
 // this method connect to the node and create it's respective GRPC clients.
-// it verify the connection by retrieving node's status using the aforementioned clients.
+// it verifies the connection by retrieving the node's status using the aforementioned clients.
 func CreateNode(node, certFile string) (*NodeInfo, error) {
 	var dialOptions grpc.DialOption
 

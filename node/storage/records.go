@@ -2,6 +2,7 @@ package storage
 
 import (
 	pb "github.com/evilsocket/sum/proto"
+	"github.com/golang/protobuf/proto"
 )
 
 type metaIndex map[string][]uint64
@@ -33,10 +34,7 @@ func LoadRecords(dataPath string) (*Records, error) {
 	return recs, nil
 }
 
-func (r *Records) metaIndexCreate(rec *pb.Record) {
-	r.Lock()
-	defer r.Unlock()
-
+func (r *Records) _metaIndexCreate(rec *pb.Record) {
 	for key, val := range rec.Meta {
 		// create the index by this key if not there already
 		if metaIdx, found := r.metaBy[key]; !found {
@@ -49,15 +47,19 @@ func (r *Records) metaIndexCreate(rec *pb.Record) {
 	}
 }
 
+func (r *Records) metaIndexCreate(rec *pb.Record) {
+	r.Lock()
+	defer r.Unlock()
+
+	r._metaIndexCreate(rec)
+}
+
 func (r *Records) metaIndexUpdate(rec *pb.Record) {
 	r.metaIndexRemove(rec)
 	r.metaIndexCreate(rec)
 }
 
-func (r *Records) metaIndexRemove(rec *pb.Record) {
-	r.Lock()
-	defer r.Unlock()
-
+func (r *Records) _metaIndexRemove(rec *pb.Record) {
 	for key, val := range rec.Meta {
 		// find the bucket for this meta
 		if metaIdx, found := r.metaBy[key]; !found {
@@ -73,6 +75,13 @@ func (r *Records) metaIndexRemove(rec *pb.Record) {
 			}
 		}
 	}
+}
+
+func (r *Records) metaIndexRemove(rec *pb.Record) {
+	r.Lock()
+	defer r.Unlock()
+
+	r._metaIndexRemove(rec)
 }
 
 // Find returns the instance of a stored pb.Record given its
@@ -122,6 +131,34 @@ func (r *Records) Create(record *pb.Record) error {
 	return nil
 }
 
+func (r *Records) CreateWithId(record *pb.Record) error {
+	if err := r.Index.CreateWithId(record); err != nil {
+		return err
+	}
+	r.metaIndexCreate(record)
+	return nil
+}
+
+func (r *Records) CreateManyWIthId(records []*pb.Record) error {
+	arg := make([]proto.Message, 0, len(records))
+	for _, r := range records {
+		arg = append(arg, r)
+	}
+
+	if err := r.Index.CreateManyWIthId(arg); err != nil {
+		return err
+	}
+
+	r.Lock()
+	defer r.Unlock()
+
+	for _, record := range records {
+		r._metaIndexCreate(record)
+	}
+
+	return nil
+}
+
 func (r *Records) Update(record *pb.Record) error {
 	if err := r.Index.Update(record); err != nil {
 		return err
@@ -141,4 +178,25 @@ func (r *Records) Delete(id uint64) *pb.Record {
 		return rec
 	}
 	return nil
+}
+
+func (r *Records) DeleteMany(ids []uint64) []*pb.Record {
+	res := make([]*pb.Record, 0, len(ids))
+
+	deleted := r.Index.DeleteMany(ids)
+
+	if len(deleted) == 0 {
+		return res
+	}
+
+	r.Lock()
+	defer r.Unlock()
+
+	for _, record := range deleted {
+		rec := record.(*pb.Record)
+		r._metaIndexRemove(rec)
+		res = append(res, rec)
+	}
+
+	return res
 }

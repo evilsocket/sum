@@ -40,64 +40,63 @@ func getErrorMessage(err error, response proto.Message) string {
 	panic("no errors dude")
 }
 
-// transfer a record from one node to another
-func transferOne(fromNode, toNode *NodeInfo, recordId uint64) {
-	ctx, cf := newCommContext()
-	defer cf()
-
-	record, err := fromNode.Client.ReadRecord(ctx, &pb.ById{Id: recordId})
-
-	if err != nil || !record.Success {
-		log.Error("cannot read record %d from node %d: %v", recordId, fromNode.ID, getErrorMessage(err, record))
-		return
-	}
-
-	if record2, err := fromNode.Client.DeleteRecord(ctx, &pb.ById{Id: recordId}); err != nil || !record2.Success {
-		log.Error("cannot delete record %d from node %d: %v", recordId, fromNode.ID, getErrorMessage(err, record2))
-		return
-	}
-
-	delete(fromNode.RecordIds, recordId)
-
-	newRecord, err := toNode.InternalClient.CreateRecordWithId(ctx, record.Record)
-
-	if err != nil || !newRecord.Success {
-		log.Error("unable to create record on node %d: %v", toNode.ID, getErrorMessage(err, newRecord))
-		// restore
-		if newRecord, err = fromNode.InternalClient.CreateRecordWithId(ctx, record.Record); err != nil || !newRecord.Success {
-			log.Error("unable to create record on node %d: %v", fromNode.ID, getErrorMessage(err, newRecord))
-			log.Error("record %d lost ( %s )", record.Record.Id, record.Record.Meta)
-		} else {
-			log.Info("record %d restored on node %d", recordId, fromNode.ID)
-			fromNode.RecordIds[recordId] = true
-		}
-	} else {
-		toNode.RecordIds[recordId] = true
-	}
-}
-
 // transfer nRecords from a node to another
-func transfer(fromNode, toNode *NodeInfo, nRecords int64) {
-	i := int64(0)
+func (ms *Service) transfer(fromNode, toNode *NodeInfo, nRecords int64) {
+	log.Info("transferring %d records: %s -> %s ...", nRecords, fromNode.Name, toNode.Name)
 
 	fromNode.Lock()
 	toNode.Lock()
 	defer fromNode.Unlock()
 	defer toNode.Unlock()
 
-	log.Info("transferring %d records: %s -> %s ...", nRecords, fromNode.Name, toNode.Name)
+	ctx, cf := newCommContext()
+	defer cf()
 
-	for id := range fromNode.RecordIds {
-		transferOne(fromNode, toNode, id)
-		i++
-		if i >= nRecords {
-			break
-		}
+	list, err := fromNode.Client.ListRecords(ctx, &pb.ListRequest{PerPage: uint64(nRecords), Page: 1})
+	if err != nil {
+		log.Error("Cannot get records from node %d: %v", fromNode.ID, err)
+		return
+	}
+
+	log.Debug("Master[%s]: got %d records from node %s", ms.address, len(list.Records), fromNode.Name)
+
+	resp, err := toNode.InternalClient.CreateRecordsWithId(ctx, &pb.Records{Records: list.Records})
+
+	if err != nil || !resp.Success {
+		log.Error("Unable to store records on node %d: %v", toNode.ID, getErrorMessage(err, resp))
+		return
+	}
+
+	log.Debug("Master[%s]: created %d records on node %s", ms.address, len(list.Records), toNode.Name)
+
+	delReq := &pb.RecordIds{Ids: make([]uint64, 0, nRecords)}
+	toNode.status.Records += uint64(nRecords)
+
+	for _, r := range list.Records {
+		toNode.RecordIds[r.Id] = true
+		ms.recId2node[r.Id] = toNode
+		delReq.Ids = append(delReq.Ids, r.Id)
+	}
+
+	resp1, err := fromNode.InternalClient.DeleteRecords(ctx, delReq)
+
+	if err != nil || !resp1.Success {
+		log.Error("Unable to delete records from node %d: %v", fromNode.ID, getErrorMessage(err, resp1))
+		// keep going anyway
+	}
+
+	log.Debug("Master[%s]: deleted %d records from node %s", ms.address, len(delReq.Ids), fromNode.Name)
+
+	fromNode.status.Records -= uint64(nRecords)
+
+	for _, r := range list.Records {
+		delete(fromNode.RecordIds, r.Id)
 	}
 }
 
 // balance the load among nodes
 func (ms *Service) balance() {
+	log.Debug("Master[%s]: balancing...", ms.address)
 	var totRecords = uint64(len(ms.recId2node))
 	var nNodes = len(ms.nodes)
 
@@ -147,7 +146,10 @@ func (ms *Service) balance() {
 			if nRecords > delta {
 				nRecords = delta
 			}
-			transfer(ms.nodes[j], ms.nodes[i], nRecords)
+			if nRecords == 0 {
+				continue
+			}
+			ms.transfer(ms.nodes[j], ms.nodes[i], nRecords)
 			delta -= nRecords
 			deltas[i] -= nRecords
 			deltas[j] += nRecords

@@ -16,6 +16,7 @@ var (
 		Meta: map[string]string{
 			"idk": "idk",
 		},
+		Shape: []uint64{10},
 	}
 )
 
@@ -275,5 +276,71 @@ func TestServiceDeleteRecordWithInvalidId(t *testing.T) {
 		t.Fatalf("unexpected record pointer: %v", resp.Record)
 	} else if resp.Msg != "record 666 not found." {
 		t.Fatalf("unexpected message: %s", resp.Msg)
+	}
+}
+
+func TestService_CreateRecordWithId(t *testing.T) {
+	setupFolders(t)
+	defer teardown(t)
+
+	testRecord.Id = 5
+
+	if svc, err := NewInternalClient(testFolder); err != nil {
+		t.Fatal(err)
+	} else if resp, err := svc.CreateRecordWithId(context.TODO(), &testRecord); err != nil {
+		t.Fatal(err)
+	} else if !resp.Success {
+		t.Fatalf("expected success response: %v", resp)
+	} else if resp.Record != nil {
+		t.Fatalf("unexpected record pointer: %v", resp.Record)
+	} else if resp.Msg != "5" {
+		t.Fatalf("unexpected response message: %s", resp.Msg)
+	}
+}
+
+func TestService_CreateRecordsWithId(t *testing.T) {
+	setupFolders(t)
+	defer teardown(t)
+
+	arg := &pb.Records{Records: make([]*pb.Record, 0)}
+
+	for i := 0; i < 5; i++ {
+		rec := &pb.Record{Id: uint64(i + 1)}
+		rec.Data = testRecord.Data
+		rec.Meta = testRecord.Meta
+		arg.Records = append(arg.Records, rec)
+	}
+
+	svc, err := NewInternalClient(testFolder)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if resp, err := svc.CreateRecordsWithId(context.TODO(), arg); err != nil {
+		t.Fatal(err)
+	} else if !resp.Success {
+		t.Fatalf("expected success response: %v", resp)
+	}
+}
+
+func TestService_DeleteRecords(t *testing.T) {
+	setup(t, true, true)
+	defer teardown(t)
+
+	svc, err := NewInternalClient(testFolder)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	arg := &pb.RecordIds{Ids: make([]uint64, 0)}
+
+	for i := 0; i < testRecords; i++ {
+		arg.Ids = append(arg.Ids, uint64(i+1))
+	}
+
+	if resp, err := svc.DeleteRecords(context.TODO(), arg); err != nil {
+		t.Fatal(err)
+	} else if !resp.Success {
+		t.Fatalf("expected success response: %v", resp)
 	}
 }

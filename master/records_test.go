@@ -145,3 +145,27 @@ func TestConcurrentCreateAndDelete(t *testing.T) {
 
 	Zero(t, ms.NumRecords())
 }
+
+func TestMuxService_DeleteRecords(t *testing.T) {
+	ns, err := setupPopulatedNetwork(2, 1)
+	Nil(t, err)
+	defer cleanupNetwork(&ns)
+
+	arg := &pb.RecordIds{}
+
+	ms := ns.orchestrators[0].svc
+	node1 := ns.nodes[0].svc
+	node2 := ns.nodes[1].svc
+
+	for id := range ms.recId2node {
+		arg.Ids = append(arg.Ids, id)
+	}
+
+	resp, err := ms.DeleteRecords(context.TODO(), arg)
+	NoError(t, err)
+	True(t, resp.Success)
+
+	Zero(t, node1.NumRecords())
+	Zero(t, node2.NumRecords())
+	Zero(t, ms.NumRecords())
+}
