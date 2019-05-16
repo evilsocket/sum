@@ -48,6 +48,7 @@ func main() {
 	grpc.MaxSendMsgSize(*maxMsgSize)
 
 	opts := []grpc.DialOption{
+		grpc.WithBlock(),
 		grpc.WithTransportCredentials(creds),
 		grpc.WithDefaultCallOptions(
 			grpc.MaxCallRecvMsgSize(*maxMsgSize),

@@ -55,18 +55,24 @@ func (n *NodeInfo) Status() ServerInfo {
 // this method connect to the node and create it's respective GRPC clients.
 // it verifies the connection by retrieving the node's status using the aforementioned clients.
 func CreateNode(node, certFile string) (*NodeInfo, error) {
-	var dialOptions grpc.DialOption
+	opts := []grpc.DialOption{
+		grpc.WithDefaultCallOptions(
+			grpc.MaxCallRecvMsgSize(maxMsgSize),
+			grpc.MaxCallSendMsgSize(maxMsgSize),
+		),
+	}
 
 	if certFile != "" {
 		creds, err := credentials.NewClientTLSFromFile(certFile, "")
 		if err != nil {
 			return nil, fmt.Errorf("cannot load certificate file '%s': %v", certFile, err)
 		}
-		dialOptions = grpc.WithTransportCredentials(creds)
+		opts = append(opts, grpc.WithTransportCredentials(creds))
 	} else {
-		dialOptions = grpc.WithInsecure()
+		opts = append(opts, grpc.WithInsecure())
 	}
-	conn, err := grpc.Dial(node, dialOptions)
+
+	conn, err := grpc.Dial(node, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("unable to dial service at '%s': %v", node, err)
 	}

@@ -99,6 +99,7 @@ func main() {
 	server, listener := setupGrpcServer(credsPath, listenString, maxMsgSize)
 	if *masterCfgFile != "" {
 		master.SetCommunicationTimeout(*timeout)
+		master.SetMaxMsgSize(*maxMsgSize)
 
 		if masterSvc, err = master.NewServiceFromConfig(*masterCfgFile, *credsPath, *listenString); err != nil {
 			log.Fatal("cannot start master service: %v", err)
