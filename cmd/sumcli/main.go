@@ -49,6 +49,10 @@ func main() {
 
 	opts := []grpc.DialOption{
 		grpc.WithTransportCredentials(creds),
+		grpc.WithDefaultCallOptions(
+			grpc.MaxCallRecvMsgSize(*maxMsgSize),
+			grpc.MaxCallSendMsgSize(*maxMsgSize),
+		),
 	}
 
 	conn, err := grpc.Dial(*serverAddress, opts...)

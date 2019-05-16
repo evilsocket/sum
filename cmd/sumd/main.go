@@ -97,7 +97,6 @@ func main() {
 	log.Info("sumd v%s is starting as %s on %s (%s) ...", node.Version, mode, *listenString, *credsPath)
 
 	server, listener := setupGrpcServer(credsPath, listenString, maxMsgSize)
-
 	if *masterCfgFile != "" {
 		master.SetCommunicationTimeout(*timeout)
 
