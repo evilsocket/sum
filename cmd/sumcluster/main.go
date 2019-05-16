@@ -24,13 +24,14 @@ import (
 )
 
 var (
-	masterAddress = flag.String("address", "localhost:50051", "Address and port to bind the master process to.")
-	masterFile    = flag.String("master", "master.json", "Output file to generate node configurations to.")
-	certPath      = flag.String("creds", "/etc/sumd/creds/cert.pem", "Path to the cert.pem file to use for TLS based authentication.")
-	basePort      = flag.Int("base-port", 1000, "Port to start to bind slave processes to.")
-	numNodes      = flag.Int("num-nodes", -1, "Number of slave processes to create or -1 to spawn one per logical CPU.")
-	dataPath      = flag.String("datapath", "/var/lib/sumd/%02d", "Datapath format of the cluster nodes.")
-	masterConfig  = master.Config{}
+	masterAddress  = flag.String("address", "localhost:50051", "Address and port to bind the master process to.")
+	masterFile     = flag.String("master", "master.json", "Output file to generate node configurations to.")
+	certPath       = flag.String("creds", "/etc/sumd/creds/cert.pem", "Path to the cert.pem file to use for TLS based authentication.")
+	basePort       = flag.Int("base-port", 1000, "Port to start to bind slave processes to.")
+	numNodes       = flag.Int("num-nodes", -1, "Number of slave processes to create or -1 to spawn one per logical CPU.")
+	maxMessageSize = flag.Int("max-msg-size", 50*1024*1024, "Maximum size of a single GPRC message (per node).")
+	dataPath       = flag.String("datapath", "/var/lib/sumd/%02d", "Datapath format of the cluster nodes.")
+	masterConfig   = master.Config{}
 )
 
 type childOutputWriter struct {
@@ -115,41 +116,66 @@ func waitClient(addr string) error {
 	return nil
 }
 
+func runNode(idx int, addr string, path string) {
+	masterConfig.Nodes[idx] = master.NodeConfig{
+		Address:  addr,
+		CertFile: *certPath,
+	}
+	name := fmt.Sprintf("node %s", addr)
+	args := []string{
+		"--listen", addr,
+		"--datapath", path,
+		"--creds", filepath.Dir(*certPath),
+		"--max-msg-size", fmt.Sprintf("%d", *maxMessageSize),
+	}
+
+	go func() {
+		if err := run(name, "sumd", args...); err != nil {
+			panic(err)
+		}
+	}()
+}
+
+func runMaster() {
+	name := fmt.Sprintf("master %s", *masterAddress)
+	args := []string{
+		"--listen", *masterAddress,
+		"--master", *masterFile,
+	}
+	if err := run(name, "sumd", args...); err != nil {
+		panic(err)
+	}
+}
+
 func init() {
 	log.Format = fmt.Sprintf("[%s] (%d) %s", tui.Bold("cluster"), os.Getpid(), log.Format)
 	flag.Parse()
 }
 
 func main() {
-
 	if *numNodes <= 0 {
 		*numNodes = runtime.NumCPU()
 	}
 
-	start := *basePort
-	end := start + *numNodes
+	end := *basePort + *numNodes
+	masterConfig.Nodes = make([]master.NodeConfig, *numNodes)
 
-	log.Info("spawning %d nodes from port %d to %d ...", *numNodes, start, end-1)
-
-	masterConfig.Nodes = make([]master.NodeConfig, 0)
-	for port := start; port < end; port++ {
-		address := fmt.Sprintf("localhost:%d", port)
-		dataPath := fmt.Sprintf(*dataPath, port-start)
-
+	log.Info("spawning %d nodes from port %d to %d ...", *numNodes, *basePort, end-1)
+	for port := *basePort; port < end; port++ {
+		idx := port - *basePort
+		dataPath := fmt.Sprintf(*dataPath, idx)
 		if err := checkDatapath(dataPath); err != nil {
 			panic(err)
 		}
 
-		go func(addr string, path string) {
-			if err := run(fmt.Sprintf("node %s", addr), "sumd", "--listen", addr, "--datapath", path, "--creds", filepath.Dir(*certPath)); err != nil {
-				panic(err)
-			}
-		}(address, dataPath)
+		runNode(idx, fmt.Sprintf("localhost:%d", port), dataPath)
+	}
 
-		masterConfig.Nodes = append(masterConfig.Nodes, master.NodeConfig{
-			Address:  address,
-			CertFile: *certPath,
-		})
+	log.Info("waiting %d nodes to start ...", len(masterConfig.Nodes))
+	for _, node := range masterConfig.Nodes {
+		if err := waitClient(node.Address); err != nil {
+			panic(err)
+		}
 	}
 
 	log.Info("saving %s", *masterFile)
@@ -159,15 +185,6 @@ func main() {
 		panic(err)
 	}
 
-	for _, node := range masterConfig.Nodes {
-		if err := waitClient(node.Address); err != nil {
-			panic(err)
-		}
-	}
-
 	log.Info("spawing master process ...")
-	name := fmt.Sprintf("master %s", *masterAddress)
-	if err := run(name, "sumd", "--listen", *masterAddress, "--master", *masterFile); err != nil {
-		panic(err)
-	}
+	runMaster()
 }
