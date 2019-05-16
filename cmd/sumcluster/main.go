@@ -29,7 +29,7 @@ var (
 	certPath      = flag.String("creds", "/etc/sumd/creds/cert.pem", "Path to the cert.pem file to use for TLS based authentication.")
 	basePort      = flag.Int("base-port", 1000, "Port to start to bind slave processes to.")
 	numNodes      = flag.Int("num-nodes", -1, "Number of slave processes to create or -1 to spawn one per logical CPU.")
-	dataPath      = flag.String("datapath", "/var/lib/sumd_%02d", "Datapath format of the cluster nodes.")
+	dataPath      = flag.String("datapath", "/var/lib/sumd/%02d", "Datapath format of the cluster nodes.")
 	masterConfig  = master.Config{}
 )
 
