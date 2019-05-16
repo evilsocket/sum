@@ -28,6 +28,7 @@ var (
 	serverName    = flag.String("name", "localhost", "The server name use to verify the hostname returned by TLS handshake.")
 	certPath      = flag.String("cert", "/etc/sumd/creds/cert.pem", "Path to the cert.pem file to use for TLS based authentication.")
 	evalString    = flag.String("eval", "", "List of commands to run, divided by a semicolon.")
+	maxMsgSize    = flag.Int("max-msg-size", 50*1024*1024, "Max size of a single GRPC message.")
 )
 
 func die(format string, args ...interface{}) {
@@ -42,6 +43,9 @@ func main() {
 	if err != nil {
 		die("failed to create TLS credentials %v\n", err)
 	}
+
+	grpc.MaxRecvMsgSize(*maxMsgSize)
+	grpc.MaxSendMsgSize(*maxMsgSize)
 
 	opts := []grpc.DialOption{
 		grpc.WithTransportCredentials(creds),

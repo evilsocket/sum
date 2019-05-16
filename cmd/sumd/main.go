@@ -224,7 +224,9 @@ func setupGrpcServer(credsPath, listenString *string, maxMsgSize *int) (*grpc.Se
 		log.Fatal("failed to create listener: %v", err)
 	}
 
-	grpc.MaxMsgSize(*maxMsgSize)
+	grpc.MaxRecvMsgSize(*maxMsgSize)
+	grpc.MaxSendMsgSize(*maxMsgSize)
+
 	server := grpc.NewServer(grpc.Creds(creds))
 
 	return server, listener

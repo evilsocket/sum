@@ -24,14 +24,14 @@ import (
 )
 
 var (
-	masterAddress  = flag.String("address", "localhost:50051", "Address and port to bind the master process to.")
-	masterFile     = flag.String("master", "master.json", "Output file to generate node configurations to.")
-	certPath       = flag.String("creds", "/etc/sumd/creds/cert.pem", "Path to the cert.pem file to use for TLS based authentication.")
-	basePort       = flag.Int("base-port", 1000, "Port to start to bind slave processes to.")
-	numNodes       = flag.Int("num-nodes", -1, "Number of slave processes to create or -1 to spawn one per logical CPU.")
-	maxMessageSize = flag.Int("max-msg-size", 50*1024*1024, "Maximum size of a single GPRC message (per node).")
-	dataPath       = flag.String("datapath", "/var/lib/sumd/%02d", "Datapath format of the cluster nodes.")
-	masterConfig   = master.Config{}
+	masterAddress = flag.String("address", "localhost:50051", "Address and port to bind the master process to.")
+	masterFile    = flag.String("master", "master.json", "Output file to generate node configurations to.")
+	certPath      = flag.String("creds", "/etc/sumd/creds/cert.pem", "Path to the cert.pem file to use for TLS based authentication.")
+	basePort      = flag.Int("base-port", 1000, "Port to start to bind slave processes to.")
+	numNodes      = flag.Int("num-nodes", -1, "Number of slave processes to create or -1 to spawn one per logical CPU.")
+	maxMsgSize    = flag.Int("max-msg-size", 50*1024*1024, "Maximum size of a single GPRC message (per node).")
+	dataPath      = flag.String("datapath", "/var/lib/sumd/%02d", "Datapath format of the cluster nodes.")
+	masterConfig  = master.Config{}
 )
 
 type childOutputWriter struct {
@@ -126,7 +126,7 @@ func runNode(idx int, addr string, path string) {
 		"--listen", addr,
 		"--datapath", path,
 		"--creds", filepath.Dir(*certPath),
-		"--max-msg-size", fmt.Sprintf("%d", *maxMessageSize),
+		"--max-msg-size", fmt.Sprintf("%d", *maxMsgSize),
 	}
 
 	go func() {
