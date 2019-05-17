@@ -8,6 +8,7 @@ type Vector interface{}
 type implementation interface {
 	Name() string
 	Space() uint64
+	Used() uint64
 
 	Wrap(size int, data []float32) Vector
 

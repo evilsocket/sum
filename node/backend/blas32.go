@@ -3,6 +3,7 @@ package backend
 import (
 	"github.com/pbnjay/memory"
 	"gonum.org/v1/gonum/blas/blas32"
+	"runtime"
 )
 
 type blas struct {
@@ -19,6 +20,12 @@ func (impl blas) Name() string {
 
 func (impl blas) Space() uint64 {
 	return memory.TotalMemory()
+}
+
+func (impl blas) Used() uint64 {
+	var m runtime.MemStats
+	runtime.ReadMemStats(&m)
+	return m.Sys
 }
 
 func (impl blas) Wrap(size int, data []float32) Vector {

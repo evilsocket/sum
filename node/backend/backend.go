@@ -49,6 +49,13 @@ func Space() uint64 {
 	return selected.Space()
 }
 
+// Used returns the backend used memory in bytes.
+func Used() uint64 {
+	lock.Lock()
+	defer lock.Unlock()
+	return selected.Used()
+}
+
 // Wrap creates an opaque reference to the data, backend specific.
 func Wrap(size int, data []float32) Vector {
 	lock.Lock()

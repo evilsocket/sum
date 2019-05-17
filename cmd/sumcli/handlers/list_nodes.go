@@ -32,24 +32,23 @@ var listNodesHandler = handler{
 			"name",
 			"os/arch",
 			"ver",
-			"backend",
 			"uptime",
-			"mem",
 			"records",
+			"backend",
 		}
 		rows := [][]string{}
 
 		for _, n := range resp.Nodes {
+			back := fmt.Sprintf("%s (%s of %s)", n.Info.Backend, humanize.Bytes(n.Info.BackendUsed), humanize.Bytes(n.Info.BackendSpace))
 			row := []string{
 				fmt.Sprintf("%d", n.Id),
 				fmt.Sprintf("%d", n.Info.Pid),
 				n.Name,
 				fmt.Sprintf("%s/%s", n.Info.Os, n.Info.Arch),
 				n.Info.Version,
-				n.Info.Backend,
 				fmt.Sprintf("%s", time.Duration(n.Info.Uptime)*time.Second),
-				humanize.Bytes(n.Info.Sys),
 				fmt.Sprintf("%d", n.Info.Records),
+				back,
 			}
 			rows = append(rows, row)
 		}
