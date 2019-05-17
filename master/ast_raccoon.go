@@ -15,6 +15,9 @@ import (
 	"strings"
 )
 
+// used to mark a record resolution as failed
+var recordNotFound = &Record{}
+
 // JS is garbage, this cute animal is responsible of digging in it.
 type astRaccoon struct {
 	ID        uint64
@@ -97,7 +100,13 @@ func (a *astRaccoon) PatchCode(records []*Record) (newCode string, err error) {
 	getCompressed := func(i int) (string, error) {
 		if compressed[i] == "" && records[i] != nil {
 			var err error
-			compressed[i], err = wrapper.RecordToCompressedText(records[i])
+			var r = records[i]
+
+			if r == recordNotFound {
+				r = nil
+			}
+
+			compressed[i], err = wrapper.RecordToCompressedText(r)
 			return compressed[i], err
 		}
 		return compressed[i], nil

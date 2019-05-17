@@ -48,6 +48,10 @@ func RecordToCompressedText(record *pb.Record) (str string, err error) {
 	var buff bytes.Buffer
 	var data []byte
 
+	if record == nil {
+		return "!nil!", nil
+	}
+
 	if data, err = proto.Marshal(record); err != nil {
 		return
 	}
@@ -68,6 +72,10 @@ func FromCompressedText(msg string) (r *Record, err error) {
 	var record pb.Record
 	var data []byte
 	var rr io.Reader
+
+	if msg == "!nil!" {
+		return WrapRecord(nil), nil
+	}
 
 	if data, err = base64.StdEncoding.DecodeString(msg); err != nil {
 	} else if rr, err = zlib.NewReader(bytes.NewReader(data)); err != nil {

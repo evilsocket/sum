@@ -55,11 +55,15 @@ func (ms *Service) Run(ctx context.Context, arg *Call) (*CallResponse, error) {
 		record, err := ms.ReadRecord(ctx, &ById{Id: recId})
 
 		if err != nil || !record.Success {
-			//FIXME: we shell make records.Find(...) return `null` when this happens
-			return errCallResponse("Unable to retrieve record %d: %v",
-				recId, getErrorMessage(err, record)), nil
+			msg := getErrorMessage(err, record)
+			if msg == fmt.Sprintf("record %d not found.", recId) {
+				resolvedRecords[i] = recordNotFound
+			} else {
+				return errCallResponse("Unable to retrieve record %d: %v", recId, msg), nil
+			}
+		} else {
+			resolvedRecords[i] = record.Record
 		}
-		resolvedRecords[i] = record.Record
 	}
 
 	// 2. substitute all the calls to records.Find(...) with their resolved record
