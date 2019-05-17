@@ -32,8 +32,8 @@ var listNodesHandler = handler{
 			"name",
 			"os/arch",
 			"ver",
-			"uptime",
 			"backend",
+			"uptime",
 			"mem",
 			"records",
 		}
@@ -46,8 +46,8 @@ var listNodesHandler = handler{
 				n.Name,
 				fmt.Sprintf("%s/%s", n.Info.Os, n.Info.Arch),
 				n.Info.Version,
-				fmt.Sprintf("%s", time.Duration(n.Info.Uptime)*time.Second),
 				n.Info.Backend,
+				fmt.Sprintf("%s", time.Duration(n.Info.Uptime)*time.Second),
 				humanize.Bytes(n.Info.Sys),
 				fmt.Sprintf("%d", n.Info.Records),
 			}
