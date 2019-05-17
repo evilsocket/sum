@@ -157,8 +157,8 @@ func TestMuxService_DeleteRecords(t *testing.T) {
 	node1 := ns.nodes[0].svc
 	node2 := ns.nodes[1].svc
 
-	for id := range ms.recId2node {
-		arg.Ids = append(arg.Ids, id)
+	for id := 1; id <= numBenchRecords; id++ {
+		arg.Ids = append(arg.Ids, uint64(id))
 	}
 
 	resp, err := ms.DeleteRecords(context.TODO(), arg)

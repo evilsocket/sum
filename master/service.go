@@ -12,10 +12,10 @@ import (
 func (ms *Service) Info(ctx context.Context, arg *Empty) (*ServerInfo, error) {
 	ms.nodesLock.RLock()
 	defer ms.nodesLock.RUnlock()
-	ms.recordsLock.RLock()
-	defer ms.recordsLock.RUnlock()
+	ms.idLock.RLock()
+	defer ms.idLock.RUnlock()
 	ms.cageLock.RLock()
 	defer ms.cageLock.RUnlock()
 
-	return service.Info("", ms.credsPath, ms.address, ms.started, len(ms.recId2node), len(ms.raccoons)), nil
+	return service.Info("", ms.credsPath, ms.address, ms.started, ms.NumRecords(), len(ms.raccoons), ms.nextId), nil
 }

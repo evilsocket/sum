@@ -30,8 +30,6 @@ func (ms *Service) Run(ctx context.Context, arg *Call) (*CallResponse, error) {
 	// NB: always keep this order of locking
 	ms.nodesLock.RLock()
 	defer ms.nodesLock.RUnlock()
-	ms.recordsLock.RLock()
-	defer ms.recordsLock.RUnlock()
 	ms.cageLock.RLock()
 	defer ms.cageLock.RUnlock()
 
@@ -53,15 +51,13 @@ func (ms *Service) Run(ctx context.Context, arg *Call) (*CallResponse, error) {
 		if err != nil {
 			return errCallResponse("Unable to parse record id form parameter #%d: %v", i, err), nil
 		}
-		node, found := ms.recId2node[recId]
-		if !found {
-			//FIXME: we shell make records.Find(...) return `null` when this happens
-			return errCallResponse("Record %d not found", recId), nil
-		}
-		record, err := node.Client.ReadRecord(ctx, &ById{Id: recId})
+
+		record, err := ms.ReadRecord(ctx, &ById{Id: recId})
+
 		if err != nil || !record.Success {
-			return errCallResponse("Unable to retrieve record %d form node %d: %v",
-				recId, node.ID, getErrorMessage(err, record)), nil
+			//FIXME: we shell make records.Find(...) return `null` when this happens
+			return errCallResponse("Unable to retrieve record %d: %v",
+				recId, getErrorMessage(err, record)), nil
 		}
 		resolvedRecords[i] = record.Record
 	}

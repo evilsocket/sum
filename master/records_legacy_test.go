@@ -223,7 +223,7 @@ func TestServiceListRecordsInvalidPage(t *testing.T) {
 	} else if resp.Pages != 3 {
 		t.Fatalf("expected 3 pages got %d", resp.Pages)
 	} else if len(resp.Records) != 0 {
-		t.Fatalf("expected %d total records, got %d", 0, len(resp.Records))
+		t.Fatalf("expected %d records, got %d", 0, len(resp.Records))
 	}
 }
 
@@ -244,21 +244,21 @@ func TestServiceDeleteRecord(t *testing.T) {
 			t.Fatalf("expected success response: %v", resp)
 		} else if resp.Record != nil {
 			t.Fatalf("unexpected record pointer: %v", resp.Record)
-		} else if len(network.orchestrators[0].svc.recId2node) != testRecords-int(id) {
-			t.Fatalf("inconsistent records storage size of %d", len(network.orchestrators[0].svc.recId2node))
+		} else if network.orchestrators[0].svc.NumRecords() != testRecords-int(id) {
+			t.Fatalf("inconsistent records storage size of %d", network.orchestrators[0].svc.NumRecords())
 		}
 	}
 
-	if len(network.orchestrators[0].svc.recId2node) != 0 {
-		t.Fatalf("expected empty records storage, found %d instead", len(network.orchestrators[0].svc.recId2node))
+	if network.orchestrators[0].svc.NumRecords() != 0 {
+		t.Fatalf("expected empty records storage, found %d instead", network.orchestrators[0].svc.NumRecords())
 	}
 
 	teardown(t)
 
 	if _, err := NewClient(testFolder); err != nil {
 		t.Fatal(err)
-	} else if len(network.orchestrators[0].svc.recId2node) != 0 {
-		t.Fatalf("%d dat files left on disk", len(network.orchestrators[0].svc.recId2node))
+	} else if network.orchestrators[0].svc.NumRecords() != 0 {
+		t.Fatalf("%d dat files left on disk", network.orchestrators[0].svc.NumRecords())
 	}
 }
 

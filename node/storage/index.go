@@ -36,6 +36,12 @@ type Index struct {
 	driver   Driver
 }
 
+func (i *Index) GetNextId() uint64 {
+	i.RLock()
+	defer i.RUnlock()
+	return i.nextID
+}
+
 // NOTE: pathSep is added if needed when the index object is created,
 // this spares us a third string concatenation or worse a Sprintf call.
 func (i *Index) pathForID(id uint64) string {

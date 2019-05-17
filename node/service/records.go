@@ -123,7 +123,6 @@ func (s *Service) DeleteRecord(ctx context.Context, query *pb.ById) (*pb.RecordR
 }
 
 func (s *Service) DeleteRecords(ctx context.Context, ids *pb.RecordIds) (*pb.RecordResponse, error) {
-	fmt.Printf("sumd[%s]: Deleting %d records\n", s.address, len(ids.Ids))
 	s.records.DeleteMany(ids.Ids)
 	return &pb.RecordResponse{Success: true}, nil
 }

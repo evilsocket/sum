@@ -12,7 +12,7 @@ import (
 
 // Info returns a *pb.ServerInfo object with various realtime information
 // about the service and its runtime.
-func Info(datapath, credspath, address string, started time.Time, records, oracles int) *pb.ServerInfo {
+func Info(datapath, credspath, address string, started time.Time, records, oracles int, nextRecordId uint64) *pb.ServerInfo {
 	var m runtime.MemStats
 	runtime.ReadMemStats(&m)
 
@@ -39,5 +39,6 @@ func Info(datapath, credspath, address string, started time.Time, records, oracl
 		Datapath:     datapath,
 		Credspath:    credspath,
 		Address:      address,
+		NextRecordId: nextRecordId,
 	}
 }

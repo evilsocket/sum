@@ -10,6 +10,14 @@ import (
 	"strings"
 )
 
+func (ms *Service) setNextIdIfHigher(newId uint64) {
+	ms.idLock.Lock()
+	defer ms.idLock.Unlock()
+	if ms.nextId <= newId {
+		ms.nextId = newId + 1
+	}
+}
+
 func (ms *Service) findLessLoadedNode() *NodeInfo {
 	ms.nodesLock.RLock()
 	defer ms.nodesLock.RUnlock()
@@ -36,9 +44,6 @@ func (ms *Service) CreateRecord(ctx context.Context, record *Record) (*RecordRes
 		return errRecordResponse("No nodes available, try later"), nil
 	}
 
-	ms.recordsLock.Lock()
-	defer ms.recordsLock.Unlock()
-
 	// for targetNode.status.Records++
 	targetNode.Lock()
 	defer targetNode.Unlock()
@@ -46,141 +51,227 @@ func (ms *Service) CreateRecord(ctx context.Context, record *Record) (*RecordRes
 	// record.Id = ms.findNextAvailableId()
 	// strange, bad but legacy behaviour
 	record.Id = ms.nextId
-	if _, exists := ms.recId2node[record.Id]; exists {
-		return errRecordResponse("%v", storage.ErrInvalidID), nil
-	}
 
 	resp, err := targetNode.InternalClient.CreateRecordWithId(ctx, record)
 
 	if err == nil && resp.Success {
 		ms.nextId++
-		targetNode.RecordIds[record.Id] = true
-		ms.recId2node[record.Id] = targetNode
 		targetNode.status.Records++
+		targetNode.status.NextRecordId = ms.nextId
 	}
 
 	return resp, err
 }
 
 // update a record from the given argument
-func (ms *Service) UpdateRecord(ctx context.Context, arg *Record) (*RecordResponse, error) {
-	ms.recordsLock.RLock()
-	defer ms.recordsLock.RUnlock()
+func (ms *Service) UpdateRecord(_ context.Context, arg *Record) (*RecordResponse, error) {
+	ms.nodesLock.RLock()
+	defer ms.nodesLock.RUnlock()
 
-	if n, found := ms.recId2node[arg.Id]; !found {
-		return errRecordResponse("%v", storage.ErrRecordNotFound), nil
-	} else {
-		return n.Client.UpdateRecord(ctx, arg)
+	ctx, cf := newCommContext()
+	defer cf()
+
+	results, errs := ms.doParallel(func(node *NodeInfo, resultChannel chan<- interface{}, errorChannel chan<- string) {
+		resp, err := node.Client.UpdateRecord(ctx, arg)
+		if err != nil || !resp.Success {
+			msg := getErrorMessage(err, resp)
+			if msg != storage.ErrRecordNotFound.Error() {
+				errorChannel <- fmt.Sprintf("node %d: %v", node.ID, msg)
+			}
+		} else {
+			cf() // cancel other queries
+			resultChannel <- true
+		}
+	})
+
+	switch len(results) {
+	case 0:
+		if len(errs) == 0 {
+			return errRecordResponse("%v", storage.ErrRecordNotFound), nil
+		}
+		return errRecordResponse("No node was able to satisfy your request: [%s]", strings.Join(errs, ", ")), nil
+	default:
+		log.Warning("Got multiple results when only one was expected: %v", results)
+		fallthrough
+	case 1:
+		return &RecordResponse{Success: true}, nil
 	}
 }
 
 // retrieve a record's content by its id
-func (ms *Service) ReadRecord(ctx context.Context, arg *ById) (*RecordResponse, error) {
-	ms.recordsLock.RLock()
-	defer ms.recordsLock.RUnlock()
+func (ms *Service) ReadRecord(_ context.Context, arg *ById) (*RecordResponse, error) {
+	ms.nodesLock.RLock()
+	defer ms.nodesLock.RUnlock()
 
-	if n, found := ms.recId2node[arg.Id]; !found {
-		return errRecordResponse("record %d not found.", arg.Id), nil
-	} else {
-		return n.Client.ReadRecord(ctx, arg)
+	notFoundError := fmt.Sprintf("record %d not found.", arg.Id)
+
+	ctx, cf := newCommContext()
+	defer cf()
+
+	results, errs := ms.doParallel(func(node *NodeInfo, resultChannel chan<- interface{}, errorChannel chan<- string) {
+		resp, err := node.Client.ReadRecord(ctx, arg)
+		if err != nil || !resp.Success {
+			msg := getErrorMessage(err, resp)
+			if msg != notFoundError {
+				errorChannel <- fmt.Sprintf("node %d: %v", node.ID, msg)
+			}
+		} else {
+			cf() // cancel other queries
+			resultChannel <- resp.Record
+		}
+	})
+
+	switch len(results) {
+	case 0:
+		if len(errs) == 0 {
+			return errRecordResponse("%s", notFoundError), nil
+		}
+		return errRecordResponse("No node was able to satisfy your request: [%s]", strings.Join(errs, ", ")), nil
+	default:
+		log.Warning("Got multiple results when only one was expected: %v", results)
+		fallthrough
+	case 1:
+		return &RecordResponse{Success: true, Record: results[0].(*Record)}, nil
 	}
 }
 
 // list records
 func (ms *Service) ListRecords(ctx context.Context, arg *ListRequest) (*RecordListResponse, error) {
-	workerInputs := make(map[uint]chan uint64)
+
+	if arg.PerPage == 0 {
+		return nil, fmt.Errorf("invalid arguments")
+	}
+
+	if arg.Page == 0 {
+		arg.Page = 1
+	}
 
 	ms.nodesLock.RLock()
 	defer ms.nodesLock.RUnlock()
-	ms.recordsLock.RLock()
-	defer ms.recordsLock.RUnlock()
+
+	var orderedNodes = make([]*NodeInfo, 0, len(ms.nodes))
+	var total uint64 = 0
 
 	for _, n := range ms.nodes {
 		n.RLock()
-		defer n.RUnlock() // defer: ensure consistent data across this whole function
-		workerInputs[n.ID] = make(chan uint64, 1)
+		defer n.RUnlock()
+		orderedNodes = append(orderedNodes, n)
+		total += n.status.Records
 	}
 
-	total := uint64(len(ms.recId2node))
+	sort.Slice(orderedNodes, func(i, j int) bool {
+		return orderedNodes[i].ID < orderedNodes[j].ID
+	})
+
 	pages := total / arg.PerPage
-	if total%pages > 0 {
+	if total%arg.PerPage > 0 {
 		pages++
 	}
+
 	start := arg.PerPage * (arg.Page - 1)
 	end := start + arg.PerPage
-	if end > total {
-		end = total
-	}
-	if start > end {
-		start = end
-	}
-	resp := &RecordListResponse{Total: total, Pages: pages, Records: make([]*Record, 0, end-start)}
+	cursor := uint64(0)
+	firstNodeIndex := -1
+	lastNodeIndex := -1
+	lastNodeId := uint(1)
+	lastNodeRecords := uint64(0)
 
-	if total == 0 || end == start {
-		return resp, nil
+	if end == start {
+		return &RecordListResponse{Records: []*Record{}, Pages: pages, Total: total}, nil
 	}
 
-	go func() {
-		sortedIds := make([]uint64, 0, len(ms.recId2node))
+	for i, n := range orderedNodes {
+		lastNodeId = n.ID
 
-		for id := range ms.recId2node {
-			sortedIds = append(sortedIds, id)
+		if cursor <= start && cursor+n.status.Records > start {
+			firstNodeIndex = i
 		}
 
-		sort.Slice(sortedIds, func(i, j int) bool { return i < j })
-
-		for _, id := range sortedIds[start:end] {
-			n := ms.recId2node[id]
-			workerInputs[n.ID] <- id
+		if cursor < end && cursor+n.status.Records >= end {
+			lastNodeIndex = i
+			lastNodeRecords = end - cursor
+			break
 		}
-		for _, ch := range workerInputs {
-			close(ch)
-		}
-	}()
 
-	//NB: can be improved by spawning more workers per node, each one with a different connection
-	results, errs := ms.doParallel(func(n *NodeInfo, outCh chan<- interface{}, errCh chan<- string) {
-		for id := range workerInputs[n.ID] {
-			resp, err := n.Client.ReadRecord(ctx, &ById{Id: id})
-			if err != nil || !resp.Success {
-				errCh <- fmt.Sprintf("Unable to read record %d on node %d: %v",
-					id, n.ID, getErrorMessage(err, resp))
-			} else {
-				outCh <- resp.Record
-			}
+		cursor = cursor + n.status.Records
+	}
+
+	if firstNodeIndex == -1 || lastNodeIndex == -1 {
+		return &RecordListResponse{Records: []*Record{}, Pages: pages, Total: total}, nil
+	}
+
+	toQueryNodes := orderedNodes[firstNodeIndex : lastNodeIndex+1]
+
+	results, errs := doParallel(toQueryNodes, func(node *NodeInfo, resultChannel chan<- interface{}, errorChannel chan<- string) {
+		arg := &ListRequest{Page: 1}
+
+		if node.ID == lastNodeId {
+			arg.PerPage = lastNodeRecords
+		} else {
+			// this size will never exceed the original request,
+			// which we assume to be reasonable
+			arg.PerPage = node.status.Records
+		}
+
+		resp, err := node.Client.ListRecords(ctx, arg)
+		if err != nil {
+			errorChannel <- err.Error()
+		} else {
+			resultChannel <- resp.Records
 		}
 	})
 
-	for _, err := range errs {
-		log.Error("%s", err)
+	if len(errs) > 0 {
+		return nil, fmt.Errorf("unable to communicate with nodes: [%s]", strings.Join(errs, ", "))
 	}
 
-	for _, res := range results {
-		resp.Records = append(resp.Records, res.(*Record))
+	records := make([]*Record, 0, arg.PerPage)
+	for _, ary := range results {
+		for _, r := range ary.([]*Record) {
+			records = append(records, r)
+		}
 	}
 
-	sort.Slice(resp.Records, func(i, j int) bool {
-		return resp.Records[i].Id < resp.Records[j].Id
-	})
-
-	return resp, nil
+	return &RecordListResponse{Total: total, Pages: pages, Records: records}, nil
 }
 
 // delete a record by its id
-func (ms *Service) DeleteRecord(ctx context.Context, arg *ById) (*RecordResponse, error) {
-	ms.recordsLock.Lock()
-	defer ms.recordsLock.Unlock()
+func (ms *Service) DeleteRecord(_ context.Context, arg *ById) (*RecordResponse, error) {
+	ms.nodesLock.RLock()
+	defer ms.nodesLock.RUnlock()
 
-	if n, found := ms.recId2node[arg.Id]; !found {
-		return errRecordResponse("record %d not found.", arg.Id), nil
-	} else if resp, err := n.Client.DeleteRecord(ctx, arg); err != nil {
-		return resp, err
-	} else {
-		n.Lock()
-		defer n.Unlock()
+	notFoundError := fmt.Sprintf("record %d not found.", arg.Id)
 
-		delete(n.RecordIds, arg.Id)
-		delete(ms.recId2node, arg.Id)
+	ctx, cf := newCommContext()
+	defer cf()
+
+	results, errs := ms.doParallel(func(node *NodeInfo, resultChannel chan<- interface{}, errorChannel chan<- string) {
+		node.Lock()
+		defer node.Unlock()
+
+		resp, err := node.Client.DeleteRecord(ctx, arg)
+		if err != nil || !resp.Success {
+			msg := getErrorMessage(err, resp)
+			if msg != notFoundError {
+				errorChannel <- fmt.Sprintf("node %d: %v", node.ID, msg)
+			}
+		} else {
+			cf() // cancel other queries
+			node.status.Records--
+			resultChannel <- true
+		}
+	})
+
+	switch len(results) {
+	case 0:
+		if len(errs) == 0 {
+			return errRecordResponse("%v", notFoundError), nil
+		}
+		return errRecordResponse("No node was able to satisfy your request: [%s]", strings.Join(errs, ", ")), nil
+	default:
+		log.Warning("Got %d results when only one was expected", len(results))
+		fallthrough
+	case 1:
 		return &RecordResponse{Success: true}, nil
 	}
 }
@@ -189,8 +280,6 @@ func (ms *Service) DeleteRecord(ctx context.Context, arg *ById) (*RecordResponse
 func (ms *Service) FindRecords(ctx context.Context, arg *ByMeta) (*FindResponse, error) {
 	ms.nodesLock.RLock()
 	defer ms.nodesLock.RUnlock()
-	ms.recordsLock.RLock()
-	defer ms.recordsLock.RUnlock()
 
 	results, errs := ms.doParallel(func(n *NodeInfo, resultChannel chan<- interface{}, errorChannel chan<- string) {
 		resp, err := n.Client.FindRecords(ctx, arg)
@@ -218,17 +307,31 @@ func (ms *Service) FindRecords(ctx context.Context, arg *ByMeta) (*FindResponse,
 // internal interface ( masters can be slave nodes as well )
 
 // create a record with a given ID
-func (ms *Service) CreateRecordWithId(ctx context.Context, in *Record) (*RecordResponse, error) {
-	ms.recordsLock.Lock()
-	defer ms.recordsLock.Unlock()
+func (ms *Service) CreateRecordWithId(_ context.Context, in *Record) (*RecordResponse, error) {
+	ms.nodesLock.RLock()
+	defer ms.nodesLock.RUnlock()
 
-	if _, exists := ms.recId2node[in.Id]; exists {
-		return errRecordResponse("%v", storage.ErrInvalidID), nil
-	}
-
+	// TODO: fix double read lock
 	n := ms.findLessLoadedNode()
 	if n == nil {
 		return errRecordResponse("No nodes available, try later"), nil
+	}
+
+	// must query the record from nodes to check its existence
+
+	ctx, cf := newCommContext()
+	defer cf()
+
+	results, _ := ms.doParallel(func(node *NodeInfo, resultChannel chan<- interface{}, errorChannel chan<- string) {
+		resp, err := node.Client.ReadRecord(ctx, &ById{Id: in.Id})
+		if err == nil && resp.Success {
+			cf() // cancel other queries
+			resultChannel <- true
+		}
+	})
+
+	if len(results) > 0 {
+		return errRecordResponse("%v", storage.ErrInvalidID), nil
 	}
 
 	n.Lock()
@@ -236,9 +339,15 @@ func (ms *Service) CreateRecordWithId(ctx context.Context, in *Record) (*RecordR
 
 	resp, err := n.InternalClient.CreateRecordWithId(ctx, in)
 	if err == nil && resp.Success {
-		n.RecordIds[in.Id] = true
 		n.status.Records++
-		ms.recId2node[in.Id] = n
+		if n.status.NextRecordId <= in.Id {
+			n.status.NextRecordId = in.Id + 1
+		}
+		ms.idLock.Lock()
+		defer ms.idLock.Unlock()
+		if ms.nextId < n.status.NextRecordId {
+			ms.nextId = n.status.NextRecordId
+		}
 	}
 	return resp, err
 }
@@ -247,35 +356,34 @@ func (ms *Service) CreateRecordWithId(ctx context.Context, in *Record) (*RecordR
 func (ms *Service) CreateRecordsWithId(ctx context.Context, in *Records) (*RecordResponse, error) {
 	ms.nodesLock.RLock()
 	defer ms.nodesLock.RUnlock()
-	ms.recordsLock.Lock()
-	defer ms.recordsLock.Unlock()
 
 	if len(ms.nodes) == 0 {
 		return errRecordResponse("No nodes available, try later"), nil
-	}
-
-	for _, r := range in.Records {
-		if _, exists := ms.recId2node[r.Id]; exists {
-			return errRecordResponse("%v", storage.ErrInvalidID), nil
-		}
 	}
 
 	perNode := len(in.Records) / len(ms.nodes)
 	remainder := len(in.Records) % len(ms.nodes)
 
 	creator := func(n *NodeInfo, records []*Record) error {
+		maxId := uint64(0)
+		for _, r := range records {
+			if r.Id > maxId {
+				maxId = r.Id
+			}
+		}
+
 		n.Lock()
 		defer n.Unlock()
 
-		log.Debug("Master[%s]: creating %d records on node %s", ms.address, len(in.Records), n.Name)
+		log.Debug("Master[%s]: creating %d records on node %s", ms.address, len(records), n.Name)
 
 		if resp, err := n.InternalClient.CreateRecordsWithId(ctx, &Records{Records: records}); err != nil || !resp.Success {
 			return fmt.Errorf("%s", getErrorMessage(err, resp))
 		} else {
-			for _, r := range in.Records {
-				n.RecordIds[r.Id] = true
-				n.status.Records++
-				ms.recId2node[r.Id] = n
+			n.status.Records += uint64(len(records))
+			if n.status.NextRecordId <= maxId {
+				n.status.NextRecordId = maxId + 1
+				ms.setNextIdIfHigher(maxId + 1)
 			}
 		}
 		return nil
@@ -327,45 +435,34 @@ func (ms *Service) CreateRecordsWithId(ctx context.Context, in *Records) (*Recor
 }
 
 func (ms *Service) DeleteRecords(ctx context.Context, in *RecordIds) (*RecordResponse, error) {
-	result := &RecordResponse{Success: true}
-	node2ids := make(map[*NodeInfo][]uint64)
 
-	ms.recordsLock.Lock()
-	defer ms.recordsLock.Unlock()
+	oldTotal := uint64(0)
+	newTotal := uint64(0)
 
-	for _, id := range in.Ids {
-		if n, exists := ms.recId2node[id]; exists {
-			node2ids[n] = append(node2ids[n], id)
-		}
+	ms.nodesLock.RLock()
+	defer ms.nodesLock.RUnlock()
+
+	for _, n := range ms.nodes {
+		oldTotal += n.Status().Records
 	}
 
-	for n, ids := range node2ids {
-		arg := &RecordIds{Ids: ids}
+	ms.doParallel(func(node *NodeInfo, resultChannel chan<- interface{}, errorChannel chan<- string) {
+		node.InternalClient.DeleteRecords(ctx, in)
+		node.UpdateStatus()
 
-		func() {
-			n.Lock()
-			defer n.Unlock()
-
-			resp, err := n.InternalClient.DeleteRecords(ctx, arg)
-			if err != nil || !resp.Success {
-				result.Success = false
-				result.Msg = getErrorMessage(err, resp)
-				return
-			}
-
-			for _, id := range ids {
-				delete(n.RecordIds, id)
-				delete(ms.recId2node, id)
-				n.status.Records--
-			}
-		}()
-
-		if !result.Success {
-			break
-		}
-	}
+		ms.setNextIdIfHigher(node.Status().NextRecordId)
+	})
 
 	ms.balance()
 
-	return result, nil
+	for _, n := range ms.nodes {
+		newTotal += n.Status().Records
+	}
+
+	deleted := oldTotal - newTotal
+	if uint64(len(in.Ids)) != deleted {
+		return errRecordResponse("deleted %d records out of %d", deleted, len(in.Ids)), nil
+	}
+
+	return &RecordResponse{Success: true}, nil
 }

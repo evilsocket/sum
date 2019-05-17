@@ -23,8 +23,6 @@ type NodeInfo struct {
 	InternalClient SumInternalServiceClient
 	// node's status
 	status ServerInfo
-	// records stored on this node
-	RecordIds map[uint64]bool
 }
 
 // update node's status
@@ -93,25 +91,6 @@ func CreateNode(node, certFile string) (*NodeInfo, error) {
 		CertFile:       certFile,
 		Client:         client,
 		InternalClient: internalClient,
-		RecordIds:      make(map[uint64]bool),
-	}
-
-	// get stored records
-	pages := int(svcInfo.Records / 1024)
-	if svcInfo.Records%1024 > 0 {
-		pages++
-	}
-
-	log.Info("bootstrapping %d pages of data from %s ...", pages, ni.Name)
-	for i := 0; i < pages; i++ {
-		resp, err := client.ListRecords(ctx, &ListRequest{Page: uint64(i + 1), PerPage: 1024})
-		if err != nil {
-			return nil, fmt.Errorf("unable to get list of records from node '%s': %v", node, err)
-		}
-
-		for _, r := range resp.Records {
-			ni.RecordIds[r.Id] = true
-		}
 	}
 
 	return ni, nil

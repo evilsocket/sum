@@ -162,6 +162,8 @@ message ServerInfo {
     string backend = 20;
     uint64 backend_space = 21;
     uint64 backend_used = 22;
+
+    uint64 next_record_id = 23;
 }
 
 message Empty {}
