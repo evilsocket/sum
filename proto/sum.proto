@@ -158,7 +158,9 @@ message ServerInfo {
     repeated string argv = 17;
     uint64 records = 18;
     uint64 oracles = 19;
+
     string backend = 20;
+    uint64 backend_space = 21;
 }
 
 message Empty {}

@@ -1,10 +1,18 @@
 package backend
 
+import (
+	"github.com/pbnjay/memory"
+)
+
 type naive struct {
 }
 
 func (impl naive) Name() string {
 	return "naive"
+}
+
+func (impl naive) Space() uint64 {
+	return memory.TotalMemory()
 }
 
 func (impl naive) Wrap(size int, data []float32) Vector {

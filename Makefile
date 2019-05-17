@@ -1,6 +1,6 @@
 SHELL := bash
 .HONY: all clients godep golint deps test codecov html_coverage benchmark
-.PHONY: clean reset_env profile run build_docker run_docker pycli phpcli
+.PHONY: clean reset_env profile run build_docker run_docker sumpy sumphp
 
 #
 # Config
@@ -8,6 +8,9 @@ SHELL := bash
 GRPC_PATH=/opt/grpc/bins/opt
 GRPC_PHP_PLUGIN=${GRPC_PATH}/grpc_php_plugin
 GRPC_PROTOC=/opt/google/protoc/bin/protoc
+
+SUMPY_PATH=${HOME}/lab/sumpy
+SUMPHP_PATH=${HOME}/lab/sumphp
 
 SUMD_DATAPATH=/tmp/sumd
 
@@ -20,8 +23,6 @@ all: sumd sumcli sumcluster
 
 server_deps: deps proto/sum.pb.go
 client_deps: deps proto/sum.pb.go
-
-clients: pycli phpcli 
 
 godep:
 	@go get -u github.com/golang/dep/...
@@ -118,16 +119,20 @@ run_docker: docker
 #
 # Client code generation related stuff.
 #
-pycli:
+clients: sumcli sumpy sumphp 
+
+sumpy:
 	@python -m grpc_tools.protoc \
 		-Iproto \
-		--python_out=clients/python/proto \
-		--grpc_python_out=clients/python/proto \
+		--python_out=${SUMPY_PATH}/sumpy/proto \
+		--grpc_python_out=${SUMPY_PATH}/sumpy/proto \
 		proto/sum.proto
+	@git --git-dir=${SUMPY_PATH}/.git --work-tree=${SUMPY_PATH} status
 
-phpcli:
+sumphp:
 	@${GRPC_PROTOC} -I. --proto_path=proto \
-		--php_out=clients/php \
-		--grpc_out=clients/php \
+		--php_out=${SUMPHP_PATH} \
+		--grpc_out=${SUMPHP_PATH} \
 		--plugin=protoc-gen-grpc=${GRPC_PHP_PLUGIN} \
 		proto/sum.proto
+	@git --git-dir=${SUMPHP_PATH}/.git --work-tree=${SUMPHP_PATH} status

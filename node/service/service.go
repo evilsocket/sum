@@ -6,11 +6,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"runtime"
 	"sync"
 	"time"
 
-	"github.com/evilsocket/sum/node/backend"
 	"github.com/evilsocket/sum/node/storage"
 	pb "github.com/evilsocket/sum/proto"
 
@@ -102,32 +100,7 @@ func New(dataPath string, credsPath string, address string) (svc *Service, err e
 // Info returns a *pb.ServerInfo object with various realtime information
 // about the service and its runtime.
 func (s *Service) Info(ctx context.Context, dummy *pb.Empty) (*pb.ServerInfo, error) {
-	var m runtime.MemStats
-
-	runtime.ReadMemStats(&m)
-
-	return &pb.ServerInfo{
-		Backend:    backend.Name(),
-		Version:    Version,
-		Os:         runtime.GOOS,
-		Arch:       runtime.GOARCH,
-		GoVersion:  runtime.Version(),
-		Cpus:       uint64(runtime.NumCPU()),
-		MaxCpus:    uint64(runtime.GOMAXPROCS(0)),
-		Goroutines: uint64(runtime.NumGoroutine()),
-		Alloc:      m.Alloc,
-		Sys:        m.Sys,
-		NumGc:      uint64(m.NumGC),
-		Datapath:   s.datapath,
-		Credspath:  s.credspath,
-		Address:    s.address,
-		Uptime:     uint64(time.Since(s.started).Seconds()),
-		Pid:        s.pid,
-		Uid:        s.uid,
-		Argv:       s.argv,
-		Records:    uint64(s.records.Size()),
-		Oracles:    uint64(s.oracles.Size()),
-	}, nil
+	return Info(s.datapath, s.credspath, s.address, s.started, s.records.Size(), s.oracles.Size()), nil
 }
 
 func BuildPayload(raw []byte) *pb.Data {

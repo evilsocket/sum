@@ -61,6 +61,14 @@
   version = "v1.0.2"
 
 [[projects]]
+  branch = "master"
+  digest = "1:5f81e80915d9312397c603b6da6f751a4ae36ae2b4d4f0474a34241d95738686"
+  name = "github.com/pbnjay/memory"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "974d429e7ae40c89e7dcd41cfcc22a0bfbe42510"
+
+[[projects]]
   digest = "1:0028cb19b2e4c3112225cd871870f2d9cf49b9b4276531f03438a88e94be86fe"
   name = "github.com/pmezard/go-difflib"
   packages = ["difflib"]
@@ -242,6 +250,7 @@
     "github.com/evilsocket/islazy/str",
     "github.com/evilsocket/islazy/tui",
     "github.com/golang/protobuf/proto",
+    "github.com/pbnjay/memory",
     "github.com/robertkrimen/otto",
     "github.com/robertkrimen/otto/ast",
     "github.com/robertkrimen/otto/file",
