@@ -6,6 +6,7 @@ import (
 	"github.com/evilsocket/islazy/tui"
 	pb "github.com/evilsocket/sum/proto"
 	"os"
+	"time"
 
 	"github.com/chzyer/readline"
 	"github.com/dustin/go-humanize"
@@ -31,10 +32,10 @@ var listNodesHandler = handler{
 			"name",
 			"os/arch",
 			"ver",
-			"records",
 			"uptime",
 			"backend",
 			"mem",
+			"records",
 		}
 		rows := [][]string{}
 
@@ -45,10 +46,10 @@ var listNodesHandler = handler{
 				n.Name,
 				fmt.Sprintf("%s/%s", n.Info.Os, n.Info.Arch),
 				n.Info.Version,
-				fmt.Sprintf("%d", n.Info.Records),
-				fmt.Sprintf("%d", n.Info.Uptime),
+				fmt.Sprintf("%d", time.Second(n.Info.Uptime)*time.Duration),
 				n.Info.Backend,
 				humanize.Bytes(n.Info.Sys),
+				fmt.Sprintf("%d", n.Info.Records),
 			}
 			rows = append(rows, row)
 		}
