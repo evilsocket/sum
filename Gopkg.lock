@@ -256,6 +256,7 @@
     "github.com/robertkrimen/otto/file",
     "github.com/robertkrimen/otto/parser",
     "github.com/sirupsen/logrus",
+    "github.com/stretchr/testify/assert",
     "github.com/stretchr/testify/require",
     "golang.org/x/net/context",
     "gonum.org/v1/gonum/blas/blas32",
