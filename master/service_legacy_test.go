@@ -240,7 +240,7 @@ func TestServiceInfo(t *testing.T) {
 		t.Fatalf("wrong pid: %d", info.Pid)
 	} else if network.orchestrators[0].svc.uid != info.Uid {
 		t.Fatalf("wrong uid: %d", info.Uid)
-	} else if len(network.orchestrators[0].svc.recId2node) != int(info.Records) {
+	} else if network.orchestrators[0].svc.NumRecords() != int(info.Records) {
 		t.Fatalf("wrong number of records: %d", info.Records)
 	} else if len(network.orchestrators[0].svc.raccoons) != int(info.Oracles) {
 		t.Fatalf("wrong number of oracles: %d", info.Oracles)

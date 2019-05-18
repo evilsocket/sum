@@ -209,8 +209,17 @@ func TestSerialization(t *testing.T) {
 
 	str, err := RecordToCompressedText(r)
 	Nil(t, err)
-	print(str, "\n")
 	r1, err := FromCompressedText(str)
 	Nil(t, err)
+	False(t, r1.IsNull())
 	True(t, proto.Equal(r, r1.record))
+
+	r = nil
+
+	str, err = RecordToCompressedText(r)
+	Nil(t, err)
+	r1, err = FromCompressedText(str)
+	Nil(t, err)
+	Nil(t, r1.record)
+	True(t, r1.IsNull())
 }

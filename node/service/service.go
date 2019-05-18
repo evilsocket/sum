@@ -100,7 +100,7 @@ func New(dataPath string, credsPath string, address string) (svc *Service, err e
 // Info returns a *pb.ServerInfo object with various realtime information
 // about the service and its runtime.
 func (s *Service) Info(ctx context.Context, dummy *pb.Empty) (*pb.ServerInfo, error) {
-	return Info(s.datapath, s.credspath, s.address, s.started, s.records.Size(), s.oracles.Size()), nil
+	return Info(s.datapath, s.credspath, s.address, s.started, s.records.Size(), s.oracles.Size(), s.records.GetNextId()), nil
 }
 
 func BuildPayload(raw []byte) *pb.Data {

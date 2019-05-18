@@ -3,7 +3,6 @@ package master
 import (
 	"context"
 	"fmt"
-	"github.com/evilsocket/islazy/log"
 	. "github.com/evilsocket/sum/proto"
 )
 
@@ -16,19 +15,15 @@ func (ms *Service) AddNode(ctx context.Context, addr *ByAddr) (*NodeResponse, er
 
 	ms.nodesLock.Lock()
 	defer ms.nodesLock.Unlock()
-	ms.recordsLock.Lock()
-	defer ms.recordsLock.Unlock()
+
+	ms.setNextIdIfHigher(n.Status().NextRecordId)
 
 	n.ID = ms.nextNodeId
 	ms.nodes = append(ms.nodes, n)
 
 	ms.nextNodeId++
 
-	if err := ms.solveAllConflictsInTheWorld(); err != nil {
-		log.Error("Cannot solve conflicts after adding node %d: %v", n.ID, err)
-	} else {
-		go ms.updateConfig()
-	}
+	go ms.updateConfig()
 
 	ms.balance()
 	ms.stealOraclesFromNode(n)
@@ -56,8 +51,6 @@ func (ms *Service) ListNodes(context.Context, *Empty) (*NodeResponse, error) {
 func (ms *Service) DeleteNode(ctx context.Context, id *ById) (*NodeResponse, error) {
 	ms.nodesLock.Lock()
 	defer ms.nodesLock.Unlock()
-	ms.recordsLock.Lock()
-	defer ms.recordsLock.Unlock()
 
 	var i int
 	var n *NodeInfo
@@ -80,8 +73,10 @@ func (ms *Service) DeleteNode(ctx context.Context, id *ById) (*NodeResponse, err
 	go ms.updateConfig()
 
 	//TODO: balance on the fly
-	if len(ms.nodes) > 0 && len(n.RecordIds) > 0 {
-		ms.transfer(n, ms.nodes[0], int64(len(n.RecordIds)))
+	nRecords := n.Status().Records
+
+	if len(ms.nodes) > 0 && nRecords > 0 {
+		ms.transfer(n, ms.nodes[0], int64(nRecords))
 		ms.balance()
 	}
 

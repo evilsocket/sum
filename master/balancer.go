@@ -73,9 +73,11 @@ func (ms *Service) transfer(fromNode, toNode *NodeInfo, nRecords int64) {
 	toNode.status.Records += uint64(nRecords)
 
 	for _, r := range list.Records {
-		toNode.RecordIds[r.Id] = true
-		ms.recId2node[r.Id] = toNode
 		delReq.Ids = append(delReq.Ids, r.Id)
+
+		if toNode.status.NextRecordId <= r.Id {
+			toNode.status.NextRecordId = r.Id + 1
+		}
 	}
 
 	resp1, err := fromNode.InternalClient.DeleteRecords(ctx, delReq)
@@ -83,22 +85,22 @@ func (ms *Service) transfer(fromNode, toNode *NodeInfo, nRecords int64) {
 	if err != nil || !resp1.Success {
 		log.Error("Unable to delete records from node %d: %v", fromNode.ID, getErrorMessage(err, resp1))
 		// keep going anyway
+	} else {
+		log.Debug("Master[%s]: deleted %d records from node %s", ms.address, len(delReq.Ids), fromNode.Name)
 	}
-
-	log.Debug("Master[%s]: deleted %d records from node %s", ms.address, len(delReq.Ids), fromNode.Name)
 
 	fromNode.status.Records -= uint64(nRecords)
-
-	for _, r := range list.Records {
-		delete(fromNode.RecordIds, r.Id)
-	}
 }
 
 // balance the load among nodes
 func (ms *Service) balance() {
 	log.Debug("Master[%s]: balancing...", ms.address)
-	var totRecords = uint64(len(ms.recId2node))
+	var totRecords = uint64(0)
 	var nNodes = len(ms.nodes)
+
+	for _, n := range ms.nodes {
+		totRecords += n.Status().Records
+	}
 
 	if totRecords == 0 || nNodes == 0 {
 		return

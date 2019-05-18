@@ -25,10 +25,6 @@ type Service struct {
 	idLock sync.RWMutex
 	// id of the next record
 	nextId uint64
-	// control access to `recId2node`
-	recordsLock sync.RWMutex
-	// map a record to its containing node
-	recId2node map[uint64]*NodeInfo
 	// control access to `raccoons`
 	cageLock sync.RWMutex
 	// raccoons ready to mess with messy JS code
@@ -60,7 +56,6 @@ func NewService(nodes []*NodeInfo, credsPath, address string) (*Service, error) 
 		nextId:        1,
 		nextRaccoonId: 1,
 		nextNodeId:    uint(len(nodes) + 1),
-		recId2node:    make(map[uint64]*NodeInfo),
 		nodes:         nodes[:],
 		raccoons:      make(map[uint64]*astRaccoon),
 		vmPool:        service.CreateExecutionPool(otto.New()),
@@ -69,16 +64,6 @@ func NewService(nodes []*NodeInfo, credsPath, address string) (*Service, error) 
 		uid:           uint64(os.Getuid()),
 		credsPath:     credsPath,
 		address:       address,
-	}
-
-	if err := ms.solveAllConflictsInTheWorld(); err != nil {
-		return nil, err
-	}
-
-	for _, n := range nodes {
-		for rId := range n.RecordIds {
-			ms.recId2node[rId] = n
-		}
 	}
 
 	ms.balance()
@@ -122,31 +107,17 @@ func (ms *Service) UpdateNodes() {
 	}
 }
 
-// find the next available node ID
-func (ms *Service) findNextAvailableId() uint64 {
-	ms.idLock.Lock()
-	defer ms.idLock.Unlock()
-
-	for {
-		found := false
-		for _, n := range ms.nodes {
-			if n.RecordIds[ms.nextId] {
-				found = true
-				break
-			}
-		}
-		if !found {
-			return ms.nextId
-		}
-		ms.nextId++
-	}
-}
-
 func (ms *Service) NumRecords() int {
-	ms.recordsLock.RLock()
-	defer ms.recordsLock.RUnlock()
+	res := 0
 
-	return len(ms.recId2node)
+	ms.nodesLock.RLock()
+	defer ms.nodesLock.RUnlock()
+
+	for _, n := range ms.nodes {
+		res += int(n.Status().Records)
+	}
+
+	return res
 }
 
 func (ms *Service) NumOracles() int {

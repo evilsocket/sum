@@ -19,6 +19,17 @@ import (
 	"github.com/evilsocket/islazy/log"
 )
 
+// find a raccoon by its ID
+func (ms *Service) findRaccoon(id uint64) *astRaccoon {
+	ms.cageLock.RLock()
+	defer ms.cageLock.RUnlock()
+
+	if raccoon, found := ms.raccoons[id]; found {
+		return raccoon
+	}
+	return nil
+}
+
 // run an oracle with the given arguments and get its results back
 // in this implementation the original oracle is patched and sent down
 // to the nodes. It is then run in parallel and its results merged together.
@@ -27,16 +38,8 @@ import (
 // "merge". Please remember that the first function shall be the oracle.
 func (ms *Service) Run(ctx context.Context, arg *Call) (*CallResponse, error) {
 
-	// NB: always keep this order of locking
-	ms.nodesLock.RLock()
-	defer ms.nodesLock.RUnlock()
-	ms.recordsLock.RLock()
-	defer ms.recordsLock.RUnlock()
-	ms.cageLock.RLock()
-	defer ms.cageLock.RUnlock()
-
-	raccoon, found := ms.raccoons[arg.OracleId]
-	if !found {
+	raccoon := ms.findRaccoon(arg.OracleId)
+	if raccoon == nil {
 		return errCallResponse("oracle %d not found.", arg.OracleId), nil
 	}
 
@@ -53,17 +56,19 @@ func (ms *Service) Run(ctx context.Context, arg *Call) (*CallResponse, error) {
 		if err != nil {
 			return errCallResponse("Unable to parse record id form parameter #%d: %v", i, err), nil
 		}
-		node, found := ms.recId2node[recId]
-		if !found {
-			//FIXME: we shell make records.Find(...) return `null` when this happens
-			return errCallResponse("Record %d not found", recId), nil
-		}
-		record, err := node.Client.ReadRecord(ctx, &ById{Id: recId})
+
+		record, err := ms.ReadRecord(ctx, &ById{Id: recId})
+
 		if err != nil || !record.Success {
-			return errCallResponse("Unable to retrieve record %d form node %d: %v",
-				recId, node.ID, getErrorMessage(err, record)), nil
+			msg := getErrorMessage(err, record)
+			if msg == fmt.Sprintf("record %d not found.", recId) {
+				resolvedRecords[i] = recordNotFound
+			} else {
+				return errCallResponse("Unable to retrieve record %d: %v", recId, msg), nil
+			}
+		} else {
+			resolvedRecords[i] = record.Record
 		}
-		resolvedRecords[i] = record.Record
 	}
 
 	// 2. substitute all the calls to records.Find(...) with their resolved record
@@ -77,6 +82,9 @@ func (ms *Service) Run(ctx context.Context, arg *Call) (*CallResponse, error) {
 	node2oracleId := make(map[*NodeInfo]uint64)
 	mapLock := sync.Mutex{}
 	newOracle := &Oracle{Code: newCode, Name: raccoon.Name}
+
+	ms.nodesLock.RLock()
+	defer ms.nodesLock.RUnlock()
 
 	// cleanup created oracles
 	defer func() {

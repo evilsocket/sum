@@ -452,16 +452,12 @@ func TestDeleteNode(t *testing.T) {
 
 	ms := ns.orchestrators[0].svc
 
-	nRecords := len(ms.recId2node)
+	nRecords := ms.NumRecords()
 
 	resp, err := ms.DeleteNode(context.TODO(), &pb.ById{Id: 1})
 	NoError(t, err)
 	True(t, resp.Success)
 
 	Equal(t, 1, len(ms.nodes))
-	Equal(t, nRecords, len(ms.recId2node))
-
-	for _, n := range ms.recId2node {
-		NotEqual(t, uint(1), n.ID)
-	}
+	Equal(t, nRecords, ms.NumRecords())
 }
