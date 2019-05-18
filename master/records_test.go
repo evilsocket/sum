@@ -3,6 +3,7 @@ package master
 import (
 	"context"
 	pb "github.com/evilsocket/sum/proto"
+	"github.com/stretchr/testify/assert"
 	. "github.com/stretchr/testify/require"
 	"strconv"
 	"sync"
@@ -19,6 +20,7 @@ func TestConcurrentCreateRecords(t *testing.T) {
 	wg := sync.WaitGroup{}
 	wg.Add(numRoutines)
 
+	success := true
 	ms := ns.orchestrators[0].svc
 
 	for i := 0; i < numRoutines; i++ {
@@ -26,17 +28,22 @@ func TestConcurrentCreateRecords(t *testing.T) {
 			var resp *pb.RecordResponse
 			var err error
 
-			NotPanics(t, func() {
+			if !assert.NotPanics(t, func() {
 				resp, err = ms.CreateRecord(context.TODO(), &testRecord)
-			})
-
-			Nil(t, err)
-			True(t, resp.Success, resp.Msg)
+			}) ||
+				!assert.Nil(t, err) ||
+				!assert.True(t, resp.Success, resp.Msg) {
+				success = false
+			}
 			wg.Done()
 		}()
 	}
 
 	wg.Wait()
+
+	if !success {
+		t.FailNow()
+	}
 
 	Equal(t, numRoutines, ms.NumRecords())
 }
@@ -47,6 +54,7 @@ func TestConcurrentDeleteRecords(t *testing.T) {
 	defer cleanupNetwork(&ns)
 
 	ms := ns.orchestrators[0].svc
+	success := true
 
 	idCh := make(chan uint64)
 	wg := sync.WaitGroup{}
@@ -65,18 +73,23 @@ func TestConcurrentDeleteRecords(t *testing.T) {
 				var resp *pb.RecordResponse
 				var err error
 
-				NotPanics(t, func() {
+				if !assert.NotPanics(t, func() {
 					resp, err = ms.DeleteRecord(context.TODO(), &pb.ById{Id: id})
-				})
-
-				Nil(t, err)
-				True(t, resp.Success, resp.Msg)
+				}) ||
+					!assert.Nil(t, err) ||
+					!assert.True(t, resp.Success, resp.Msg) {
+					success = false
+				}
 			}
 			wg.Done()
 		}()
 	}
 
 	wg.Wait()
+
+	if !success {
+		t.FailNow()
+	}
 
 	Zero(t, ms.NumRecords())
 }
@@ -89,10 +102,12 @@ func TestConcurrentCreateAndDelete(t *testing.T) {
 	ms := ns.orchestrators[0].svc
 	inputCh := genBenchRecords()
 	idCh := make(chan uint64)
-	wg := sync.WaitGroup{}
-	wg1 := sync.WaitGroup{}
+	wg := &sync.WaitGroup{}
+	wg1 := &sync.WaitGroup{}
 	wg.Add(numRoutines)
 	wg1.Add(numRoutines)
+
+	success := true
 
 	// create records
 
@@ -103,23 +118,26 @@ func TestConcurrentCreateAndDelete(t *testing.T) {
 				var err error
 				var id uint64
 
-				resp, err = ms.CreateRecord(context.TODO(), r)
-				Nil(t, err)
-				True(t, resp.Success, resp.Msg)
+				if !assert.NotPanics(t, func() {
+					resp, err = ms.CreateRecord(context.TODO(), r)
+				}) ||
+					!assert.NoError(t, err) ||
+					!assert.True(t, resp.Success, resp.Msg) {
+					success = false
+					continue
+				}
 
 				id, err = strconv.ParseUint(resp.Msg, 10, 64)
-				Nil(t, err)
+				if !assert.NoError(t, err) {
+					success = false
+					continue
+				}
 
 				idCh <- id
 			}
 			wg.Done()
 		}()
 	}
-
-	go func() {
-		wg.Wait()
-		close(idCh)
-	}()
 
 	// delete them
 
@@ -129,19 +147,26 @@ func TestConcurrentCreateAndDelete(t *testing.T) {
 				var resp *pb.RecordResponse
 				var err error
 
-				NotPanics(t, func() {
+				if !assert.NotPanics(t, func() {
 					resp, err = ms.DeleteRecord(context.TODO(), &pb.ById{Id: id})
-				})
-
-				Nil(t, err)
-				True(t, resp.Success, resp.Msg)
+				}) ||
+					!assert.NoError(t, err) ||
+					!assert.True(t, resp.Success, resp.Msg) {
+					success = false
+				}
 			}
+
 			wg1.Done()
 		}()
 	}
 
 	wg.Wait()
+	close(idCh)
 	wg1.Wait()
+
+	if !success {
+		t.FailNow()
+	}
 
 	Zero(t, ms.NumRecords())
 }
