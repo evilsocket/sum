@@ -18,10 +18,7 @@ func (ms *Service) setNextIdIfHigher(newId uint64) {
 	}
 }
 
-func (ms *Service) findLessLoadedNode() *NodeInfo {
-	ms.nodesLock.RLock()
-	defer ms.nodesLock.RUnlock()
-
+func (ms *Service) _findLessLoadedNode() *NodeInfo {
 	var lowestRecords *uint64
 	var targetNode *NodeInfo
 
@@ -36,6 +33,13 @@ func (ms *Service) findLessLoadedNode() *NodeInfo {
 	return targetNode
 }
 
+func (ms *Service) findLessLoadedNode() *NodeInfo {
+	ms.nodesLock.RLock()
+	defer ms.nodesLock.RUnlock()
+
+	return ms._findLessLoadedNode()
+}
+
 // create a record from the given argument
 func (ms *Service) CreateRecord(ctx context.Context, record *Record) (*RecordResponse, error) {
 	targetNode := ms.findLessLoadedNode()
@@ -48,8 +52,9 @@ func (ms *Service) CreateRecord(ctx context.Context, record *Record) (*RecordRes
 	targetNode.Lock()
 	defer targetNode.Unlock()
 
-	// record.Id = ms.findNextAvailableId()
-	// strange, bad but legacy behaviour
+	ms.idLock.Lock()
+	defer ms.idLock.Unlock()
+
 	record.Id = ms.nextId
 
 	resp, err := targetNode.InternalClient.CreateRecordWithId(ctx, record)
@@ -311,8 +316,7 @@ func (ms *Service) CreateRecordWithId(_ context.Context, in *Record) (*RecordRes
 	ms.nodesLock.RLock()
 	defer ms.nodesLock.RUnlock()
 
-	// TODO: fix double read lock
-	n := ms.findLessLoadedNode()
+	n := ms._findLessLoadedNode()
 	if n == nil {
 		return errRecordResponse("No nodes available, try later"), nil
 	}

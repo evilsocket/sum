@@ -19,6 +19,17 @@ import (
 	"github.com/evilsocket/islazy/log"
 )
 
+// find a raccoon by its ID
+func (ms *Service) findRaccoon(id uint64) *astRaccoon {
+	ms.cageLock.RLock()
+	defer ms.cageLock.RUnlock()
+
+	if raccoon, found := ms.raccoons[id]; found {
+		return raccoon
+	}
+	return nil
+}
+
 // run an oracle with the given arguments and get its results back
 // in this implementation the original oracle is patched and sent down
 // to the nodes. It is then run in parallel and its results merged together.
@@ -27,14 +38,8 @@ import (
 // "merge". Please remember that the first function shall be the oracle.
 func (ms *Service) Run(ctx context.Context, arg *Call) (*CallResponse, error) {
 
-	// NB: always keep this order of locking
-	ms.nodesLock.RLock()
-	defer ms.nodesLock.RUnlock()
-	ms.cageLock.RLock()
-	defer ms.cageLock.RUnlock()
-
-	raccoon, found := ms.raccoons[arg.OracleId]
-	if !found {
+	raccoon := ms.findRaccoon(arg.OracleId)
+	if raccoon == nil {
 		return errCallResponse("oracle %d not found.", arg.OracleId), nil
 	}
 
@@ -77,6 +82,9 @@ func (ms *Service) Run(ctx context.Context, arg *Call) (*CallResponse, error) {
 	node2oracleId := make(map[*NodeInfo]uint64)
 	mapLock := sync.Mutex{}
 	newOracle := &Oracle{Code: newCode, Name: raccoon.Name}
+
+	ms.nodesLock.RLock()
+	defer ms.nodesLock.RUnlock()
 
 	// cleanup created oracles
 	defer func() {
