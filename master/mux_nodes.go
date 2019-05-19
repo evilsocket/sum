@@ -72,12 +72,22 @@ func (ms *Service) DeleteNode(ctx context.Context, id *ById) (*NodeResponse, err
 
 	go ms.updateConfig()
 
-	//TODO: balance on the fly
 	nRecords := n.Status().Records
+	nNodes := uint64(len(ms.nodes))
 
-	if len(ms.nodes) > 0 && nRecords > 0 {
-		ms.transfer(n, ms.nodes[0], int64(nRecords))
-		ms.balance()
+	if nNodes > 0 && nRecords > 0 {
+		perNode := nRecords / nNodes
+		remainder := nRecords % nNodes
+
+		for i, n1 := range ms.nodes {
+			target := perNode
+
+			if uint64(i) < remainder {
+				target++
+			}
+
+			ms.transfer(n, n1, int64(target))
+		}
 	}
 
 	return &NodeResponse{Success: true}, nil

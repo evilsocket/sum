@@ -110,7 +110,7 @@ func (ms *Service) balance() {
 	var reminder = int(totRecords % uint64(nNodes))
 	// target amount of records
 	var targets = make([]uint64, nNodes)
-	// nodes that shall enter in the node
+	// records that shall enter in the node
 	var deltas = make([]int64, nNodes)
 	var needsBalancing = false
 
