@@ -119,7 +119,7 @@ func (ms *Service) balance() {
 		if i < reminder {
 			targets[i]++
 		}
-		deltas[i] = int64(targets[i]) - int64(n.status.Records)
+		deltas[i] = int64(targets[i]) - int64(n.Status().Records)
 
 		// 5% hysteresis
 		if !needsBalancing && deltas[i] > int64(targetRecordsPerNode/20) {

@@ -27,6 +27,9 @@ type NodeInfo struct {
 
 // update node's status
 func (n *NodeInfo) UpdateStatus() {
+	n.Lock()
+	defer n.Unlock()
+
 	ctx, cf := newCommContext()
 	defer cf()
 	srvInfo, err := n.Client.Info(ctx, &Empty{})
@@ -35,9 +38,6 @@ func (n *NodeInfo) UpdateStatus() {
 		log.Error("Unable to update node '%s' status: %v", n.Name, err)
 		return
 	}
-
-	n.Lock()
-	defer n.Unlock()
 
 	n.status = *srvInfo
 }
