@@ -89,6 +89,19 @@ function findSimilar(id, threshold) {
 	Equal(t, expected, newCode)
 }
 
+func TestService_Run_InvalidID(t *testing.T) {
+	ns, err := setupNetwork(1, 1)
+	NoError(t, err)
+	defer cleanupNetwork(&ns)
+
+	ms := ns.orchestrators[0].svc
+
+	resp, err := ms.Run(context.TODO(), &pb.Call{OracleId: 1, Args: []string{"hey"}})
+	NoError(t, err)
+	False(t, resp.Success)
+	Equal(t, "oracle 1 not found.", resp.Msg)
+}
+
 func spawnNodeErr(port uint32, dataPath string) (*grpc.Server, *service.Service, error) {
 	addr := fmt.Sprintf("localhost:%d", port)
 	listener, err := net.Listen("tcp", addr)
@@ -185,22 +198,13 @@ func spawnOrchestrator(t *testing.T, port uint32, nodesStr string) (*grpc.Server
 }
 
 func TestDistributedRun(t *testing.T) {
-	SetCommunicationTimeout(time.Second)
+	ns, err := setupNetwork(2, 1)
+	NoError(t, err)
+	defer cleanupNetwork(&ns)
 
-	dir1, err := setupEmptyTmpFolder()
-	Nil(t, err)
-	defer os.RemoveAll(dir1)
-	dir2, err := setupEmptyTmpFolder()
-	Nil(t, err)
-	defer os.RemoveAll(dir2)
-
-	node1, sum1 := spawnNode(t, 12345, dir1)
-	defer node1.Stop()
-	node2, sum2 := spawnNode(t, 12346, dir2)
-	defer node2.Stop()
-
-	master, ms := spawnOrchestrator(t, 12347, "localhost:12345,localhost:12346")
-	defer master.Stop()
+	sum1 := ns.nodes[0].svc
+	sum2 := ns.nodes[1].svc
+	ms := ns.orchestrators[0].svc
 
 	// Test time!
 
@@ -239,7 +243,7 @@ func TestDistributedRun(t *testing.T) {
 	// create oracle
 
 	code := `
-function findDoubles(id) {
+function findDoubles(id, anotherParam) {
     var v = records.Find(id);
     if( v.IsNull() == true ) {
         return ctx.Error("Vector " + id + " not found.");
@@ -264,31 +268,51 @@ function findDoubles(id) {
 
 	// run oracle
 
-	arg1 := fmt.Sprintf("%d", rec1Id)
-	resp2, err := ms.Run(context.Background(), &pb.Call{Args: []string{arg1}, OracleId: oId})
-	Nil(t, err)
-	True(t, resp2.Success)
-
-	if resp2.Data.Compressed {
-		r, err := gzip.NewReader(bytes.NewReader(resp2.Data.Payload))
-		Nil(t, err)
-		resp2.Data.Payload, err = ioutil.ReadAll(r)
-		Nil(t, err)
+	newRunner := func(arg *pb.Call, expectedResponse *pb.CallResponse) func(*testing.T) {
+		return func(t *testing.T) {
+			resp, err := ms.Run(context.TODO(), arg)
+			NoError(t, err)
+			Equal(t, expectedResponse.Success, resp.Success, resp.Msg)
+			if !resp.Success {
+				if strings.HasPrefix(expectedResponse.Msg, "/") &&
+					strings.HasSuffix(expectedResponse.Msg, "/") {
+					Regexp(t, expectedResponse.Msg[1:len(expectedResponse.Msg)-1], resp.Msg)
+				} else {
+					Equal(t, expectedResponse.Msg, resp.Msg)
+				}
+				return
+			}
+			if resp.Data.Compressed {
+				r, err := gzip.NewReader(bytes.NewReader(resp.Data.Payload))
+				NoError(t, err)
+				resp.Data.Payload, err = ioutil.ReadAll(r)
+				NoError(t, err)
+			}
+			Equal(t, expectedResponse.Data.Payload, resp.Data.Payload)
+		}
 	}
 
-	var res interface{}
+	idString := fmt.Sprintf("%d", rec1Id)
 
-	err = json.Unmarshal(resp2.Data.Payload, &res)
-	Nil(t, err)
+	t.Run("Valid", newRunner(
+		&pb.Call{Args: []string{idString, "null"}, OracleId: oId},
+		&pb.CallResponse{Success: true, Data: &pb.Data{Payload: []byte(fmt.Sprintf("[%d]", rec2Id))}}))
 
-	// check result
+	t.Run("InvalidId", newRunner(
+		&pb.Call{Args: []string{}, OracleId: 100},
+		&pb.CallResponse{Msg: "oracle 100 not found."}))
 
-	ary, ok := res.([]interface{})
-	True(t, ok)
-	Equal(t, 1, len(ary))
-	resId, ok := ary[0].(float64)
-	True(t, ok)
-	Equal(t, rec2Id, uint64(resId))
+	t.Run("MissingArgs", newRunner(
+		&pb.Call{Args: []string{idString}, OracleId: oId},
+		&pb.CallResponse{Success: true, Data: &pb.Data{Payload: []byte(fmt.Sprintf("[%d]", rec2Id))}}))
+
+	t.Run("InvalidRecordID", newRunner(
+		&pb.Call{Args: []string{"NaN"}, OracleId: oId},
+		&pb.CallResponse{Msg: "Unable to parse record id form parameter #0: strconv.ParseUint: parsing \"NaN\": invalid syntax"}))
+
+	t.Run("RecordNotFound", newRunner(
+		&pb.Call{Args: []string{"200"}, OracleId: oId},
+		&pb.CallResponse{Msg: "/Vector 200 not found\\./"}))
 }
 
 func TestMergerFunction(t *testing.T) {
