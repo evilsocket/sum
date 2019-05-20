@@ -206,6 +206,8 @@ func (ms *Service) ListRecords(ctx context.Context, arg *ListRequest) (*RecordLi
 	}
 
 	toQueryNodes := orderedNodes[firstNodeIndex : lastNodeIndex+1]
+	ctx, cf := newCommContext()
+	defer cf()
 
 	results, errs := doParallel(toQueryNodes, func(node *NodeInfo, resultChannel chan<- interface{}, errorChannel chan<- string) {
 		arg := &ListRequest{Page: 1}
@@ -220,6 +222,7 @@ func (ms *Service) ListRecords(ctx context.Context, arg *ListRequest) (*RecordLi
 
 		resp, err := node.Client.ListRecords(ctx, arg)
 		if err != nil {
+			cf()
 			errorChannel <- err.Error()
 		} else {
 			resultChannel <- resp.Records
@@ -247,12 +250,14 @@ func (ms *Service) DeleteRecord(_ context.Context, arg *ById) (*RecordResponse, 
 
 	notFoundError := fmt.Sprintf("record %d not found.", arg.Id)
 
-	ctx, cf := newCommContext()
+	ctx, cf := context.WithCancel(context.Background())
 	defer cf()
 
 	results, errs := ms.doParallel(func(node *NodeInfo, resultChannel chan<- interface{}, errorChannel chan<- string) {
 		node.Lock()
 		defer node.Unlock()
+
+		ctx, _ := context.WithTimeout(ctx, timeout)
 
 		resp, err := node.Client.DeleteRecord(ctx, arg)
 		if err != nil || !resp.Success {
@@ -381,6 +386,9 @@ func (ms *Service) CreateRecordsWithId(ctx context.Context, in *Records) (*Recor
 
 		log.Debug("Master[%s]: creating %d records on node %s", ms.address, len(records), n.Name)
 
+		ctx, cf := newCommContext()
+		defer cf()
+
 		if resp, err := n.InternalClient.CreateRecordsWithId(ctx, &Records{Records: records}); err != nil || !resp.Success {
 			return fmt.Errorf("%s", getErrorMessage(err, resp))
 		} else {
@@ -449,6 +457,9 @@ func (ms *Service) DeleteRecords(ctx context.Context, in *RecordIds) (*RecordRes
 	for _, n := range ms.nodes {
 		oldTotal += n.Status().Records
 	}
+
+	ctx, cf := newCommContext()
+	defer cf()
 
 	ms.doParallel(func(node *NodeInfo, resultChannel chan<- interface{}, errorChannel chan<- string) {
 		node.InternalClient.DeleteRecords(ctx, in)
