@@ -97,14 +97,19 @@ func (ms *Service) Run(ctx context.Context, arg *Call) (*CallResponse, error) {
 		}
 	}()
 
+	ctx, cf := newCommContext()
+	defer cf()
+
 	results, errs := ms.doParallel(func(n *NodeInfo, okChan chan<- interface{}, errChan chan<- string) {
 		resp, err := n.Client.CreateOracle(ctx, newOracle)
 		if err != nil || !resp.Success {
+			cf()
 			errChan <- getErrorMessage(err, resp)
 			return
 		}
 		oId, err := strconv.ParseUint(resp.Msg, 10, 64)
 		if err != nil {
+			cf()
 			errChan <- fmt.Sprintf("unable to parse oracleId string '%s': %v", resp.Msg, err)
 			return
 		}
@@ -115,20 +120,24 @@ func (ms *Service) Run(ctx context.Context, arg *Call) (*CallResponse, error) {
 		}()
 		resp1, err := n.Client.Run(ctx, &Call{OracleId: oId, Args: arg.Args})
 		if err != nil || !resp1.Success {
+			cf()
 			errChan <- getErrorMessage(err, resp1)
 			return
 		}
 		if resp1.Data.Compressed {
 			if r, err := gzip.NewReader(bytes.NewReader(resp1.Data.Payload)); err != nil {
+				cf()
 				errChan <- err.Error()
 				return
 			} else if resp1.Data.Payload, err = ioutil.ReadAll(r); err != nil {
+				cf()
 				errChan <- err.Error()
 				return
 			}
 		}
 		var res interface{}
 		if err = json.Unmarshal(resp1.Data.Payload, &res); err != nil {
+			cf()
 			errChan <- err.Error()
 			return
 		}

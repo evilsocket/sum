@@ -7,6 +7,7 @@ import (
 	. "github.com/stretchr/testify/require"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"testing"
 )
 
@@ -20,7 +21,7 @@ func TestConcurrentCreateRecords(t *testing.T) {
 	wg := sync.WaitGroup{}
 	wg.Add(numRoutines)
 
-	success := true
+	failures := uint64(0)
 	ms := ns.orchestrators[0].svc
 
 	for i := 0; i < numRoutines; i++ {
@@ -33,7 +34,7 @@ func TestConcurrentCreateRecords(t *testing.T) {
 			}) ||
 				!assert.Nil(t, err) ||
 				!assert.True(t, resp.Success, resp.Msg) {
-				success = false
+				atomic.AddUint64(&failures, 1)
 			}
 			wg.Done()
 		}()
@@ -41,8 +42,8 @@ func TestConcurrentCreateRecords(t *testing.T) {
 
 	wg.Wait()
 
-	if !success {
-		t.FailNow()
+	if failures > 0 {
+		t.Fatalf("%d routines failed", failures)
 	}
 
 	Equal(t, numRoutines, ms.NumRecords())
@@ -54,7 +55,7 @@ func TestConcurrentDeleteRecords(t *testing.T) {
 	defer cleanupNetwork(&ns)
 
 	ms := ns.orchestrators[0].svc
-	success := true
+	failures := uint64(0)
 
 	idCh := make(chan uint64)
 	wg := sync.WaitGroup{}
@@ -78,7 +79,7 @@ func TestConcurrentDeleteRecords(t *testing.T) {
 				}) ||
 					!assert.Nil(t, err) ||
 					!assert.True(t, resp.Success, resp.Msg) {
-					success = false
+					atomic.AddUint64(&failures, 1)
 				}
 			}
 			wg.Done()
@@ -87,8 +88,8 @@ func TestConcurrentDeleteRecords(t *testing.T) {
 
 	wg.Wait()
 
-	if !success {
-		t.FailNow()
+	if failures > 0 {
+		t.Fatalf("%d routines failed", failures)
 	}
 
 	Zero(t, ms.NumRecords())
@@ -107,7 +108,7 @@ func TestConcurrentCreateAndDelete(t *testing.T) {
 	wg.Add(numRoutines)
 	wg1.Add(numRoutines)
 
-	success := true
+	failures := uint64(0)
 
 	// create records
 
@@ -123,13 +124,13 @@ func TestConcurrentCreateAndDelete(t *testing.T) {
 				}) ||
 					!assert.NoError(t, err) ||
 					!assert.True(t, resp.Success, resp.Msg) {
-					success = false
+					atomic.AddUint64(&failures, 1)
 					continue
 				}
 
 				id, err = strconv.ParseUint(resp.Msg, 10, 64)
 				if !assert.NoError(t, err) {
-					success = false
+					atomic.AddUint64(&failures, 1)
 					continue
 				}
 
@@ -152,7 +153,7 @@ func TestConcurrentCreateAndDelete(t *testing.T) {
 				}) ||
 					!assert.NoError(t, err) ||
 					!assert.True(t, resp.Success, resp.Msg) {
-					success = false
+					atomic.AddUint64(&failures, 1)
 				}
 			}
 
@@ -164,8 +165,8 @@ func TestConcurrentCreateAndDelete(t *testing.T) {
 	close(idCh)
 	wg1.Wait()
 
-	if !success {
-		t.FailNow()
+	if failures > 0 {
+		t.Fatalf("%d routines failed", failures)
 	}
 
 	Zero(t, ms.NumRecords())

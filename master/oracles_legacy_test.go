@@ -64,7 +64,8 @@ func TestServiceCreateOracleWithInvalidId(t *testing.T) {
 	}
 
 	network.orchestrators[0].svc.nextRaccoonId = 1
-	if resp, err := svc.CreateOracle(context.TODO(), &testOracle); err != nil {
+	oracle := &pb.Oracle{Name: "wow", Code: testOracle.Code}
+	if resp, err := svc.CreateOracle(context.TODO(), oracle); err != nil {
 		t.Fatal(err)
 	} else if resp.Success {
 		t.Fatalf("expected error response: %v", resp)

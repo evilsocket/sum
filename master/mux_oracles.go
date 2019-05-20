@@ -10,6 +10,10 @@ import (
 
 // create an oracle form the given argument
 func (ms *Service) CreateOracle(ctx context.Context, arg *Oracle) (*OracleResponse, error) {
+	if ms.doIHaveThisOracle(arg) {
+		return errOracleResponse("This oracle already exists."), nil
+	}
+
 	raccoon, err := NewAstRaccoon(arg.Code)
 	if err != nil {
 		return errOracleResponse("Error parsing the code: %v", err), nil

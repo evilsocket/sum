@@ -212,3 +212,8 @@ func (a *astRaccoon) IsParameterPositionARecordLookup(i int) bool {
 func (a *astRaccoon) AsOracle() *Oracle {
 	return &Oracle{Id: a.ID, Name: a.Name, Code: a.src}
 }
+
+// Check if the given oracle is equal to the one managed by this raccoon
+func (a *astRaccoon) IsEqualTo(oracle *Oracle) bool {
+	return oracle.Name == a.Name && oracle.Code == a.src
+}

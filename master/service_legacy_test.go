@@ -113,10 +113,12 @@ func setup(t testing.TB, withRecords bool, withOracles bool) {
 		if err != nil {
 			t.Fatal(err)
 		}
+		oracle := &pb.Oracle{Name: testOracle.Name, Code: testOracle.Code}
 		for i := 1; i <= testOracles; i++ {
-			if err := ors.Create(&testOracle); err != nil {
+			if err := ors.Create(oracle); err != nil {
 				t.Fatalf("error creating oracle: %s", err)
 			}
+			oracle.Name += "Live"
 		}
 	}
 }

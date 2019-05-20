@@ -110,7 +110,7 @@ func (ms *Service) balance() {
 	var reminder = int(totRecords % uint64(nNodes))
 	// target amount of records
 	var targets = make([]uint64, nNodes)
-	// nodes that shall enter in the node
+	// records that shall enter in the node
 	var deltas = make([]int64, nNodes)
 	var needsBalancing = false
 
@@ -119,7 +119,7 @@ func (ms *Service) balance() {
 		if i < reminder {
 			targets[i]++
 		}
-		deltas[i] = int64(targets[i]) - int64(n.status.Records)
+		deltas[i] = int64(targets[i]) - int64(n.Status().Records)
 
 		// 5% hysteresis
 		if !needsBalancing && deltas[i] > int64(targetRecordsPerNode/20) {
