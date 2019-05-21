@@ -1,44 +1,10 @@
 package master
 
 import (
-	"fmt"
-
-	"github.com/golang/protobuf/proto"
-
 	pb "github.com/evilsocket/sum/proto"
 
 	"github.com/evilsocket/islazy/log"
 )
-
-// Get the error message from either a GRPC error or a application-level one
-func getErrorMessage(err error, response proto.Message) string {
-	if err != nil {
-		return err.Error()
-	}
-
-	var success bool
-	var msg string
-
-	switch response.(type) {
-	case *pb.RecordResponse:
-		success = response.(*pb.RecordResponse).Success
-		msg = response.(*pb.RecordResponse).Msg
-	case *pb.OracleResponse:
-		success = response.(*pb.OracleResponse).Success
-		msg = response.(*pb.OracleResponse).Msg
-	case *pb.CallResponse:
-		success = response.(*pb.CallResponse).Success
-		msg = response.(*pb.CallResponse).Msg
-	default:
-		panic(fmt.Sprintf("unsupported message %T: %v", response, response))
-	}
-
-	if !success {
-		return msg
-	}
-
-	panic("no errors dude")
-}
 
 // transfer nRecords from a node to another
 func (ms *Service) transfer(fromNode, toNode *NodeInfo, nRecords int64) {
