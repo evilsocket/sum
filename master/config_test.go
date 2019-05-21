@@ -4,6 +4,7 @@ import (
 	"context"
 	pb "github.com/evilsocket/sum/proto"
 	. "github.com/stretchr/testify/require"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -55,4 +56,18 @@ func TestSaveConfig(t *testing.T) {
 	cfg, err = LoadConfig(ms.configFile)
 	Nil(t, err)
 	Empty(t, cfg.Nodes)
+}
+
+func TestBadConfig(t *testing.T) {
+	_, err := LoadConfig("/not/found")
+	Error(t, err)
+
+	tmpfile, err := ioutil.TempFile("", "")
+	NoError(t, err)
+
+	err = ioutil.WriteFile(tmpfile.Name(), []byte("not a json thingy"), 0644)
+	NoError(t, err)
+
+	_, err = LoadConfig(tmpfile.Name())
+	Error(t, err)
 }

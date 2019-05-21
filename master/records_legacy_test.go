@@ -2,9 +2,11 @@ package master
 
 import (
 	"context"
+	"fmt"
 	"github.com/evilsocket/sum/node/storage"
 	pb "github.com/evilsocket/sum/proto"
 	"github.com/golang/protobuf/proto"
+	"regexp"
 	"testing"
 )
 
@@ -121,6 +123,33 @@ func TestService_FindRecordsNotFound(t *testing.T) {
 		t.Fatalf("expected success response: %v", resp)
 	} else if len(resp.Records) != 0 {
 		t.Fatalf("unexpected records: %v", resp.Records)
+	}
+}
+
+func TestService_FindRecordsErrors(t *testing.T) {
+	setup(t, true, true)
+	defer teardown(t)
+
+	var svc pb.SumServiceClient
+	var err error
+
+	if svc, err = NewClient(testFolder); err != nil {
+		t.Fatal(err)
+	}
+
+	ni := network.orchestrators[0].svc.nodes[0]
+	network.nodes[0].server.Stop() // trigger connection error
+
+	rgx := regexp.MustCompile(fmt.Sprintf(`Errors from nodes: \[.*Error while dialing dial tcp %s: connect: connection refused"\]`, ni.Name))
+
+	if resp, err := svc.FindRecords(context.TODO(), &pb.ByMeta{Meta: "not", Value: "found"}); err != nil {
+		t.Fatal(err)
+	} else if resp.Success {
+		t.Fatalf("expected unsuccessful response: %v", resp)
+	} else if len(resp.Records) != 0 {
+		t.Fatalf("unexpected records: %v", resp.Records)
+	} else if rgx.Find([]byte(resp.Msg)) == nil {
+		t.Fatalf("unexpected error message: %v", resp.Msg)
 	}
 }
 
