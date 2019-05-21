@@ -94,6 +94,36 @@ func TestServiceUpdateRecord(t *testing.T) {
 	}
 }
 
+func TestService_FindRecords(t *testing.T) {
+	setup(t, true, true)
+	defer teardown(t)
+
+	if svc, err := NewClient(testFolder); err != nil {
+		t.Fatal(err)
+	} else if resp, err := svc.FindRecords(context.TODO(), &pb.ByMeta{Meta: "666", Value: "666"}); err != nil {
+		t.Fatal(err)
+	} else if !resp.Success {
+		t.Fatalf("expected success response: %v", resp)
+	} else if len(resp.Records) != testRecords {
+		t.Fatalf("unexpected records: %v", resp.Records)
+	}
+}
+
+func TestService_FindRecordsNotFound(t *testing.T) {
+	setup(t, true, true)
+	defer teardown(t)
+
+	if svc, err := NewClient(testFolder); err != nil {
+		t.Fatal(err)
+	} else if resp, err := svc.FindRecords(context.TODO(), &pb.ByMeta{Meta: "not", Value: "found"}); err != nil {
+		t.Fatal(err)
+	} else if !resp.Success {
+		t.Fatalf("expected success response: %v", resp)
+	} else if len(resp.Records) != 0 {
+		t.Fatalf("unexpected records: %v", resp.Records)
+	}
+}
+
 func TestServiceUpdateRecordWithInvalidId(t *testing.T) {
 	setup(t, true, true)
 	defer teardown(t)

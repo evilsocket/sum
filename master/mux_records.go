@@ -288,13 +288,18 @@ func (ms *Service) DeleteRecord(_ context.Context, arg *ById) (*RecordResponse, 
 
 // find records that meet the given requirements
 func (ms *Service) FindRecords(ctx context.Context, arg *ByMeta) (*FindResponse, error) {
+	notIndexedErrmsg := fmt.Sprintf("meta %v not indexed.", arg.Meta)
+
 	ms.nodesLock.RLock()
 	defer ms.nodesLock.RUnlock()
 
 	results, errs := ms.doParallel(func(n *NodeInfo, resultChannel chan<- interface{}, errorChannel chan<- string) {
 		resp, err := n.Client.FindRecords(ctx, arg)
 		if err != nil || !resp.Success {
-			errorChannel <- getErrorMessage(err, resp)
+			msg := getErrorMessage(err, resp)
+			if msg != notIndexedErrmsg {
+				errorChannel <- msg
+			}
 		} else {
 			for _, r := range resp.Records {
 				resultChannel <- r
