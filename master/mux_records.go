@@ -142,11 +142,6 @@ func (ms *Service) ReadRecord(_ context.Context, arg *ById) (*RecordResponse, er
 
 // list records
 func (ms *Service) ListRecords(ctx context.Context, arg *ListRequest) (*RecordListResponse, error) {
-
-	if arg.PerPage == 0 {
-		return nil, fmt.Errorf("invalid arguments")
-	}
-
 	if arg.Page == 0 {
 		arg.Page = 1
 	}
@@ -162,6 +157,10 @@ func (ms *Service) ListRecords(ctx context.Context, arg *ListRequest) (*RecordLi
 		defer n.RUnlock()
 		orderedNodes = append(orderedNodes, n)
 		total += n.status.Records
+	}
+
+	if arg.PerPage == 0 {
+		return &RecordListResponse{Records: []*Record{}, Pages: 0, Total: total}, nil
 	}
 
 	sort.Slice(orderedNodes, func(i, j int) bool {
@@ -180,10 +179,6 @@ func (ms *Service) ListRecords(ctx context.Context, arg *ListRequest) (*RecordLi
 	lastNodeIndex := -1
 	lastNodeId := uint(1)
 	lastNodeRecords := uint64(0)
-
-	if end == start {
-		return &RecordListResponse{Records: []*Record{}, Pages: pages, Total: total}, nil
-	}
 
 	for i, n := range orderedNodes {
 		lastNodeId = n.ID
@@ -230,7 +225,7 @@ func (ms *Service) ListRecords(ctx context.Context, arg *ListRequest) (*RecordLi
 	})
 
 	if len(errs) > 0 {
-		return nil, fmt.Errorf("unable to communicate with nodes: [%s]", strings.Join(errs, ", "))
+		log.Warning("unable to communicate with nodes: [%s]", strings.Join(errs, ", "))
 	}
 
 	records := make([]*Record, 0, arg.PerPage)

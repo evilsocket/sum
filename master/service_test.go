@@ -29,6 +29,20 @@ func init() {
 	log.Level = log.ERROR
 }
 
+func TestService_AddNode_Invalid(t *testing.T) {
+	ms, err := NewService([]*NodeInfo{}, "", "")
+	Nil(t, err)
+
+	resp, err := ms.AddNode(context.TODO(), &pb.ByAddr{Address: "moon"})
+	NoError(t, err)
+	False(t, resp.Success)
+	Empty(t, resp.Nodes)
+
+	expectedErrMsg := `Cannot create node: unable to get service info from node 'moon': rpc error: code = Unavailable desc = all SubConns are in TransientFailure, latest connection error: connection error: desc = "transport: Error while dialing dial tcp: address moon: missing port in address"`
+
+	Equal(t, expectedErrMsg, resp.Msg)
+}
+
 func TestCreateOracle(t *testing.T) {
 	ms, err := NewService([]*NodeInfo{}, "", "")
 	Nil(t, err)

@@ -13,6 +13,33 @@ import (
 
 const numRoutines = 1024
 
+func TestService_CreateRecord_NoNodes(t *testing.T) {
+	ns, err := setupNetwork(0, 1)
+	NoError(t, err)
+	defer cleanupNetwork(&ns)
+
+	resp, err := ns.orchestrators[0].svc.CreateRecord(context.TODO(), &testRecord)
+	NoError(t, err)
+	False(t, resp.Success)
+	Equal(t, "No nodes available, try later", resp.Msg)
+}
+
+func TestService_UpdateRecord_ConnectionError(t *testing.T) {
+	ns, err := setupPopulatedNetwork(1, 1)
+	NoError(t, err)
+	defer cleanupNetwork(&ns)
+
+	ns.nodes[0].server.Stop()
+
+	resp, err := ns.orchestrators[0].svc.UpdateRecord(context.TODO(), &testRecord)
+	NoError(t, err)
+	False(t, resp.Success)
+
+	errMsgRgx := `^No node was able to satisfy your request: \[node 1: rpc error: code = Unavailable`
+
+	Regexp(t, errMsgRgx, resp.Msg)
+}
+
 func TestConcurrentCreateRecords(t *testing.T) {
 	ns, err := setupNetwork(2, 1)
 	Nil(t, err)
@@ -194,4 +221,75 @@ func TestMuxService_DeleteRecords(t *testing.T) {
 	Zero(t, node1.NumRecords())
 	Zero(t, node2.NumRecords())
 	Zero(t, ms.NumRecords())
+}
+
+func TestService_ReadRecord_ConnErr(t *testing.T) {
+	ns, err := setupPopulatedNetwork(1, 1)
+	Nil(t, err)
+	defer cleanupNetwork(&ns)
+
+	ns.nodes[0].server.Stop()
+
+	resp, err := ns.orchestrators[0].svc.ReadRecord(context.TODO(), &pb.ById{Id: 1})
+	NoError(t, err)
+	False(t, resp.Success)
+
+	errRgx := `^No node was able to satisfy your request: \[node 1: rpc error: code = Unavailable`
+
+	Regexp(t, errRgx, resp.Msg)
+
+}
+
+func TestServiceListRecordsMultiPageMultiNode(t *testing.T) {
+	ns, err := setupPopulatedNetwork(2, 1)
+	NoError(t, err)
+	defer cleanupNetwork(&ns)
+
+	list := pb.ListRequest{
+		Page:    1,
+		PerPage: 2,
+	}
+
+	ms := ns.orchestrators[0].svc
+	numPages := uint64(numBenchRecords) / 2
+	if numBenchRecords%2 != 0 {
+		numPages++
+	}
+
+	if resp, err := ms.ListRecords(context.TODO(), &list); err != nil {
+		t.Fatal(err)
+	} else if resp.Total != numBenchRecords {
+		t.Fatalf("expected %d total records, got %d", testRecords, resp.Total)
+	} else if resp.Pages != numPages {
+		t.Fatalf("expected %d pages got %d", numPages, resp.Pages)
+	} else if len(resp.Records) != 2 {
+		t.Fatalf("expected %d total records, got %d", 2, len(resp.Records))
+	}
+}
+
+func TestServiceListRecordsSinglePage_ConnErr(t *testing.T) {
+	setup(t, true, true)
+	defer teardown(t)
+
+	list := pb.ListRequest{
+		Page:    0,
+		PerPage: testRecords,
+	}
+
+	if _, err := NewClient(testFolder); err != nil {
+		t.Fatal(err)
+	}
+
+	ms := network.orchestrators[0].svc
+	network.nodes[0].server.Stop()
+
+	if resp, err := ms.ListRecords(context.TODO(), &list); err != nil {
+		t.Fatal(err)
+	} else if resp.Total != testRecords {
+		t.Fatalf("expected %d total records, got %d", testRecords, resp.Total)
+	} else if resp.Pages != 1 {
+		t.Fatalf("expected 1 page, got %d", resp.Pages)
+	} else if len(resp.Records) != 0 {
+		t.Fatalf("expected 0 total records, got %d", len(resp.Records))
+	}
 }
