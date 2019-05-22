@@ -142,8 +142,12 @@ func (ms *Service) ReadRecord(_ context.Context, arg *ById) (*RecordResponse, er
 
 // list records
 func (ms *Service) ListRecords(ctx context.Context, arg *ListRequest) (*RecordListResponse, error) {
-	if arg.Page == 0 {
+	if arg.Page < 1 {
 		arg.Page = 1
+	}
+
+	if arg.PerPage < 1 {
+		arg.PerPage = 1
 	}
 
 	ms.nodesLock.RLock()
@@ -157,10 +161,6 @@ func (ms *Service) ListRecords(ctx context.Context, arg *ListRequest) (*RecordLi
 		defer n.RUnlock()
 		orderedNodes = append(orderedNodes, n)
 		total += n.status.Records
-	}
-
-	if arg.PerPage == 0 {
-		return &RecordListResponse{Records: []*Record{}, Pages: 0, Total: total}, nil
 	}
 
 	sort.Slice(orderedNodes, func(i, j int) bool {

@@ -128,8 +128,8 @@ func (ms *Service) ListOracles(ctx context.Context, list *ListRequest) (*OracleL
 		Oracles: make([]*Oracle, 0),
 	}
 
-	if end >= total {
-		end = total - 1
+	if end > total {
+		end = total
 	}
 
 	for _, id := range sortedIds[start:end] {

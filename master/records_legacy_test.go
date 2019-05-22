@@ -286,28 +286,6 @@ func TestServiceListRecordsInvalidPage(t *testing.T) {
 	}
 }
 
-func TestServiceListRecordsInvalidPage2(t *testing.T) {
-	setup(t, true, true)
-	defer teardown(t)
-
-	list := pb.ListRequest{
-		Page:    0,
-		PerPage: 0,
-	}
-
-	if svc, err := NewClient(testFolder); err != nil {
-		t.Fatal(err)
-	} else if resp, err := svc.ListRecords(context.TODO(), &list); err != nil {
-		t.Fatal(err)
-	} else if len(resp.Records) != 0 {
-		t.Fatalf("unexpected records: %v", resp.Records)
-	} else if resp.Pages != 0 {
-		t.Fatalf("unexpected number of pages: %v", resp.Pages)
-	} else if resp.Total != testRecords {
-		t.Fatalf("unexpected number of total records: %d", resp.Total)
-	}
-}
-
 func TestServiceDeleteRecord(t *testing.T) {
 	setup(t, true, true)
 	defer teardown(t)

@@ -267,3 +267,69 @@ func TestServiceDeleteOracleWithInvalidId(t *testing.T) {
 		t.Fatalf("unexpected message: %s", resp.Msg)
 	}
 }
+
+func TestServiceListOraclesSinglePage(t *testing.T) {
+	setup(t, true, true)
+	defer teardown(t)
+
+	list := pb.ListRequest{
+		Page:    0,
+		PerPage: uint64(testOracles),
+	}
+
+	if svc, err := NewClient(testFolder); err != nil {
+		t.Fatal(err)
+	} else if resp, err := svc.ListOracles(context.TODO(), &list); err != nil {
+		t.Fatal(err)
+	} else if resp.Total != uint64(testOracles) {
+		t.Fatalf("expected %d total oracles, got %d", testOracles, resp.Total)
+	} else if resp.Pages != 1 {
+		t.Fatalf("expected 3 pages got %d", resp.Pages)
+	} else if len(resp.Oracles) != testOracles {
+		t.Fatalf("expected %d total oracles, got %d", testOracles, len(resp.Oracles))
+	}
+}
+
+func TestServiceListOraclesMultiPage(t *testing.T) {
+	setup(t, true, true)
+	defer teardown(t)
+
+	list := pb.ListRequest{
+		Page:    1,
+		PerPage: 2,
+	}
+
+	if svc, err := NewClient(testFolder); err != nil {
+		t.Fatal(err)
+	} else if resp, err := svc.ListOracles(context.TODO(), &list); err != nil {
+		t.Fatal(err)
+	} else if resp.Total != uint64(testOracles) {
+		t.Fatalf("expected %d total oracles, got %d", testOracles, resp.Total)
+	} else if resp.Pages != 3 {
+		t.Fatalf("expected 3 pages got %d", resp.Pages)
+	} else if len(resp.Oracles) != 2 {
+		t.Fatalf("expected %d total oracles, got %d", 2, len(resp.Oracles))
+	}
+}
+
+func TestServiceListOraclesInvalidPage(t *testing.T) {
+	setup(t, true, true)
+	defer teardown(t)
+
+	list := pb.ListRequest{
+		Page:    100000,
+		PerPage: 2,
+	}
+
+	if svc, err := NewClient(testFolder); err != nil {
+		t.Fatal(err)
+	} else if resp, err := svc.ListOracles(context.TODO(), &list); err != nil {
+		t.Fatal(err)
+	} else if resp.Total != uint64(testOracles) {
+		t.Fatalf("expected %d total oracles, got %d", testOracles, resp.Total)
+	} else if resp.Pages != 3 {
+		t.Fatalf("expected 3 pages got %d", resp.Pages)
+	} else if len(resp.Oracles) != 0 {
+		t.Fatalf("expected %d total oracles, got %d", 0, len(resp.Oracles))
+	}
+}
