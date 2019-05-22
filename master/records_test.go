@@ -2,6 +2,7 @@ package master
 
 import (
 	"context"
+	"fmt"
 	pb "github.com/evilsocket/sum/proto"
 	"github.com/stretchr/testify/assert"
 	. "github.com/stretchr/testify/require"
@@ -216,7 +217,36 @@ func TestMuxService_DeleteRecords(t *testing.T) {
 
 	resp, err := ms.DeleteRecords(context.TODO(), arg)
 	NoError(t, err)
-	True(t, resp.Success)
+	True(t, resp.Success, resp.Msg)
+
+	Zero(t, node1.NumRecords())
+	Zero(t, node2.NumRecords())
+	Zero(t, ms.NumRecords())
+}
+
+func TestMuxService_DeleteRecordsInvalid(t *testing.T) {
+	ns, err := setupPopulatedNetwork(2, 1)
+	Nil(t, err)
+	defer cleanupNetwork(&ns)
+
+	arg := &pb.RecordIds{}
+
+	ms := ns.orchestrators[0].svc
+	node1 := ns.nodes[0].svc
+	node2 := ns.nodes[1].svc
+
+	for id := 1; id <= numBenchRecords; id++ {
+		arg.Ids = append(arg.Ids, uint64(id))
+	}
+	arg.Ids = append(arg.Ids, uint64(numBenchRecords+1))
+
+	resp, err := ms.DeleteRecords(context.TODO(), arg)
+	NoError(t, err)
+	False(t, resp.Success)
+
+	errMsg := fmt.Sprintf("deleted %d records out of %d", numBenchRecords, numBenchRecords+1)
+
+	Equal(t, errMsg, resp.Msg)
 
 	Zero(t, node1.NumRecords())
 	Zero(t, node2.NumRecords())
@@ -339,6 +369,19 @@ func TestService_CreateRecordsWithId3(t *testing.T) {
 
 	ms := ns.orchestrators[0].svc
 	resp, err := ms.CreateRecordsWithId(context.TODO(), &pb.Records{})
+
+	NoError(t, err)
+	False(t, resp.Success)
+	Equal(t, "No nodes available, try later", resp.Msg)
+}
+
+func TestService_CreateRecordWithId2(t *testing.T) {
+	ns, err := setupNetwork(0, 1)
+	NoError(t, err)
+	defer cleanupNetwork(&ns)
+
+	ms := ns.orchestrators[0].svc
+	resp, err := ms.CreateRecordWithId(context.TODO(), &testRecord)
 
 	NoError(t, err)
 	False(t, resp.Success)

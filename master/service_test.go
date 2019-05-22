@@ -117,8 +117,15 @@ func TestService_Run_InvalidID(t *testing.T) {
 }
 
 func spawnNodeErr(port uint32, dataPath string) (*grpc.Server, *service.Service, error) {
+	start := time.Now()
 	addr := fmt.Sprintf("localhost:%d", port)
 	listener, err := net.Listen("tcp", addr)
+
+	for err != nil && err.Error() == "bind: address already in use" && time.Since(start) < time.Second {
+		time.Sleep(5 * time.Millisecond)
+		listener, err = net.Listen("tcp", addr)
+	}
+
 	if err != nil {
 		return nil, nil, err
 	}
@@ -611,4 +618,85 @@ func TestDeleteNode(t *testing.T) {
 
 	Equal(t, 1, len(ms.nodes))
 	Equal(t, nRecords, ms.NumRecords())
+}
+
+func TestService_Run_ConnErr(t *testing.T) {
+	ns, err := setupPopulatedNetwork(2, 1)
+	NoError(t, err)
+	defer cleanupNetwork(&ns)
+
+	ms := ns.orchestrators[0].svc
+	for _, node := range ns.nodes {
+		node.server.Stop()
+	}
+
+	mapCode := `
+function listOfRecordIds() {
+	result = [];
+	records.All().forEach(function(record){
+		result.push(record.ID);
+	});
+	return result;
+}`
+
+	resp1, err := ms.CreateOracle(context.Background(), &pb.Oracle{Code: mapCode, Name: "listOfRecordIds"})
+	Nil(t, err)
+	True(t, resp1.Success)
+	oId, err := strconv.ParseUint(resp1.Msg, 10, 64)
+	Nil(t, err)
+
+	// run oracle
+
+	resp2, err := ms.Run(context.Background(), &pb.Call{Args: []string{}, OracleId: oId})
+	Nil(t, err)
+	False(t, resp2.Success)
+
+	errRgx := `^Errors from nodes: \[.*rpc error: code = Unavailable.*\]$`
+
+	Regexp(t, errRgx, resp2.Msg)
+}
+
+func TestService_Run_ConnErr_WithId(t *testing.T) {
+	ns, err := setupPopulatedNetwork(2, 1)
+	NoError(t, err)
+	defer cleanupNetwork(&ns)
+
+	ms := ns.orchestrators[0].svc
+	for _, node := range ns.nodes {
+		node.server.Stop()
+	}
+
+	code := `
+function findSimilar(id, threshold) {
+    var v = records.Find(id);
+    if( v.IsNull() == true ) {
+        return ctx.Error("Vector " + id + " not found.");
+    }
+
+    var results = {};
+    records.AllBut(v).forEach(function(record){
+        var similarity = v.Cosine(record);
+        if( similarity >= threshold ) {
+           results[record.ID] = similarity
+        }
+    });
+
+    return results;
+}`
+
+	resp1, err := ms.CreateOracle(context.Background(), &pb.Oracle{Code: code, Name: "such name, very common, many characters, wow"})
+	Nil(t, err)
+	True(t, resp1.Success, resp1.Msg)
+	oId, err := strconv.ParseUint(resp1.Msg, 10, 64)
+	Nil(t, err)
+
+	// run oracle
+
+	resp2, err := ms.Run(context.Background(), &pb.Call{Args: []string{"1"}, OracleId: oId})
+	Nil(t, err)
+	False(t, resp2.Success)
+
+	errRgx := `^Unable to retrieve record 1: No node was able to satisfy your request: \[.*rpc error: code = Unavailable.*\]$`
+
+	Regexp(t, errRgx, resp2.Msg)
 }
