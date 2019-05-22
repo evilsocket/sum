@@ -293,3 +293,41 @@ func TestServiceListRecordsSinglePage_ConnErr(t *testing.T) {
 		t.Fatalf("expected 0 total records, got %d", len(resp.Records))
 	}
 }
+
+func TestService_CreateRecordsWithId2(t *testing.T) {
+	ns, err := setupNetwork(2, 1)
+	NoError(t, err)
+	defer cleanupNetwork(&ns)
+
+	ms := ns.orchestrators[0].svc
+
+	Nrecs := 5
+	recs := make([]*pb.Record, 0, Nrecs)
+	for i := 0; i < Nrecs; i++ {
+		rCopy := *&testRecord
+		rCopy.Id = uint64(i + 1)
+		recs = append(recs, &rCopy)
+	}
+
+	t.Run("WithoutNode", func(t *testing.T) {
+		ns.nodes[0].server.Stop()
+
+		resp, err := ms.CreateRecordsWithId(context.TODO(), &pb.Records{Records: recs})
+
+		NoError(t, err)
+		True(t, resp.Success, resp.Msg)
+	})
+
+	t.Run("WithoutNodes", func(t *testing.T) {
+		ns.nodes[1].server.Stop()
+
+		resp, err := ms.CreateRecordsWithId(context.TODO(), &pb.Records{Records: recs})
+
+		NoError(t, err)
+		False(t, resp.Success)
+
+		rgx := `^Cannot create records on nodes: last error = rpc error: code = Unavailable`
+
+		Regexp(t, rgx, resp.Msg)
+	})
+}
