@@ -444,6 +444,37 @@ function heteroMap() {
 		Regexp(t, errRgx, resp2.Msg)
 	})
 
+	existingKeyMapCode := `
+function heteroKeyMap() {
+	result = {};
+
+	records.All().forEach(function(record){
+		if (record.ID % 2 == 0) {
+			result["id"] = 5;
+		} else {
+			result["id"] = 1;
+		}
+	});
+
+	return result;
+}`
+
+	t.Run("ExistingKeysMap", func(t *testing.T) {
+		resp1, err := ms.CreateOracle(context.Background(), &pb.Oracle{Code: existingKeyMapCode, Name: "existingKeyMap"})
+		Nil(t, err)
+		True(t, resp1.Success)
+		oId, err := strconv.ParseUint(resp1.Msg, 10, 64)
+		Nil(t, err)
+
+		resp2, err := ms.Run(context.Background(), &pb.Call{Args: []string{}, OracleId: oId})
+		Nil(t, err)
+		False(t, resp2.Success)
+
+		errRgx := `^Unable to merge results from nodes: merge conflict: multiple results define key id: oldValue='(1', newValue='5|5', newValue='1)'$`
+
+		Regexp(t, errRgx, resp2.Msg)
+	})
+
 	scalarCode := `
 function sumAllVectors() {
     var result = 0.0;
