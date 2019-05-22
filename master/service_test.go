@@ -168,8 +168,15 @@ func spawnOrchestratorErr(port uint32, nodesStr string) (*grpc.Server, *Service,
 		}
 	}
 
+	start := time.Now()
 	addr := fmt.Sprintf("localhost:%d", port)
 	listener, err := net.Listen("tcp", addr)
+
+	for err != nil && err.Error() == "bind: address already in use" && time.Since(start) < time.Second {
+		time.Sleep(5 * time.Millisecond)
+		listener, err = net.Listen("tcp", addr)
+	}
+
 	if err != nil {
 		return nil, nil, err
 	}
