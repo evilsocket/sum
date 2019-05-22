@@ -331,3 +331,16 @@ func TestService_CreateRecordsWithId2(t *testing.T) {
 		Regexp(t, rgx, resp.Msg)
 	})
 }
+
+func TestService_CreateRecordsWithId3(t *testing.T) {
+	ns, err := setupNetwork(0, 1)
+	NoError(t, err)
+	defer cleanupNetwork(&ns)
+
+	ms := ns.orchestrators[0].svc
+	resp, err := ms.CreateRecordsWithId(context.TODO(), &pb.Records{})
+
+	NoError(t, err)
+	False(t, resp.Success)
+	Equal(t, "No nodes available, try later", resp.Msg)
+}
