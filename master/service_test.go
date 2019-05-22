@@ -330,31 +330,11 @@ function findDoubles(id, anotherParam) {
 }
 
 func TestMergerFunction(t *testing.T) {
-	SetCommunicationTimeout(time.Second)
+	ns, err := setupNetwork(2, 1)
+	NoError(t, err)
+	defer cleanupNetwork(&ns)
 
-	dir1, err := ioutil.TempDir("", "")
-	Nil(t, err)
-	defer os.RemoveAll(dir1)
-	dir2, err := ioutil.TempDir("", "")
-	Nil(t, err)
-	defer os.RemoveAll(dir2)
-
-	for _, baseDir := range []string{dir1, dir2} {
-		for _, childDir := range []string{"data", "oracles"} {
-			err = os.Mkdir(filepath.Join(baseDir, childDir), 0755)
-			Nil(t, err)
-		}
-	}
-
-	node1, _ := spawnNode(t, 12345, dir1)
-	defer node1.Stop()
-	node2, _ := spawnNode(t, 12346, dir2)
-	defer node2.Stop()
-
-	master, ms := spawnOrchestrator(t, 12347, "localhost:12345,localhost:12346")
-	defer master.Stop()
-
-	// Test time!
+	ms := ns.orchestrators[0].svc
 
 	// create records
 
@@ -375,9 +355,89 @@ func TestMergerFunction(t *testing.T) {
 
 	NotEqual(t, rec1Id, rec2Id)
 
-	// create oracle
+	mapCode := `
+function mapOfRecordNames() {
+	result = {};
+	records.All().forEach(function(record){
+		result[record.ID] = record.Meta('name');
+	});
 
-	code := `
+	return result;
+}`
+
+	t.Run("DefaultMap", func(t *testing.T) {
+		resp1, err := ms.CreateOracle(context.Background(), &pb.Oracle{Code: mapCode, Name: "mapOfRecordNames"})
+		Nil(t, err)
+		True(t, resp1.Success)
+		oId, err := strconv.ParseUint(resp1.Msg, 10, 64)
+		Nil(t, err)
+
+		// run oracle
+
+		resp2, err := ms.Run(context.Background(), &pb.Call{Args: []string{}, OracleId: oId})
+		Nil(t, err)
+		True(t, resp2.Success)
+
+		if resp2.Data.Compressed {
+			r, err := gzip.NewReader(bytes.NewReader(resp2.Data.Payload))
+			Nil(t, err)
+			resp2.Data.Payload, err = ioutil.ReadAll(r)
+			Nil(t, err)
+		}
+
+		var res interface{}
+
+		err = json.Unmarshal(resp2.Data.Payload, &res)
+		Nil(t, err)
+
+		// check result
+
+		val, ok := res.(map[string]interface{})
+		True(t, ok)
+		Len(t, val, 2)
+
+		for k, v := range map[string]string{"1": "1", "2": "2"} {
+			v1, ok := val[k]
+			True(t, ok)
+			Equal(t, v, v1)
+		}
+
+	})
+
+	heteroMapCode := `
+function heteroMap() {
+	result = {'1': 1};
+	result1 = [1];
+	var res;
+
+	records.All().forEach(function(record){
+		if (record.ID % 2 == 0) {
+			res = result;
+		} else {
+			res = result1;
+		}
+	});
+
+	return res;
+}`
+
+	t.Run("HeterogeneousMap", func(t *testing.T) {
+		resp1, err := ms.CreateOracle(context.Background(), &pb.Oracle{Code: heteroMapCode, Name: "heteroMap"})
+		Nil(t, err)
+		True(t, resp1.Success)
+		oId, err := strconv.ParseUint(resp1.Msg, 10, 64)
+		Nil(t, err)
+
+		resp2, err := ms.Run(context.Background(), &pb.Call{Args: []string{}, OracleId: oId})
+		Nil(t, err)
+		False(t, resp2.Success)
+
+		errRgx := `^Unable to merge results from nodes: heterogeneous results: prior results had type (map\[string\]interface \{\}, this one has type \[\]interface \{\}|\[\]interface \{\}, this one has type map\[string\]interface \{\})$`
+
+		Regexp(t, errRgx, resp2.Msg)
+	})
+
+	scalarCode := `
 function sumAllVectors() {
     var result = 0.0;
     records.All().forEach(function(record){
@@ -387,60 +447,113 @@ function sumAllVectors() {
     });
 
     return result;
-}
-`
+}`
 
-	// shall fail without a merger function
+	t.Run("Missing", func(t *testing.T) {
 
-	resp1, err := ms.CreateOracle(context.Background(), &pb.Oracle{Code: code, Name: "sumAllVectors"})
-	Nil(t, err)
-	True(t, resp1.Success)
-	oId, err := strconv.ParseUint(resp1.Msg, 10, 64)
-	Nil(t, err)
+		// shall fail without a merger function
 
-	resp2, err := ms.Run(context.Background(), &pb.Call{Args: []string{}, OracleId: oId})
-	Nil(t, err)
-	False(t, resp2.Success)
+		resp1, err := ms.CreateOracle(context.Background(), &pb.Oracle{Code: scalarCode, Name: "sumAllVectors"})
+		Nil(t, err)
+		True(t, resp1.Success)
+		oId, err := strconv.ParseUint(resp1.Msg, 10, 64)
+		Nil(t, err)
 
-	// add merger function
+		resp2, err := ms.Run(context.Background(), &pb.Call{Args: []string{}, OracleId: oId})
+		Nil(t, err)
+		False(t, resp2.Success)
+		Equal(t, "Unable to merge results from nodes: type float64 is not supported for auto-merge, please provide a custom merge function", resp2.Msg)
+	})
 
-	code += `
+	validCode := scalarCode + `
 function add(accumulator, a) { return accumulator + a; }
 
 function mergeNodesResults(results) {
 	return results.reduce(add);
-}
-`
+}`
 
-	resp1, err = ms.CreateOracle(context.Background(), &pb.Oracle{Code: code, Name: "sumAllVectors"})
-	Nil(t, err)
-	True(t, resp1.Success)
-	oId, err = strconv.ParseUint(resp1.Msg, 10, 64)
-	Nil(t, err)
-
-	// run oracle
-
-	resp2, err = ms.Run(context.Background(), &pb.Call{Args: []string{}, OracleId: oId})
-	Nil(t, err)
-	True(t, resp2.Success)
-
-	if resp2.Data.Compressed {
-		r, err := gzip.NewReader(bytes.NewReader(resp2.Data.Payload))
+	t.Run("Valid", func(t *testing.T) {
+		resp1, err := ms.CreateOracle(context.Background(), &pb.Oracle{Code: validCode, Name: "sumAllVectors"})
 		Nil(t, err)
-		resp2.Data.Payload, err = ioutil.ReadAll(r)
+		True(t, resp1.Success)
+		oId, err := strconv.ParseUint(resp1.Msg, 10, 64)
 		Nil(t, err)
-	}
 
-	var res interface{}
+		// run oracle
 
-	err = json.Unmarshal(resp2.Data.Payload, &res)
-	Nil(t, err)
+		resp2, err := ms.Run(context.Background(), &pb.Call{Args: []string{}, OracleId: oId})
+		Nil(t, err)
+		True(t, resp2.Success)
 
-	// check result
+		if resp2.Data.Compressed {
+			r, err := gzip.NewReader(bytes.NewReader(resp2.Data.Payload))
+			Nil(t, err)
+			resp2.Data.Payload, err = ioutil.ReadAll(r)
+			Nil(t, err)
+		}
 
-	val, ok := res.(float64)
-	True(t, ok)
-	InEpsilon(t, 1.8, val, 1e-6)
+		var res interface{}
+
+		err = json.Unmarshal(resp2.Data.Payload, &res)
+		Nil(t, err)
+
+		// check result
+
+		val, ok := res.(float64)
+		True(t, ok)
+		InEpsilon(t, 1.8, val, 1e-6)
+	})
+
+	failingCode := scalarCode + `
+function mergeNodesResults(results) {
+	ctx.Error('FAIL');
+}`
+
+	t.Run("Failing", func(t *testing.T) {
+		resp1, err := ms.CreateOracle(context.Background(), &pb.Oracle{Code: failingCode, Name: "sumAllVectorsFailing"})
+		Nil(t, err)
+		True(t, resp1.Success)
+		oId, err := strconv.ParseUint(resp1.Msg, 10, 64)
+		Nil(t, err)
+
+		// run oracle
+
+		resp2, err := ms.Run(context.Background(), &pb.Call{Args: []string{}, OracleId: oId})
+		Nil(t, err)
+		False(t, resp2.Success)
+		Equal(t, `Unable to merge results from nodes: merger function failed: FAIL`, resp2.Msg)
+	})
+
+	nodeFailsCode := `
+function mapOfRecordNamesFailing() {
+	result = {};
+	records.All().forEach(function(record){
+		if (record.ID % 2 == 0) {
+			ctx.Error('FAIL');
+		}
+		result[record.ID] = record.Meta('name');
+	});
+
+	return result;
+}`
+
+	t.Run("NodeFailing", func(t *testing.T) {
+		resp1, err := ms.CreateOracle(context.Background(), &pb.Oracle{Code: nodeFailsCode, Name: "mapOfRecordNamesFailing"})
+		Nil(t, err)
+		True(t, resp1.Success)
+		oId, err := strconv.ParseUint(resp1.Msg, 10, 64)
+		Nil(t, err)
+
+		// run oracle
+
+		resp2, err := ms.Run(context.Background(), &pb.Call{Args: []string{}, OracleId: oId})
+		Nil(t, err)
+		False(t, resp2.Success)
+
+		rgx := `^Errors from nodes: \[.*error while running oracle [0-9]+: FAIL.*\]$`
+
+		Regexp(t, rgx, resp2.Msg)
+	})
 }
 
 func TestAddNode(t *testing.T) {

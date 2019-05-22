@@ -169,9 +169,9 @@ func (ms *Service) merge(raccoon *astRaccoon, results []interface{}) (interface{
 	ctx := wrapper.NewContext()
 
 	if err := vm.Set(mf.ParameterList.List[0].Name, results); err != nil {
-		return errCallResponse("Unable to set parameter variable '%s': %v", mf.ParameterList.List[0].Name, err), nil
+		return nil, fmt.Errorf("unable to set parameter variable '%s': %v", mf.ParameterList.List[0].Name, err)
 	} else if err := vm.Set("ctx", ctx); err != nil {
-		return errCallResponse("Unable to set parameter variable '%s': %v", "ctx", err), nil
+		return nil, fmt.Errorf("unable to set parameter variable '%s': %v", "ctx", err)
 	}
 
 	// I've tried with the compiled version but didn't work ^^"
@@ -181,13 +181,13 @@ func (ms *Service) merge(raccoon *astRaccoon, results []interface{}) (interface{
 	ret, err := vm.Run(code)
 
 	if err != nil {
-		return errCallResponse("Unable to run merger function: %v", err), nil
+		return nil, fmt.Errorf("unable to run merger function: %v", err)
 	} else if ctx.IsError() {
 		// same goes for errors triggered within the oracle
-		return errCallResponse("Merger function failed: %v", ctx.Message()), nil
+		return nil, fmt.Errorf("merger function failed: %v", ctx.Message())
 	} else if mergedResults, err := ret.Export(); err != nil {
 		// or if we can't export its return value
-		return errCallResponse("Couldn't deserialize returned object from merger: %v", err), nil
+		return nil, fmt.Errorf("couldn't deserialize returned object from merger: %v", err)
 	} else {
 		return mergedResults, nil
 	}
