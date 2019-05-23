@@ -28,6 +28,15 @@ func LoadConfig(configFile string) (*Config, error) {
 	}
 }
 
+func StoreConfig(config *Config, filepath string) error {
+	if data, err := json.Marshal(config); err != nil {
+		return err
+	} else if err = ioutil.WriteFile(filepath, data, 0644); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (ms *Service) updateConfig() {
 	if ms.configFile == "" {
 		return
@@ -44,9 +53,7 @@ func (ms *Service) updateConfig() {
 		cfg.Nodes = append(cfg.Nodes, nc)
 	}
 
-	if data, err := json.Marshal(&cfg); err != nil {
-		log.Error("cannot save configuration: %v", err)
-	} else if err = ioutil.WriteFile(ms.configFile, data, 0644); err != nil {
+	if err := StoreConfig(&cfg, ms.configFile); err != nil {
 		log.Error("cannot save configuration: %v", err)
 	}
 }
