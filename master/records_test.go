@@ -275,16 +275,66 @@ func TestServiceListRecordsMultiPageMultiNode(t *testing.T) {
 	NoError(t, err)
 	defer cleanupNetwork(&ns)
 
+	t.Run("WithPageLessThan1Node", func(t *testing.T) {
+		list := pb.ListRequest{
+			Page:    1,
+			PerPage: 2,
+		}
+
+		ms := ns.orchestrators[0].svc
+		numPages := uint64(numBenchRecords) / 2
+		if numBenchRecords%2 != 0 {
+			numPages++
+		}
+
+		if resp, err := ms.ListRecords(context.TODO(), &list); err != nil {
+			t.Fatal(err)
+		} else if resp.Total != numBenchRecords {
+			t.Fatalf("expected %d total records, got %d", testRecords, resp.Total)
+		} else if resp.Pages != numPages {
+			t.Fatalf("expected %d pages got %d", numPages, resp.Pages)
+		} else if len(resp.Records) != 2 {
+			t.Fatalf("expected %d total records, got %d", 2, len(resp.Records))
+		}
+	})
+
+	t.Run("WithPageMoreTHan1Node", func(t *testing.T) {
+		list := pb.ListRequest{
+			Page:    1,
+			PerPage: (numBenchRecords / 2) + 1,
+		}
+
+		ms := ns.orchestrators[0].svc
+		numPages := numBenchRecords / list.PerPage
+		if numBenchRecords%list.PerPage != 0 {
+			numPages++
+		}
+
+		if resp, err := ms.ListRecords(context.TODO(), &list); err != nil {
+			t.Fatal(err)
+		} else if resp.Total != numBenchRecords {
+			t.Fatalf("expected %d total records, got %d", testRecords, resp.Total)
+		} else if resp.Pages != numPages {
+			t.Fatalf("expected %d pages got %d", numPages, resp.Pages)
+		} else if uint64(len(resp.Records)) != list.PerPage {
+			t.Fatalf("expected %d total records, got %d", list.PerPage, len(resp.Records))
+		}
+	})
+
+}
+
+func TestServiceListRecordsZeroPerPage(t *testing.T) {
+	ns, err := setupPopulatedNetwork(2, 1)
+	NoError(t, err)
+	defer cleanupNetwork(&ns)
+
 	list := pb.ListRequest{
 		Page:    1,
-		PerPage: 2,
+		PerPage: 0,
 	}
 
 	ms := ns.orchestrators[0].svc
-	numPages := uint64(numBenchRecords) / 2
-	if numBenchRecords%2 != 0 {
-		numPages++
-	}
+	numPages := uint64(numBenchRecords)
 
 	if resp, err := ms.ListRecords(context.TODO(), &list); err != nil {
 		t.Fatal(err)
@@ -292,8 +342,8 @@ func TestServiceListRecordsMultiPageMultiNode(t *testing.T) {
 		t.Fatalf("expected %d total records, got %d", testRecords, resp.Total)
 	} else if resp.Pages != numPages {
 		t.Fatalf("expected %d pages got %d", numPages, resp.Pages)
-	} else if len(resp.Records) != 2 {
-		t.Fatalf("expected %d total records, got %d", 2, len(resp.Records))
+	} else if len(resp.Records) != 1 {
+		t.Fatalf("expected %d total records, got %d", 1, len(resp.Records))
 	}
 }
 
