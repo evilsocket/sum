@@ -116,16 +116,21 @@ func TestService_Run_InvalidID(t *testing.T) {
 	Equal(t, "oracle 1 not found.", resp.Msg)
 }
 
-func spawnNodeErr(port uint32, dataPath string) (*grpc.Server, *service.Service, error) {
-	start := time.Now()
-	addr := fmt.Sprintf("localhost:%d", port)
-	listener, err := net.Listen("tcp", addr)
+func startListener(port uint32) (addr string, listener net.Listener, err error) {
+	deadline := time.Now().Add(time.Second)
+	addr = fmt.Sprintf("localhost:%d", port)
+	listener, err = net.Listen("tcp", addr)
 
-	for err != nil && err.Error() == "bind: address already in use" && time.Since(start) < time.Second {
+	for err != nil && strings.HasSuffix(err.Error(), "bind: address already in use") && deadline.After(time.Now()) {
 		time.Sleep(5 * time.Millisecond)
 		listener, err = net.Listen("tcp", addr)
 	}
 
+	return
+}
+
+func spawnNodeErr(port uint32, dataPath string) (*grpc.Server, *service.Service, error) {
+	addr, listener, err := startListener(port)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -168,21 +173,14 @@ func spawnOrchestratorErr(port uint32, nodesStr string) (*grpc.Server, *Service,
 		}
 	}
 
-	start := time.Now()
-	addr := fmt.Sprintf("localhost:%d", port)
-	listener, err := net.Listen("tcp", addr)
-
-	for err != nil && err.Error() == "bind: address already in use" && time.Since(start) < time.Second {
-		time.Sleep(5 * time.Millisecond)
-		listener, err = net.Listen("tcp", addr)
-	}
-
+	addr, listener, err := startListener(port)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	ms, err := NewService(nodes, "", addr)
 	if err != nil {
+		listener.Close()
 		return nil, nil, err
 	}
 
@@ -221,7 +219,7 @@ func setupEmptyTmpFolder() (string, error) {
 
 func spawnOrchestrator(t *testing.T, port uint32, nodesStr string) (*grpc.Server, *Service) {
 	server, ms, err := spawnOrchestratorErr(port, nodesStr)
-	Nil(t, err)
+	NoError(t, err)
 	return server, ms
 }
 
