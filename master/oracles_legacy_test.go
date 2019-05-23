@@ -233,21 +233,21 @@ func TestServiceDeleteOracle(t *testing.T) {
 			t.Fatalf("expected success response: %v", resp)
 		} else if resp.Oracle != nil {
 			t.Fatalf("unexpected oracles list: %v", resp.Oracle)
-		} else if len(network.orchestrators[0].svc.raccoons) != testOracles-int(id) {
-			t.Fatalf("inconsistent oracles storage size of %d", len(network.orchestrators[0].svc.raccoons))
+		} else if network.orchestrators[0].svc.NumOracles() != testOracles-int(id) {
+			t.Fatalf("inconsistent oracles storage size of %d", network.orchestrators[0].svc.NumOracles())
 		}
 	}
 
-	if len(network.orchestrators[0].svc.raccoons) != 0 {
-		t.Fatalf("expected empty oracles storage, found %d instead", len(network.orchestrators[0].svc.raccoons))
+	if network.orchestrators[0].svc.NumOracles() != 0 {
+		t.Fatalf("expected empty oracles storage, found %d instead", network.orchestrators[0].svc.NumOracles())
 	}
 
 	teardown(t)
 
 	if _, err := NewClient(testFolder); err != nil {
 		t.Fatal(err)
-	} else if len(network.orchestrators[0].svc.raccoons) != 0 {
-		t.Fatalf("%d dat files left on disk", len(network.orchestrators[0].svc.raccoons))
+	} else if network.orchestrators[0].svc.NumOracles() != 0 {
+		t.Fatalf("%d dat files left on disk", network.orchestrators[0].svc.NumOracles())
 	}
 }
 
