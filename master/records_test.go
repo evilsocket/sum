@@ -6,6 +6,7 @@ import (
 	pb "github.com/evilsocket/sum/proto"
 	"github.com/stretchr/testify/assert"
 	. "github.com/stretchr/testify/require"
+	"google.golang.org/grpc"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -374,6 +375,20 @@ func TestServiceListRecordsSinglePage_ConnErr(t *testing.T) {
 	}
 }
 
+type clientFailureProxy struct {
+	pb.SumInternalServiceClient
+	failNextCall bool
+	errorString  string
+}
+
+func (cfp *clientFailureProxy) CreateRecordsWithId(ctx context.Context, arg *pb.Records, options ...grpc.CallOption) (*pb.RecordResponse, error) {
+	if !cfp.failNextCall {
+		cfp.failNextCall = true
+		return cfp.SumInternalServiceClient.CreateRecordsWithId(ctx, arg, options...)
+	}
+	return nil, fmt.Errorf("%s", cfp.errorString)
+}
+
 func TestService_CreateRecordsWithId2(t *testing.T) {
 	ns, err := setupNetwork(2, 1)
 	NoError(t, err)
@@ -390,7 +405,7 @@ func TestService_CreateRecordsWithId2(t *testing.T) {
 	}
 
 	t.Run("WithoutNode", func(t *testing.T) {
-		ns.nodes[0].server.Stop()
+		ns.nodes[1].server.Stop()
 
 		resp, err := ms.CreateRecordsWithId(context.TODO(), &pb.Records{Records: recs})
 
@@ -398,8 +413,26 @@ func TestService_CreateRecordsWithId2(t *testing.T) {
 		True(t, resp.Success, resp.Msg)
 	})
 
+	t.Run("Rollback", func(t *testing.T) {
+		oldClient := ms.nodes[0].InternalClient
+		ms.nodes[0].InternalClient = &clientFailureProxy{
+			SumInternalServiceClient: oldClient,
+			errorString:              "FAIL",
+		}
+		defer func() {
+			ms.nodes[0].InternalClient = oldClient
+		}()
+
+		resp, err := ms.CreateRecordsWithId(context.TODO(), &pb.Records{Records: recs})
+
+		NoError(t, err)
+		False(t, resp.Success)
+
+		Equal(t, `Unable to create records on fallback node 1: FAIL`, resp.Msg)
+	})
+
 	t.Run("WithoutNodes", func(t *testing.T) {
-		ns.nodes[1].server.Stop()
+		ns.nodes[0].server.Stop()
 
 		resp, err := ms.CreateRecordsWithId(context.TODO(), &pb.Records{Records: recs})
 
