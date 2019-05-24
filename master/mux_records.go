@@ -246,7 +246,11 @@ func (ms *Service) DeleteRecord(_ context.Context, arg *ById) (*RecordResponse, 
 	notFoundError := fmt.Sprintf("record %d not found.", arg.Id)
 
 	ctx, cf := context.WithCancel(context.Background())
-	defer cf()
+	if !commContextIsCancellable {
+		cf = func() {}
+	} else {
+		defer cf()
+	}
 
 	results, errs := ms.doParallel(func(node *NodeInfo, resultChannel chan<- interface{}, errorChannel chan<- string) {
 		node.Lock()
