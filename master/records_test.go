@@ -1,13 +1,17 @@
 package master
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	pb "github.com/evilsocket/sum/proto"
 	"github.com/stretchr/testify/assert"
 	. "github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
+	"io/ioutil"
+	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -40,6 +44,74 @@ func TestService_UpdateRecord_ConnectionError(t *testing.T) {
 	errMsgRgx := `^No node was able to satisfy your request: \[node 1: rpc error: code = Unavailable`
 
 	Regexp(t, errMsgRgx, resp.Msg)
+}
+
+func TestService_MultipleAnswers(t *testing.T) {
+	ns, err := setupPopulatedNetwork(2, 1)
+	NoError(t, err)
+	defer cleanupNetwork(&ns)
+
+	// duplicate a record on one node
+
+	sum1 := ns.nodes[0].svc
+	sum2 := ns.nodes[1].svc
+
+	resp, err := sum1.ListRecords(context.TODO(), &pb.ListRequest{PerPage: 1, Page: 1})
+	NoError(t, err)
+	Equal(t, 1, len(resp.Records))
+
+	aRecord := resp.Records[0]
+
+	resp1, err := sum2.CreateRecordWithId(context.TODO(), aRecord)
+	NoError(t, err)
+	True(t, resp1.Success, resp1.Msg)
+
+	newLog, restoreLog := captureEvilsocketLog(t)
+	defer os.Remove(newLog)
+	defer restoreLog()
+
+	// wait all the parallel requests to complete
+	commContextIsCancellable = false
+	defer func() { commContextIsCancellable = true }()
+
+	// setup complete
+
+	ms := ns.orchestrators[0].svc
+
+	// read
+
+	resp1, err = ms.ReadRecord(context.TODO(), &pb.ById{Id: aRecord.Id})
+	NoError(t, err)
+	True(t, resp1.Success, resp1.Msg)
+
+	// update
+
+	aRecord.Data[0] = aRecord.Data[0] / 2
+	aRecord.Meta = map[string]string{"updated": "true"}
+
+	resp1, err = ms.UpdateRecord(context.TODO(), aRecord)
+	NoError(t, err)
+	True(t, resp1.Success, resp1.Msg)
+
+	// delete
+
+	resp1, err = ms.DeleteRecord(context.TODO(), &pb.ById{Id: aRecord.Id})
+	NoError(t, err)
+	True(t, resp1.Success, resp1.Msg)
+
+	restoreLog()
+
+	logContent, err := ioutil.ReadFile(newLog)
+	found := 0
+
+	scanner := bufio.NewScanner(strings.NewReader(string(logContent)))
+	for scanner.Scan() {
+		if strings.Contains(scanner.Text(), "Got 2 results when only one was expected") {
+			found++
+		}
+	}
+
+	Equalf(t, 3, found, "Expected 3 lines of log to match, got %d", found)
 }
 
 func TestConcurrentCreateRecords(t *testing.T) {

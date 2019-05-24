@@ -12,6 +12,26 @@ import (
 	"time"
 )
 
+func captureEvilsocketLog(t *testing.T) (filename string, restoreLog func()) {
+	tmpfile, err := ioutil.TempFile("", "")
+	NoError(t, err)
+	NoError(t, tmpfile.Close())
+
+	log.Output = tmpfile.Name()
+	NoError(t, log.Open())
+
+	oldLevel := log.Level
+	log.Level = log.DEBUG
+
+	return log.Output, func() {
+		log.Level = oldLevel
+		if log.Output != "" {
+			log.Output = ""
+			log.Open()
+		}
+	}
+}
+
 func TestSaveConfig(t *testing.T) {
 	tmpDir, err := setupEmptyTmpFolder()
 	Nil(t, err)
@@ -60,18 +80,8 @@ func TestSaveConfig(t *testing.T) {
 
 	// test error
 
-	tmpfile, err := ioutil.TempFile("", "")
-	NoError(t, err)
-	defer os.Remove(tmpfile.Name())
-	NoError(t, tmpfile.Close())
-
-	restoreLog := func() {
-		log.Output = ""
-		log.Open()
-	}
-
-	log.Output = tmpfile.Name()
-	NoError(t, log.Open())
+	newLog, restoreLog := captureEvilsocketLog(t)
+	defer os.Remove(newLog)
 	defer restoreLog()
 
 	ms.configFile = "/suchdirectory/veryunexistingfile"
@@ -79,7 +89,8 @@ func TestSaveConfig(t *testing.T) {
 
 	restoreLog()
 
-	logContent, err := ioutil.ReadFile(tmpfile.Name())
+	logContent, err := ioutil.ReadFile(newLog)
+	NoError(t, err)
 
 	Contains(t, string(logContent), `cannot save configuration: open /suchdirectory/veryunexistingfile: no such file or directory`)
 }

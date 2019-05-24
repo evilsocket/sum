@@ -96,7 +96,7 @@ func (ms *Service) UpdateRecord(_ context.Context, arg *Record) (*RecordResponse
 		}
 		return errRecordResponse("No node was able to satisfy your request: [%s]", strings.Join(errs, ", ")), nil
 	default:
-		log.Warning("Got multiple results when only one was expected: %v", results)
+		log.Warning("Got %d results when only one was expected: %v", len(results), results)
 		fallthrough
 	case 1:
 		return &RecordResponse{Success: true}, nil
@@ -133,7 +133,7 @@ func (ms *Service) ReadRecord(_ context.Context, arg *ById) (*RecordResponse, er
 		}
 		return errRecordResponse("No node was able to satisfy your request: [%s]", strings.Join(errs, ", ")), nil
 	default:
-		log.Warning("Got multiple results when only one was expected: %v", results)
+		log.Warning("Got %d results when only one was expected: %v", len(results), results)
 		fallthrough
 	case 1:
 		return &RecordResponse{Success: true, Record: results[0].(*Record)}, nil
