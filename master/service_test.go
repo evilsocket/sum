@@ -350,8 +350,8 @@ func TestMergerFunction(t *testing.T) {
 
 	// create records
 
-	rec1 := &pb.Record{Data: []float32{0.1, 0.2, 0.3}, Meta: map[string]string{"name": "1"}}
-	rec2 := &pb.Record{Data: []float32{0.2, 0.4, 0.6}, Meta: map[string]string{"name": "2"}}
+	rec1 := &pb.Record{Data: []float32{0.1, 0.2, 0.3}, Meta: map[string]string{"name": "Lorea"}}
+	rec2 := &pb.Record{Data: []float32{0.2, 0.4, 0.6}, Meta: map[string]string{"name": "Sabrina"}}
 
 	resp, err := ms.CreateRecord(context.Background(), rec1)
 	Nil(t, err)
@@ -408,7 +408,7 @@ function mapOfRecordNames() {
 		True(t, ok)
 		Len(t, val, 2)
 
-		for k, v := range map[string]string{"1": "1", "2": "2"} {
+		for k, v := range map[string]string{"1": "Lorea", "2": "Sabrina"} {
 			v1, ok := val[k]
 			True(t, ok)
 			Equal(t, v, v1)
@@ -583,7 +583,7 @@ function mapOfRecordNamesFailing() {
 	t.Run("NodeFailing", func(t *testing.T) {
 		resp1, err := ms.CreateOracle(context.Background(), &pb.Oracle{Code: nodeFailsCode, Name: "mapOfRecordNamesFailing"})
 		Nil(t, err)
-		True(t, resp1.Success)
+		True(t, resp1.Success, resp1.Msg)
 		oId, err := strconv.ParseUint(resp1.Msg, 10, 64)
 		Nil(t, err)
 
@@ -596,6 +596,204 @@ function mapOfRecordNamesFailing() {
 		rgx := `^Errors from nodes: \[.*error while running oracle [0-9]+: FAIL.*\]$`
 
 		Regexp(t, rgx, resp2.Msg)
+	})
+
+	fnMarshalErrorCode := `
+function divisionByZero() {
+	return 5 / 0;
+}`
+
+	t.Run("FunctionMarshalError", func(t *testing.T) {
+		resp1, err := ms.CreateOracle(context.TODO(), &pb.Oracle{Code: fnMarshalErrorCode, Name: "divisionByZero"})
+		NoError(t, err)
+		True(t, resp1.Success, resp1.Msg)
+
+		oId, err := strconv.ParseUint(resp1.Msg, 10, 64)
+		NoError(t, err)
+
+		resp2, err := ms.Run(context.TODO(), &pb.Call{OracleId: oId})
+		NoError(t, err)
+		False(t, resp2.Success)
+
+		errRgx := `^Errors from nodes: \[.*error while running oracle [0-9]+: json: unsupported value: \+Inf.*\]$`
+
+		Regexp(t, errRgx, resp2.Msg)
+	})
+
+	mergerMarshalErrorCode := `
+function theVoid() {
+	return 0;
+}
+
+function mergeResultsWithDivisionByZero(results) {
+	return results[0]/0;
+}`
+
+	t.Run("MergerMarshalErr", func(t *testing.T) {
+		resp1, err := ms.CreateOracle(context.TODO(), &pb.Oracle{Code: mergerMarshalErrorCode, Name: "mergeResultsWithDivisionByZero"})
+		NoError(t, err)
+		True(t, resp1.Success, resp1.Msg)
+
+		oId, err := strconv.ParseUint(resp1.Msg, 10, 64)
+		NoError(t, err)
+
+		resp2, err := ms.Run(context.TODO(), &pb.Call{OracleId: oId})
+		NoError(t, err)
+		False(t, resp2.Success)
+		Equal(t, "Unable to marshal result: json: unsupported value: NaN", resp2.Msg)
+	})
+
+	fnErrorCode := `
+function throwError() {
+	throw "yuppie!";
+}`
+
+	t.Run("functionError", func(t *testing.T) {
+		resp1, err := ms.CreateOracle(context.TODO(), &pb.Oracle{Code: fnErrorCode, Name: "throwError"})
+		NoError(t, err)
+		True(t, resp1.Success, resp1.Msg)
+
+		oId, err := strconv.ParseUint(resp1.Msg, 10, 64)
+		NoError(t, err)
+
+		resp2, err := ms.Run(context.TODO(), &pb.Call{OracleId: oId})
+		NoError(t, err)
+		False(t, resp2.Success)
+
+		errRgx := `^Errors from nodes: \[.*error while running oracle [0-9]+: yuppie!.*\]$`
+
+		Regexp(t, errRgx, resp2.Msg)
+	})
+
+	mergerErrorCode := `
+function drinkAppleCider() { return 0; }
+function mergeSomethingButThrowup(results) { throw "apple cider"; }`
+
+	t.Run("mergerError", func(t *testing.T) {
+		resp1, err := ms.CreateOracle(context.TODO(), &pb.Oracle{Code: mergerErrorCode, Name: "mergerThrowup"})
+		NoError(t, err)
+		True(t, resp1.Success, resp1.Msg)
+
+		oId, err := strconv.ParseUint(resp1.Msg, 10, 64)
+		NoError(t, err)
+
+		resp2, err := ms.Run(context.TODO(), &pb.Call{OracleId: oId})
+		NoError(t, err)
+		False(t, resp2.Success)
+		Equal(t, "Unable to merge results from nodes: unable to run merger function: apple cider", resp2.Msg)
+	})
+
+	mergerWrongNumArgs := `
+function eatChuleta() { return 0; }
+function mergeRibsButWaiterStoleTheDish() { return "what a nice service man :)"; }`
+
+	t.Run("mergerFunctionWrongArgs", func(t *testing.T) {
+		newLog, restoreLog := captureEvilsocketLog(t)
+		defer os.Remove(newLog)
+		defer restoreLog()
+
+		resp1, err := ms.CreateOracle(context.TODO(), &pb.Oracle{Code: mergerWrongNumArgs, Name: "eatChuletaAndCleanitup"})
+
+		fileContent, err1 := ioutil.ReadFile(newLog)
+		restoreLog()
+
+		NoError(t, err)
+		True(t, resp1.Success, resp1.Msg)
+
+		NoError(t, err1)
+		Contains(t, string(fileContent), "Function mergeRibsButWaiterStoleTheDish is not a merger function as it does not take 1 argument")
+	})
+
+	functionTakeMultipleIds := `
+function doTheDandyWithMultipleLadies(lady1, lady2) {
+	var rec1 = records.Find(lady1);
+	var rec2 = records.Find(lady2);
+
+	if (rec1.IsNull() || rec2.IsNull()) {
+		ctx.Error('someone stole the ladies from me >.<');
+	}
+
+	// this fucked language does not have string interpolation... 
+	var s = 'Yesterday I was with ';
+	s += rec1.Meta('name');
+	s += ', but today I\'ll hang out with ';
+	s += rec2.Meta('name');
+	s += '. Keep it secret!';
+
+	return s;
+}
+function mergeTakeFirstString(results) { return results[0]; }`
+
+	t.Run("functionWithMulitpleIds", func(t *testing.T) {
+		resp1, err := ms.CreateOracle(context.Background(), &pb.Oracle{Code: functionTakeMultipleIds, Name: "theDandy"})
+		NoError(t, err)
+		True(t, resp1.Success, resp1.Msg)
+		oId, err := strconv.ParseUint(resp1.Msg, 10, 64)
+		NoError(t, err)
+
+		// run oracle
+
+		resp2, err := ms.Run(context.Background(), &pb.Call{Args: []string{"1", "2"}, OracleId: oId})
+		Nil(t, err)
+		True(t, resp2.Success, resp2.Msg)
+
+		if resp2.Data.Compressed {
+			r, err := gzip.NewReader(bytes.NewReader(resp2.Data.Payload))
+			NoError(t, err)
+			resp2.Data.Payload, err = ioutil.ReadAll(r)
+			NoError(t, err)
+		}
+
+		var res interface{}
+
+		err = json.Unmarshal(resp2.Data.Payload, &res)
+		NoError(t, err)
+
+		// check result
+
+		val, ok := res.(string)
+		True(t, ok)
+		Equal(t, "Yesterday I was with Lorea, but today I'll hang out with Sabrina. Keep it secret!", val)
+	})
+
+	functionHardcodedLookups := `
+var idFromGlobalVar = 2;
+
+function fetchRecordNames() {
+	var rec1 = records.Find(1);
+	var rec2 = records.Find(idFromGlobalVar);
+
+	if (rec1.IsNull() || rec2.IsNull()) {
+		ctx.Error('not found');
+		return;
+	}
+	
+	var s = "I found ";
+	s += rec1.Meta('name');
+	s += ' and ';
+	s += rec2.Meta('name');
+	s += '.'
+	
+	return s;
+}
+function mergeResults(results) { return results[0]; }`
+
+	t.Run("functionHardcoededLookup", func(t *testing.T) {
+		resp1, err := ms.CreateOracle(context.Background(), &pb.Oracle{Code: functionHardcodedLookups, Name: "hardcodedLookups"})
+		NoError(t, err)
+		True(t, resp1.Success, resp1.Msg)
+		oId, err := strconv.ParseUint(resp1.Msg, 10, 64)
+		NoError(t, err)
+
+		// run oracle
+
+		resp2, err := ms.Run(context.Background(), &pb.Call{OracleId: oId})
+		Nil(t, err)
+		False(t, resp2.Success)
+
+		errRgx := `^Errors from nodes: \[.*error while running oracle [0-9]+: not found.*\]$`
+
+		Regexp(t, errRgx, resp2.Msg)
 	})
 }
 
@@ -735,4 +933,18 @@ function findSimilar(id, threshold) {
 	errRgx := `^Unable to retrieve record 1: No node was able to satisfy your request: \[.*rpc error: code = Unavailable.*\]$`
 
 	Regexp(t, errRgx, resp2.Msg)
+}
+
+func TestService_Run_NoFunctions(t *testing.T) {
+	ns, err := setupNetwork(1, 1)
+	NoError(t, err)
+	defer cleanupNetwork(&ns)
+
+	ms := ns.orchestrators[0].svc
+
+	resp, err := ms.CreateOracle(context.TODO(), &pb.Oracle{})
+	NoError(t, err)
+	False(t, resp.Success)
+
+	Equal(t, "Error parsing the code: no function provided", resp.Msg)
 }
