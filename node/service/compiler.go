@@ -13,7 +13,7 @@ import (
 )
 
 var (
-	errNoDeclarations = errors.New("expected function declaration")
+	errNoDeclarations = errors.New("expected a function declaration")
 )
 
 func validate(oracle *pb.Oracle) (call string, args []string, err error) {
@@ -21,13 +21,20 @@ func validate(oracle *pb.Oracle) (call string, args []string, err error) {
 	// first try to parse the oracle and validate that
 	// it starts with a function declaration
 	program, err := parser.ParseFile(nil, "", oracle.Code, 0)
-	ok := true
+	ok := false
+
 	if err != nil {
 		return "", nil, err
-	} else if program.DeclarationList == nil || len(program.DeclarationList) < 1 {
+	}
+
+	for _, decl := range program.DeclarationList {
+		if prototype, ok = decl.(*ast.FunctionDeclaration); ok {
+			break
+		}
+	}
+
+	if !ok {
 		return "", nil, errNoDeclarations
-	} else if prototype, ok = program.DeclarationList[0].(*ast.FunctionDeclaration); !ok {
-		return "", nil, fmt.Errorf("expected function declaration, found %T", program.DeclarationList[0])
 	}
 
 	// use the function declaration in order to build  the function call
