@@ -99,7 +99,7 @@ function findSimilar(id, threshold) {
 	newCode, err := raccoon.PatchCode([]*pb.Record{r, nil})
 	Nil(t, err)
 
-	expected := strings.Replace(code, "records.Find(id)", "records.New('eJziYBTiOXvmjO3ZMz52s2bOtFPi4WLOTq0UYi1LzClNBQQAAP//qmgKrw==')", -1)
+	expected := strings.Replace(code, "records.Find(id)", `records.New({"id":1,"data":[0.1,0.2,0.3],"meta":{"key":"value"}})`, -1)
 	Equal(t, expected, newCode)
 }
 

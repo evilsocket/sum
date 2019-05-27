@@ -3,7 +3,6 @@ package wrapper
 import (
 	"errors"
 	"github.com/evilsocket/sum/node/storage"
-	. "github.com/stretchr/testify/require"
 	"io/ioutil"
 	"log"
 	"os"
@@ -204,21 +203,4 @@ func TestWrappedRecordsAllBut(t *testing.T) {
 			t.Fatalf("record %d not wrapped correctly", wRec.ID)
 		}
 	}
-}
-
-func TestRecords_Serialisation(t *testing.T) {
-	str, err := RecordToCompressedText(&testRecord)
-	NoError(t, err)
-	r, err := FromCompressedText(str)
-	NoError(t, err)
-	True(t, proto.Equal(r.record, &testRecord))
-	r = Records{}.New(str)
-	True(t, proto.Equal(r.record, &testRecord))
-
-	// errors
-
-	r, err = FromCompressedText("explode!")
-	Error(t, err)
-
-	Panics(t, func() { Records{}.New("explode!") })
 }
