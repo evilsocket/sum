@@ -2,9 +2,11 @@ package master
 
 import (
 	"context"
+	"fmt"
 	"github.com/evilsocket/sum/node/storage"
 	pb "github.com/evilsocket/sum/proto"
 	"github.com/golang/protobuf/proto"
+	"regexp"
 	"testing"
 )
 
@@ -94,6 +96,63 @@ func TestServiceUpdateRecord(t *testing.T) {
 	}
 }
 
+func TestService_FindRecords(t *testing.T) {
+	setup(t, true, true)
+	defer teardown(t)
+
+	if svc, err := NewClient(testFolder); err != nil {
+		t.Fatal(err)
+	} else if resp, err := svc.FindRecords(context.TODO(), &pb.ByMeta{Meta: "666", Value: "666"}); err != nil {
+		t.Fatal(err)
+	} else if !resp.Success {
+		t.Fatalf("expected success response: %v", resp)
+	} else if len(resp.Records) != testRecords {
+		t.Fatalf("unexpected records: %v", resp.Records)
+	}
+}
+
+func TestService_FindRecordsNotFound(t *testing.T) {
+	setup(t, true, true)
+	defer teardown(t)
+
+	if svc, err := NewClient(testFolder); err != nil {
+		t.Fatal(err)
+	} else if resp, err := svc.FindRecords(context.TODO(), &pb.ByMeta{Meta: "not", Value: "found"}); err != nil {
+		t.Fatal(err)
+	} else if !resp.Success {
+		t.Fatalf("expected success response: %v", resp)
+	} else if len(resp.Records) != 0 {
+		t.Fatalf("unexpected records: %v", resp.Records)
+	}
+}
+
+func TestService_FindRecordsErrors(t *testing.T) {
+	setup(t, true, true)
+	defer teardown(t)
+
+	var svc pb.SumServiceClient
+	var err error
+
+	if svc, err = NewClient(testFolder); err != nil {
+		t.Fatal(err)
+	}
+
+	ni := network.orchestrators[0].svc.nodes[0]
+	network.nodes[0].server.Stop() // trigger connection error
+
+	rgx := regexp.MustCompile(fmt.Sprintf(`Errors from nodes: \[.*Error while dialing dial tcp %s: connect: connection refused"\]`, ni.Name))
+
+	if resp, err := svc.FindRecords(context.TODO(), &pb.ByMeta{Meta: "not", Value: "found"}); err != nil {
+		t.Fatal(err)
+	} else if resp.Success {
+		t.Fatalf("expected unsuccessful response: %v", resp)
+	} else if len(resp.Records) != 0 {
+		t.Fatalf("unexpected records: %v", resp.Records)
+	} else if rgx.Find([]byte(resp.Msg)) == nil {
+		t.Fatalf("unexpected error message: %v", resp.Msg)
+	}
+}
+
 func TestServiceUpdateRecordWithInvalidId(t *testing.T) {
 	setup(t, true, true)
 	defer teardown(t)
@@ -154,7 +213,7 @@ func TestServiceListRecordsSinglePage(t *testing.T) {
 	defer teardown(t)
 
 	list := pb.ListRequest{
-		Page:    1,
+		Page:    0,
 		PerPage: testRecords,
 	}
 
@@ -283,19 +342,38 @@ func TestService_CreateRecordWithId(t *testing.T) {
 	setupFolders(t)
 	defer teardown(t)
 
+	var svc pb.SumInternalServiceClient
+	var err error
+
+	if svc, err = NewInternalClient(testFolder); err != nil {
+		t.Fatal(err)
+	}
+
 	testRecord.Id = 5
 
-	if svc, err := NewInternalClient(testFolder); err != nil {
-		t.Fatal(err)
-	} else if resp, err := svc.CreateRecordWithId(context.TODO(), &testRecord); err != nil {
-		t.Fatal(err)
-	} else if !resp.Success {
-		t.Fatalf("expected success response: %v", resp)
-	} else if resp.Record != nil {
-		t.Fatalf("unexpected record pointer: %v", resp.Record)
-	} else if resp.Msg != "5" {
-		t.Fatalf("unexpected response message: %s", resp.Msg)
-	}
+	t.Run("Valid", func(t *testing.T) {
+		if resp, err := svc.CreateRecordWithId(context.TODO(), &testRecord); err != nil {
+			t.Fatal(err)
+		} else if !resp.Success {
+			t.Fatalf("expected success response: %v", resp)
+		} else if resp.Record != nil {
+			t.Fatalf("unexpected record pointer: %v", resp.Record)
+		} else if resp.Msg != "5" {
+			t.Fatalf("unexpected response message: %s", resp.Msg)
+		}
+	})
+
+	t.Run("InvalidId", func(t *testing.T) {
+		if resp, err := svc.CreateRecordWithId(context.TODO(), &testRecord); err != nil {
+			t.Fatal(err)
+		} else if resp.Success {
+			t.Fatalf("expected unsuccessful response: %v", resp)
+		} else if resp.Record != nil {
+			t.Fatalf("unexpected record pointer: %v", resp.Record)
+		} else if resp.Msg != storage.ErrInvalidID.Error() {
+			t.Fatalf("unexpected response message: %s", resp.Msg)
+		}
+	})
 }
 
 func TestService_CreateRecordsWithId(t *testing.T) {

@@ -54,6 +54,11 @@ func (r *Records) metaIndexCreate(rec *pb.Record) {
 	r._metaIndexCreate(rec)
 }
 
+func (r *Records) _metaIndexUpdate(rec *pb.Record) {
+	r._metaIndexRemove(rec)
+	r._metaIndexCreate(rec)
+}
+
 func (r *Records) metaIndexUpdate(rec *pb.Record) {
 	r.metaIndexRemove(rec)
 	r.metaIndexCreate(rec)
@@ -153,7 +158,7 @@ func (r *Records) CreateManyWIthId(records []*pb.Record) error {
 	defer r.Unlock()
 
 	for _, record := range records {
-		r._metaIndexCreate(record)
+		r._metaIndexUpdate(record)
 	}
 
 	return nil

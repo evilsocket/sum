@@ -4,9 +4,6 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/golang/protobuf/proto"
-	. "github.com/stretchr/testify/require"
-
 	pb "github.com/evilsocket/sum/proto"
 
 	"github.com/evilsocket/islazy/log"
@@ -202,24 +199,4 @@ func TestWrappedRecordCosineWithIncompatibleSizes(t *testing.T) {
 	assertPanic(t, "cosine similarity should panic with vectors of different sizes", func() {
 		WrapRecord(&testRecord).Cosine(WrapRecord(&testShorterRecord))
 	})
-}
-
-func TestSerialization(t *testing.T) {
-	r := &pb.Record{Id: 1, Meta: map[string]string{"key": "value"}, Data: []float32{0.1, 0.2, 0.3}}
-
-	str, err := RecordToCompressedText(r)
-	Nil(t, err)
-	r1, err := FromCompressedText(str)
-	Nil(t, err)
-	False(t, r1.IsNull())
-	True(t, proto.Equal(r, r1.record))
-
-	r = nil
-
-	str, err = RecordToCompressedText(r)
-	Nil(t, err)
-	r1, err = FromCompressedText(str)
-	Nil(t, err)
-	Nil(t, r1.record)
-	True(t, r1.IsNull())
 }

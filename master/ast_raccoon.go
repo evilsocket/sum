@@ -1,9 +1,9 @@
 package master
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/evilsocket/sum/node/wrapper"
 
 	. "github.com/evilsocket/sum/proto"
 
@@ -92,24 +92,27 @@ func parseAst(code string) (oracleFunction, mergerFunction *ast.FunctionLiteral,
 // Patch the code managed by this astRaccoon with the given records.
 // Records are positional, the index identify which parameter has been resolved to that record.
 func (a *astRaccoon) PatchCode(records []*Record) (newCode string, err error) {
-	var compressed = make([]string, len(records))
+	var serialised = make([]string, len(records))
 	shift := file.Idx(0)
 	newCode = a.src
 
-	// lazy compression
-	getCompressed := func(i int) (string, error) {
-		if compressed[i] == "" && records[i] != nil {
+	// lazy serialisation
+	getSerialised := func(i int) (string, error) {
+		if serialised[i] == "" && records[i] != nil {
 			var err error
 			var r = records[i]
 
 			if r == recordNotFound {
-				r = nil
+				serialised[i] = "null"
+			} else if data, err := json.Marshal(r); err != nil {
+				return "", err
+			} else {
+				serialised[i] = string(data)
 			}
 
-			compressed[i], err = wrapper.RecordToCompressedText(r)
-			return compressed[i], err
+			return serialised[i], err
 		}
-		return compressed[i], nil
+		return serialised[i], nil
 	}
 
 	// foreach parameter
@@ -126,16 +129,16 @@ func (a *astRaccoon) PatchCode(records []*Record) (newCode string, err error) {
 				continue
 			}
 
-			// generate a compressed representation of the record
-			compressedRecord, err := getCompressed(i)
+			// serialise the record
+			serialisedRecord, err := getSerialised(i)
 			if err != nil {
 				return "", err
 			}
 
-			// replace the node with the compressed string of the record
+			// replace the node with the serialised string of the record
 			idx0 := n.Idx0() + shift - 1
 			idx1 := n.Idx1() + shift - 1
-			newRecord := fmt.Sprintf("records.New('%s')", compressedRecord)
+			newRecord := fmt.Sprintf("records.New(%s)", serialisedRecord)
 			newCode = newCode[:idx0] + newRecord + newCode[idx1:]
 			shift += file.Idx(len(newRecord)) - (idx1 - idx0)
 		}

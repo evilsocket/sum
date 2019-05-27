@@ -100,48 +100,46 @@ func (ms *Service) Run(ctx context.Context, arg *Call) (*CallResponse, error) {
 	ctx, cf := newCommContext()
 	defer cf()
 
-	results, errs := ms.doParallel(func(n *NodeInfo, okChan chan<- interface{}, errChan chan<- string) {
+	worker := func(n *NodeInfo) (interface{}, string) {
 		resp, err := n.Client.CreateOracle(ctx, newOracle)
 		if err != nil || !resp.Success {
-			cf()
-			errChan <- getErrorMessage(err, resp)
-			return
+			return nil, getErrorMessage(err, resp)
 		}
 		oId, err := strconv.ParseUint(resp.Msg, 10, 64)
 		if err != nil {
-			cf()
-			errChan <- fmt.Sprintf("unable to parse oracleId string '%s': %v", resp.Msg, err)
-			return
+			return nil, fmt.Sprintf("unable to parse oracleId string '%s': %v", resp.Msg, err)
 		}
 		func() {
 			mapLock.Lock()
 			defer mapLock.Unlock()
 			node2oracleId[n] = oId
 		}()
+
 		resp1, err := n.Client.Run(ctx, &Call{OracleId: oId, Args: arg.Args})
 		if err != nil || !resp1.Success {
-			cf()
-			errChan <- getErrorMessage(err, resp1)
-			return
+			return nil, getErrorMessage(err, resp1)
 		}
 		if resp1.Data.Compressed {
 			if r, err := gzip.NewReader(bytes.NewReader(resp1.Data.Payload)); err != nil {
-				cf()
-				errChan <- err.Error()
-				return
+				return nil, err.Error()
 			} else if resp1.Data.Payload, err = ioutil.ReadAll(r); err != nil {
-				cf()
-				errChan <- err.Error()
-				return
+				return nil, err.Error()
 			}
 		}
 		var res interface{}
 		if err = json.Unmarshal(resp1.Data.Payload, &res); err != nil {
-			cf()
-			errChan <- err.Error()
-			return
+			return nil, err.Error()
 		}
-		okChan <- res
+		return res, ""
+	}
+
+	results, errs := ms.doParallel(func(n *NodeInfo, okChan chan<- interface{}, errChan chan<- string) {
+		if res, errStr := worker(n); errStr != "" {
+			cf()
+			errChan <- errStr
+		} else {
+			okChan <- res
+		}
 	})
 
 	if len(errs) > 0 {
@@ -169,9 +167,9 @@ func (ms *Service) merge(raccoon *astRaccoon, results []interface{}) (interface{
 	ctx := wrapper.NewContext()
 
 	if err := vm.Set(mf.ParameterList.List[0].Name, results); err != nil {
-		return errCallResponse("Unable to set parameter variable '%s': %v", mf.ParameterList.List[0].Name, err), nil
+		return nil, fmt.Errorf("unable to set parameter variable '%s': %v", mf.ParameterList.List[0].Name, err)
 	} else if err := vm.Set("ctx", ctx); err != nil {
-		return errCallResponse("Unable to set parameter variable '%s': %v", "ctx", err), nil
+		return nil, fmt.Errorf("unable to set parameter variable '%s': %v", "ctx", err)
 	}
 
 	// I've tried with the compiled version but didn't work ^^"
@@ -181,13 +179,13 @@ func (ms *Service) merge(raccoon *astRaccoon, results []interface{}) (interface{
 	ret, err := vm.Run(code)
 
 	if err != nil {
-		return errCallResponse("Unable to run merger function: %v", err), nil
+		return nil, fmt.Errorf("unable to run merger function: %v", err)
 	} else if ctx.IsError() {
 		// same goes for errors triggered within the oracle
-		return errCallResponse("Merger function failed: %v", ctx.Message()), nil
+		return nil, fmt.Errorf("merger function failed: %v", ctx.Message())
 	} else if mergedResults, err := ret.Export(); err != nil {
 		// or if we can't export its return value
-		return errCallResponse("Couldn't deserialize returned object from merger: %v", err), nil
+		return nil, fmt.Errorf("couldn't deserialize returned object from merger: %v", err)
 	} else {
 		return mergedResults, nil
 	}

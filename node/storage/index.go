@@ -207,10 +207,7 @@ func (i *Index) CreateManyWIthId(records []proto.Message) (err error) {
 
 	for _, record := range records {
 		id := i.driver.GetID(record)
-		if _, found := i.index[id]; found {
-			err = ErrInvalidID
-			break
-		} else if err = Flush(record, i.pathForID(id)); err != nil {
+		if err = Flush(record, i.pathForID(id)); err != nil {
 			break
 		}
 

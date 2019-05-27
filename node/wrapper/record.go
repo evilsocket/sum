@@ -1,13 +1,7 @@
 package wrapper
 
 import (
-	"bytes"
-	"compress/zlib"
-	"encoding/base64"
 	"github.com/evilsocket/sum/node/backend"
-	"github.com/golang/protobuf/proto"
-	"io"
-	"io/ioutil"
 	"math"
 	"reflect"
 
@@ -42,49 +36,6 @@ func (w *Record) SetData(data []float32) {
 	w.record.Data = data
 	w.Size = len(data)
 	w.vec = backend.Wrap(w.Size, data)
-}
-
-func RecordToCompressedText(record *pb.Record) (str string, err error) {
-	var buff bytes.Buffer
-	var data []byte
-
-	if record == nil {
-		return "!nil!", nil
-	}
-
-	if data, err = proto.Marshal(record); err != nil {
-		return
-	}
-
-	w := zlib.NewWriter(&buff)
-
-	if _, err = w.Write(data); err != nil {
-		return
-	}
-
-	w.Close()
-
-	str = base64.StdEncoding.EncodeToString(buff.Bytes())
-	return
-}
-
-func FromCompressedText(msg string) (r *Record, err error) {
-	var record pb.Record
-	var data []byte
-	var rr io.Reader
-
-	if msg == "!nil!" {
-		return WrapRecord(nil), nil
-	}
-
-	if data, err = base64.StdEncoding.DecodeString(msg); err != nil {
-	} else if rr, err = zlib.NewReader(bytes.NewReader(data)); err != nil {
-	} else if data, err = ioutil.ReadAll(rr); err != nil {
-	} else if err = proto.Unmarshal(data, &record); err != nil {
-	} else {
-		r = WrapRecord(&record)
-	}
-	return
 }
 
 // IsNull returns true if the record wrapped by this object is nil.

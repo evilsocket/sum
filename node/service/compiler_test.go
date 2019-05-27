@@ -12,10 +12,10 @@ var units = []struct {
 	expectedError        bool
 	expectedErrorMessage string
 }{
-	{pb.Oracle{Name: "empty"}, true, "expected function declaration"},
+	{pb.Oracle{Name: "empty"}, true, "expected a function declaration"},
 	{pb.Oracle{Name: "simple", Code: "function simple(){ return 0; }"}, false, ""},
 	{pb.Oracle{Name: "broken", Code: "lulz i won't compile =)"}, true, "unexpected identifier"},
-	{pb.Oracle{Name: "no functions", Code: "var lulz = 123;"}, true, "expected function declaration"},
+	{pb.Oracle{Name: "no functions", Code: "var lulz = 123;"}, true, "expected a function declaration"},
 	{pb.Oracle{Name: "error during definition", Code: "function imok(){} imnot = not_defined + 1;"}, true, "ReferenceError"},
 }
 

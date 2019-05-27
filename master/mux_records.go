@@ -96,7 +96,7 @@ func (ms *Service) UpdateRecord(_ context.Context, arg *Record) (*RecordResponse
 		}
 		return errRecordResponse("No node was able to satisfy your request: [%s]", strings.Join(errs, ", ")), nil
 	default:
-		log.Warning("Got multiple results when only one was expected: %v", results)
+		log.Warning("Got %d results when only one was expected: %v", len(results), results)
 		fallthrough
 	case 1:
 		return &RecordResponse{Success: true}, nil
@@ -133,7 +133,7 @@ func (ms *Service) ReadRecord(_ context.Context, arg *ById) (*RecordResponse, er
 		}
 		return errRecordResponse("No node was able to satisfy your request: [%s]", strings.Join(errs, ", ")), nil
 	default:
-		log.Warning("Got multiple results when only one was expected: %v", results)
+		log.Warning("Got %d results when only one was expected: %v", len(results), results)
 		fallthrough
 	case 1:
 		return &RecordResponse{Success: true, Record: results[0].(*Record)}, nil
@@ -142,13 +142,12 @@ func (ms *Service) ReadRecord(_ context.Context, arg *ById) (*RecordResponse, er
 
 // list records
 func (ms *Service) ListRecords(ctx context.Context, arg *ListRequest) (*RecordListResponse, error) {
-
-	if arg.PerPage == 0 {
-		return nil, fmt.Errorf("invalid arguments")
+	if arg.Page < 1 {
+		arg.Page = 1
 	}
 
-	if arg.Page == 0 {
-		arg.Page = 1
+	if arg.PerPage < 1 {
+		arg.PerPage = 1
 	}
 
 	ms.nodesLock.RLock()
@@ -180,10 +179,6 @@ func (ms *Service) ListRecords(ctx context.Context, arg *ListRequest) (*RecordLi
 	lastNodeIndex := -1
 	lastNodeId := uint(1)
 	lastNodeRecords := uint64(0)
-
-	if end == start {
-		return &RecordListResponse{Records: []*Record{}, Pages: pages, Total: total}, nil
-	}
 
 	for i, n := range orderedNodes {
 		lastNodeId = n.ID
@@ -230,7 +225,7 @@ func (ms *Service) ListRecords(ctx context.Context, arg *ListRequest) (*RecordLi
 	})
 
 	if len(errs) > 0 {
-		return nil, fmt.Errorf("unable to communicate with nodes: [%s]", strings.Join(errs, ", "))
+		log.Warning("unable to communicate with nodes: [%s]", strings.Join(errs, ", "))
 	}
 
 	records := make([]*Record, 0, arg.PerPage)
@@ -251,7 +246,11 @@ func (ms *Service) DeleteRecord(_ context.Context, arg *ById) (*RecordResponse, 
 	notFoundError := fmt.Sprintf("record %d not found.", arg.Id)
 
 	ctx, cf := context.WithCancel(context.Background())
-	defer cf()
+	if !commContextIsCancellable {
+		cf = func() {}
+	} else {
+		defer cf()
+	}
 
 	results, errs := ms.doParallel(func(node *NodeInfo, resultChannel chan<- interface{}, errorChannel chan<- string) {
 		node.Lock()
@@ -288,13 +287,18 @@ func (ms *Service) DeleteRecord(_ context.Context, arg *ById) (*RecordResponse, 
 
 // find records that meet the given requirements
 func (ms *Service) FindRecords(ctx context.Context, arg *ByMeta) (*FindResponse, error) {
+	notIndexedErrmsg := fmt.Sprintf("meta %v not indexed.", arg.Meta)
+
 	ms.nodesLock.RLock()
 	defer ms.nodesLock.RUnlock()
 
 	results, errs := ms.doParallel(func(n *NodeInfo, resultChannel chan<- interface{}, errorChannel chan<- string) {
 		resp, err := n.Client.FindRecords(ctx, arg)
 		if err != nil || !resp.Success {
-			errorChannel <- getErrorMessage(err, resp)
+			msg := getErrorMessage(err, resp)
+			if msg != notIndexedErrmsg {
+				errorChannel <- msg
+			}
 		} else {
 			for _, r := range resp.Records {
 				resultChannel <- r

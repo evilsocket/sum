@@ -2,7 +2,7 @@ package wrapper
 
 import (
 	"github.com/evilsocket/sum/node/storage"
-	
+
 	pb "github.com/evilsocket/sum/proto"
 	"github.com/golang/protobuf/proto"
 )
@@ -21,12 +21,8 @@ func WrapRecords(records *storage.Records) Records {
 	}
 }
 
-func (_ Records) New(msg string) *Record {
-	if r, err := FromCompressedText(msg); err != nil {
-		panic(err)
-	} else {
-		return r
-	}
+func (_ Records) New(record *pb.Record) *Record {
+	return WrapRecord(record)
 }
 
 // Find returns a wrapped Record given its identifier.

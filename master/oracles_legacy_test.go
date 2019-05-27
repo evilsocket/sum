@@ -233,21 +233,21 @@ func TestServiceDeleteOracle(t *testing.T) {
 			t.Fatalf("expected success response: %v", resp)
 		} else if resp.Oracle != nil {
 			t.Fatalf("unexpected oracles list: %v", resp.Oracle)
-		} else if len(network.orchestrators[0].svc.raccoons) != testOracles-int(id) {
-			t.Fatalf("inconsistent oracles storage size of %d", len(network.orchestrators[0].svc.raccoons))
+		} else if network.orchestrators[0].svc.NumOracles() != testOracles-int(id) {
+			t.Fatalf("inconsistent oracles storage size of %d", network.orchestrators[0].svc.NumOracles())
 		}
 	}
 
-	if len(network.orchestrators[0].svc.raccoons) != 0 {
-		t.Fatalf("expected empty oracles storage, found %d instead", len(network.orchestrators[0].svc.raccoons))
+	if network.orchestrators[0].svc.NumOracles() != 0 {
+		t.Fatalf("expected empty oracles storage, found %d instead", network.orchestrators[0].svc.NumOracles())
 	}
 
 	teardown(t)
 
 	if _, err := NewClient(testFolder); err != nil {
 		t.Fatal(err)
-	} else if len(network.orchestrators[0].svc.raccoons) != 0 {
-		t.Fatalf("%d dat files left on disk", len(network.orchestrators[0].svc.raccoons))
+	} else if network.orchestrators[0].svc.NumOracles() != 0 {
+		t.Fatalf("%d dat files left on disk", network.orchestrators[0].svc.NumOracles())
 	}
 }
 
@@ -265,5 +265,71 @@ func TestServiceDeleteOracleWithInvalidId(t *testing.T) {
 		t.Fatalf("unexpected oracle: %v", resp.Oracle)
 	} else if resp.Msg != "Oracle 666 not found." {
 		t.Fatalf("unexpected message: %s", resp.Msg)
+	}
+}
+
+func TestServiceListOraclesSinglePage(t *testing.T) {
+	setup(t, true, true)
+	defer teardown(t)
+
+	list := pb.ListRequest{
+		Page:    0,
+		PerPage: uint64(testOracles),
+	}
+
+	if svc, err := NewClient(testFolder); err != nil {
+		t.Fatal(err)
+	} else if resp, err := svc.ListOracles(context.TODO(), &list); err != nil {
+		t.Fatal(err)
+	} else if resp.Total != uint64(testOracles) {
+		t.Fatalf("expected %d total oracles, got %d", testOracles, resp.Total)
+	} else if resp.Pages != 1 {
+		t.Fatalf("expected 3 pages got %d", resp.Pages)
+	} else if len(resp.Oracles) != testOracles {
+		t.Fatalf("expected %d total oracles, got %d", testOracles, len(resp.Oracles))
+	}
+}
+
+func TestServiceListOraclesMultiPage(t *testing.T) {
+	setup(t, true, true)
+	defer teardown(t)
+
+	list := pb.ListRequest{
+		Page:    1,
+		PerPage: 2,
+	}
+
+	if svc, err := NewClient(testFolder); err != nil {
+		t.Fatal(err)
+	} else if resp, err := svc.ListOracles(context.TODO(), &list); err != nil {
+		t.Fatal(err)
+	} else if resp.Total != uint64(testOracles) {
+		t.Fatalf("expected %d total oracles, got %d", testOracles, resp.Total)
+	} else if resp.Pages != 3 {
+		t.Fatalf("expected 3 pages got %d", resp.Pages)
+	} else if len(resp.Oracles) != 2 {
+		t.Fatalf("expected %d total oracles, got %d", 2, len(resp.Oracles))
+	}
+}
+
+func TestServiceListOraclesInvalidPage(t *testing.T) {
+	setup(t, true, true)
+	defer teardown(t)
+
+	list := pb.ListRequest{
+		Page:    100000,
+		PerPage: 2,
+	}
+
+	if svc, err := NewClient(testFolder); err != nil {
+		t.Fatal(err)
+	} else if resp, err := svc.ListOracles(context.TODO(), &list); err != nil {
+		t.Fatal(err)
+	} else if resp.Total != uint64(testOracles) {
+		t.Fatalf("expected %d total oracles, got %d", testOracles, resp.Total)
+	} else if resp.Pages != 3 {
+		t.Fatalf("expected 3 pages got %d", resp.Pages)
+	} else if len(resp.Oracles) != 0 {
+		t.Fatalf("expected %d total oracles, got %d", 0, len(resp.Oracles))
 	}
 }
