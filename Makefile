@@ -21,14 +21,8 @@ PACKAGES=node/storage node/wrapper node/service master
 #
 all: sumd sumcli sumcluster
 
-server_deps: deps proto/sum.pb.go
-client_deps: deps proto/sum.pb.go
-
-godep:
-	@go get -u github.com/golang/dep/...
-
-deps: godep golint
-	@dep ensure
+server_deps: proto/sum.pb.go
+client_deps: proto/sum.pb.go
 
 proto/sum.pb.go:
 	@${GRPC_PROTOC} -I. --go_out=plugins=grpc:. proto/sum.proto
