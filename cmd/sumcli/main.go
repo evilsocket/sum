@@ -3,10 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/evilsocket/sum/cmd/sumcli/handlers"
 	"io"
 	"os"
-
-	"github.com/evilsocket/sum/cmd/sumcli/handlers"
 
 	pb "github.com/evilsocket/sum/proto"
 
@@ -24,11 +23,13 @@ const (
 )
 
 var (
-	serverAddress = flag.String("address", "127.0.0.1:50051", "Server connection string.")
-	serverName    = flag.String("name", "localhost", "The server name use to verify the hostname returned by TLS handshake.")
-	certPath      = flag.String("cert", "/etc/sumd/creds/cert.pem", "Path to the cert.pem file to use for TLS based authentication.")
-	evalString    = flag.String("eval", "", "List of commands to run, divided by a semicolon.")
-	maxMsgSize    = flag.Int("max-msg-size", 50*1024*1024, "Max size of a single GRPC message.")
+	serverAddress   = flag.String("address", "127.0.0.1:50051", "Server connection string.")
+	serverName      = flag.String("name", "localhost", "The server name use to verify the hostname returned by TLS handshake.")
+	certPath        = flag.String("cert", "/etc/sumd/creds/cert.pem", "Path to the cert.pem file to use for TLS based authentication.")
+	evalString      = flag.String("eval", "", "List of commands to run, divided by a semicolon.")
+	importFile      = flag.String("import", "", "Import vectors from this CSV file.")
+	importBatchSize = flag.Int("import-batch-size", 1024, "Batch size for import.")
+	maxMsgSize      = flag.Int("max-msg-size", 50*1024*1024, "Max size of a single GRPC message.")
 )
 
 func die(format string, args ...interface{}) {
@@ -63,6 +64,13 @@ func main() {
 	defer conn.Close()
 
 	client := pb.NewSumServiceClient(conn)
+
+	if *importFile != "" {
+		doImport(client, *importFile, *importBatchSize)
+		return
+	}
+
+
 	masterClient := pb.NewSumMasterServiceClient(conn)
 	reader, err := readline.NewEx(&readline.Config{
 		Prompt:          fmt.Sprintf("sumd@%s %s", *serverAddress, prompt),

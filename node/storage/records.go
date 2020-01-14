@@ -136,6 +136,31 @@ func (r *Records) Create(record *pb.Record) error {
 	return nil
 }
 
+func (r *Records) CreateMulti(records *pb.Records) error {
+	if records.Records != nil {
+		r.Lock()
+		defer r.Unlock()
+
+		r.Index.Lock()
+		defer r.Index.Unlock()
+
+		for _, record := range records.Records {
+			// if the shape was not provide, it is 1d
+			if record.Shape == nil {
+				record.Shape = []uint64{uint64(len(record.Data))}
+			}
+
+			if err := r.Index.CreateUnlocked(record); err != nil {
+				return err
+			}
+
+			r._metaIndexCreate(record)
+		}
+	}
+
+	return nil
+}
+
 func (r *Records) CreateWithId(record *pb.Record) error {
 	if err := r.Index.CreateWithId(record); err != nil {
 		return err

@@ -13,7 +13,6 @@ import (
 )
 
 var (
-
 	// ErrInvalidID is returned when the system detects a collision of
 	// identifiers, usually due to multiple Sum instances running on the
 	// same data path.
@@ -154,7 +153,11 @@ func (i *Index) NextID(next uint64) {
 func (i *Index) Create(record proto.Message) error {
 	i.Lock()
 	defer i.Unlock()
+	return i.CreateUnlocked(record)
+}
 
+// CreateUnlocked is the unlocked version of Create.
+func (i *Index) CreateUnlocked(record proto.Message) error {
 	// make sure the id is unique and that we
 	// are able to create the data file
 	recID := i.nextID

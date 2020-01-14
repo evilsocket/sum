@@ -5,6 +5,7 @@ package sum;
 service SumService {
   // vectors CRUD
   rpc CreateRecord(Record) returns (RecordResponse) {}
+  rpc CreateRecords(Records) returns (RecordResponse) {}
   rpc UpdateRecord(Record) returns (RecordResponse) {}
   rpc ReadRecord(ById) returns (RecordResponse) {}
   rpc ListRecords(ListRequest) returns (RecordListResponse) {}

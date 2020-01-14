@@ -43,7 +43,6 @@ func (ms *Service) findLessLoadedNode() *NodeInfo {
 // create a record from the given argument
 func (ms *Service) CreateRecord(ctx context.Context, record *Record) (*RecordResponse, error) {
 	targetNode := ms.findLessLoadedNode()
-
 	if targetNode == nil {
 		return errRecordResponse("No nodes available, try later"), nil
 	}
@@ -62,6 +61,35 @@ func (ms *Service) CreateRecord(ctx context.Context, record *Record) (*RecordRes
 	if err == nil && resp.Success {
 		ms.nextId++
 		targetNode.status.Records++
+		targetNode.status.NextRecordId = ms.nextId
+	}
+
+	return resp, err
+}
+
+// CreateRecords creates and stores a series of new *pb.Record object.
+func (ms *Service) CreateRecords(ctx context.Context, records *Records) (*RecordResponse, error) {
+	targetNode := ms.findLessLoadedNode()
+	if targetNode == nil {
+		return errRecordResponse("No nodes available, try later"), nil
+	}
+
+	// for targetNode.status.Records++
+	targetNode.Lock()
+	defer targetNode.Unlock()
+
+	ms.idLock.Lock()
+	defer ms.idLock.Unlock()
+
+	// set the identifiers
+	for _, record := range records.Records {
+		record.Id = ms.nextId
+		ms.nextId++
+	}
+
+	resp, err := targetNode.InternalClient.CreateRecordsWithId(ctx, records)
+	if err == nil && resp.Success {
+		targetNode.status.Records += uint64(len(records.Records))
 		targetNode.status.NextRecordId = ms.nextId
 	}
 
