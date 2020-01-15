@@ -6,6 +6,7 @@ import (
 	"github.com/evilsocket/islazy/log"
 	"github.com/evilsocket/sum/node/storage"
 	. "github.com/evilsocket/sum/proto"
+	"math/big"
 	"sort"
 	"strings"
 )
@@ -178,6 +179,8 @@ func (ms *Service) ListRecords(ctx context.Context, arg *ListRequest) (*RecordLi
 		arg.PerPage = 1
 	}
 
+	fetcher := NewRecordFetcher()
+
 	ms.nodesLock.RLock()
 	defer ms.nodesLock.RUnlock()
 
@@ -203,67 +206,63 @@ func (ms *Service) ListRecords(ctx context.Context, arg *ListRequest) (*RecordLi
 	start := arg.PerPage * (arg.Page - 1)
 	end := start + arg.PerPage
 	cursor := uint64(0)
-	firstNodeIndex := -1
-	lastNodeIndex := -1
-	lastNodeId := uint(1)
-	lastNodeRecords := uint64(0)
 
-	for i, n := range orderedNodes {
-		lastNodeId = n.ID
+	for _, n := range orderedNodes {
+		nodeEnd := cursor + n.status.Records
+		records := n.status.Records
 
-		if cursor <= start && cursor+n.status.Records > start {
-			firstNodeIndex = i
-		}
+		// page start at this node
+		if cursor <= start && nodeEnd > start {
+			offset := start - cursor
+			records -= offset
 
-		if cursor < end && cursor+n.status.Records >= end {
-			lastNodeIndex = i
-			lastNodeRecords = end - cursor
+			// page also end in this node
+			if end <= nodeEnd {
+				records = arg.PerPage
+			}
+
+			if offset == 0 {
+				// page start with this node, get first page, same perPage
+				fetcher.Fetch(n, 1, records)
+			} else if end >= nodeEnd && records < offset {
+				// optimization using overflowed page
+				fetcher.Fetch(n, 2, offset)
+			} else {
+				// find the GCD between offset and records to
+				// skip offset and fetch exactly the needed records
+
+				bigOffset := big.NewInt(0).SetUint64(offset)
+				bigRecords := big.NewInt(0).SetUint64(records)
+				gcd := big.NewInt(0).GCD(nil, nil, bigOffset, bigRecords).Uint64()
+
+				startPage := offset/gcd + 1
+				nPages := records / gcd
+				for i := uint64(0); i < nPages; i++ {
+					fetcher.Fetch(n, startPage+i, gcd)
+				}
+			}
+
+			if end <= nodeEnd {
+				break
+			}
+		} else if cursor < end && nodeEnd > end {
+			// chunk end at this node
+			fetcher.Fetch(n, 1, end-cursor)
 			break
+		} else if start < cursor && end > nodeEnd {
+			fetcher.Fetch(n, 1, records)
 		}
 
 		cursor = cursor + n.status.Records
 	}
 
-	if firstNodeIndex == -1 || lastNodeIndex == -1 {
-		return &RecordListResponse{Records: []*Record{}, Pages: pages, Total: total}, nil
+	fetcher.Wait()
+
+	if len(fetcher.Errs) > 0 {
+		log.Warning("unable to communicate with nodes: [%s]", strings.Join(fetcher.Errs, ", "))
 	}
 
-	toQueryNodes := orderedNodes[firstNodeIndex : lastNodeIndex+1]
-	ctx, cf := newCommContext()
-	defer cf()
-
-	results, errs := doParallel(toQueryNodes, func(node *NodeInfo, resultChannel chan<- interface{}, errorChannel chan<- string) {
-		arg := &ListRequest{Page: 1}
-
-		if node.ID == lastNodeId {
-			arg.PerPage = lastNodeRecords
-		} else {
-			// this size will never exceed the original request,
-			// which we assume to be reasonable
-			arg.PerPage = node.status.Records
-		}
-
-		resp, err := node.Client.ListRecords(ctx, arg)
-		if err != nil {
-			cf()
-			errorChannel <- err.Error()
-		} else {
-			resultChannel <- resp.Records
-		}
-	})
-
-	if len(errs) > 0 {
-		log.Warning("unable to communicate with nodes: [%s]", strings.Join(errs, ", "))
-	}
-
-	records := make([]*Record, 0, arg.PerPage)
-	for _, ary := range results {
-		for _, r := range ary.([]*Record) {
-			records = append(records, r)
-		}
-	}
-
-	return &RecordListResponse{Total: total, Pages: pages, Records: records}, nil
+	return &RecordListResponse{Total: total, Pages: pages, Records: fetcher.Records}, nil
 }
 
 // delete a record by its id

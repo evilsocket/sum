@@ -420,6 +420,43 @@ func TestServiceListRecordsZeroPerPage(t *testing.T) {
 	}
 }
 
+func TestService_ListRecords(t *testing.T) {
+	ns, err := setupPopulatedNetwork(2, 1)
+	NoError(t, err)
+	defer cleanupNetwork(&ns)
+
+	ms := ns.orchestrators[0].svc
+
+	testList := func(t *testing.T, expectedNumPages, page, perPage uint64) {
+		list := pb.ListRequest{Page: page, PerPage: perPage}
+		if resp, err := ms.ListRecords(context.TODO(), &list); err != nil {
+			t.Fatal(err)
+		} else if resp.Total != numBenchRecords {
+			t.Fatalf("expected %d total records, got %d", testRecords, resp.Total)
+		} else if resp.Pages != expectedNumPages {
+			t.Fatalf("expected %d pages got %d", expectedNumPages, resp.Pages)
+		} else if len(resp.Records) != int(perPage) {
+			t.Fatalf("expected %d total records, got %d", perPage, len(resp.Records))
+		}
+	}
+
+	t.Run("Strictly contained in node", func(t *testing.T) {
+		testList(t, 7, 2, numBenchRecords/6)
+	})
+
+	t.Run("At the beginning of node", func(t *testing.T) {
+		testList(t, 4, 1, numBenchRecords/3)
+	})
+
+	t.Run("Across nodes", func(t *testing.T) {
+		testList(t, 4, 2, numBenchRecords/3)
+	})
+
+	t.Run("At the end of node", func(t *testing.T) {
+		testList(t, 4, 2, numBenchRecords/4)
+	})
+}
+
 func TestServiceListRecordsSinglePage_ConnErr(t *testing.T) {
 	setup(t, true, true)
 	defer teardown(t)
