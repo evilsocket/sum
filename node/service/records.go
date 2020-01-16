@@ -32,7 +32,7 @@ func (s *Service) CreateRecord(ctx context.Context, record *pb.Record) (*pb.Reco
 
 // CreateRecords creates and stores a series of new *pb.Record object.
 func (s *Service) CreateRecords(ctx context.Context, records *pb.Records) (*pb.RecordResponse, error) {
-	if err := s.records.CreateMulti(records); err != nil {
+	if err := s.records.CreateMany(records); err != nil {
 		return errRecordResponse("%s", err), nil
 	}
 	return &pb.RecordResponse{Success: true}, nil

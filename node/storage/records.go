@@ -89,6 +89,19 @@ func (r *Records) metaIndexRemove(rec *pb.Record) {
 	r._metaIndexRemove(rec)
 }
 
+func (r *Records) metaIndexFind(meta, val string) []uint64 {
+	r.RLock()
+	defer r.RUnlock()
+
+	if metaIdx, found := r.metaBy[meta]; !found {
+		return nil
+	} else if bucket, found := metaIdx[val]; !found {
+		return nil
+	} else {
+		return bucket[:]
+	}
+}
+
 // Find returns the instance of a stored pb.Record given its
 // identifier or nil if the object can not be found.
 func (r *Records) Find(id uint64) *pb.Record {
@@ -101,92 +114,81 @@ func (r *Records) Find(id uint64) *pb.Record {
 // FindBy returns the list of pb.Record objects
 // indexed by a specific meta value.
 func (r *Records) FindBy(meta string, val string) []*pb.Record {
-	r.RLock()
-	defer r.RUnlock()
-
-	metaIdx, found := r.metaBy[meta]
-	if !found {
-		return nil
-	}
-
-	records := []*pb.Record{}
-	if bucket, found := metaIdx[val]; found {
-		for _, recID := range bucket {
-			m := r.Index.Find(recID)
-			if m != nil {
-				records = append(records, m.(*pb.Record))
-			}
+	var records []*pb.Record
+	for _, recId := range r.metaIndexFind(meta, val) {
+		if m := r.Index.Find(recId); m != nil {
+			records = append(records, m.(*pb.Record))
 		}
 	}
 
 	return records
 }
 
-func (r *Records) Create(record *pb.Record) error {
+func (r *Records) _createUsing(record *pb.Record, creator func(proto.Message) error) error {
 	// if the shape was not provide, it is 1d
 	if record.Shape == nil {
 		record.Shape = []uint64{uint64(len(record.Data))}
 	}
 
-	if err := r.Index.Create(record); err != nil {
+	if err := creator(record); err != nil {
 		return err
+	} else if len(record.Meta) > 0 {
+		// create the meta index for this new record
+		r.metaIndexCreate(record)
 	}
-	// create the meta index for this new record
-	r.metaIndexCreate(record)
 	return nil
 }
 
-func (r *Records) CreateMulti(records *pb.Records) error {
-	if records.Records != nil {
-		r.Lock()
-		defer r.Unlock()
+func (r *Records) _createManyUsing(records []*pb.Record, creator func([]proto.Message) error) (err error) {
+	if len(records) == 0 {
+		return
+	}
 
-		r.Index.Lock()
-		defer r.Index.Unlock()
-
-		for _, record := range records.Records {
-			// if the shape was not provide, it is 1d
-			if record.Shape == nil {
-				record.Shape = []uint64{uint64(len(record.Data))}
-			}
-
-			if err := r.Index.CreateUnlocked(record); err != nil {
-				return err
-			}
-
-			r._metaIndexCreate(record)
+	haveMeta := false
+	messages := make([]proto.Message, len(records))
+	for i, record := range records {
+		// if the shape was not provide, it is 1d
+		if record.Shape == nil {
+			record.Shape = []uint64{uint64(len(record.Data))}
 		}
+		if !haveMeta && len(record.Meta) > 0 {
+			haveMeta = true
+		}
+		messages[i] = record
 	}
 
-	return nil
-}
-
-func (r *Records) CreateWithId(record *pb.Record) error {
-	if err := r.Index.CreateWithId(record); err != nil {
-		return err
-	}
-	r.metaIndexCreate(record)
-	return nil
-}
-
-func (r *Records) CreateManyWIthId(records []*pb.Record) error {
-	arg := make([]proto.Message, 0, len(records))
-	for _, r := range records {
-		arg = append(arg, r)
-	}
-
-	if err := r.Index.CreateManyWIthId(arg); err != nil {
-		return err
+	if err = creator(messages); err != nil {
+		return
+	} else if !haveMeta {
+		return
 	}
 
 	r.Lock()
 	defer r.Unlock()
 
 	for _, record := range records {
-		r._metaIndexUpdate(record)
+		if len(record.Meta) > 0 {
+			r._metaIndexCreate(record)
+		}
 	}
 
-	return nil
+	return
+}
+
+func (r *Records) Create(record *pb.Record) error {
+	return r._createUsing(record, r.Index.Create)
+}
+
+func (r *Records) CreateMany(records *pb.Records) (err error) {
+	return r._createManyUsing(records.Records, r.Index.CreateMany)
+}
+
+func (r *Records) CreateWithId(record *pb.Record) error {
+	return r._createUsing(record, r.Index.CreateWithId)
+}
+
+func (r *Records) CreateManyWIthId(records []*pb.Record) error {
+	return r._createManyUsing(records, r.Index.CreateManyWIthId)
 }
 
 func (r *Records) Update(record *pb.Record) error {
@@ -224,7 +226,9 @@ func (r *Records) DeleteMany(ids []uint64) []*pb.Record {
 
 	for _, record := range deleted {
 		rec := record.(*pb.Record)
-		r._metaIndexRemove(rec)
+		if len(rec.Meta) > 0 {
+			r._metaIndexRemove(rec)
+		}
 		res = append(res, rec)
 	}
 

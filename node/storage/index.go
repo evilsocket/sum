@@ -174,6 +174,34 @@ func (i *Index) CreateUnlocked(record proto.Message) error {
 	return nil
 }
 
+func (i *Index) CreateMany(records []proto.Message) (err error) {
+	created := make([]uint64, 0, len(records))
+
+	i.Lock()
+	defer i.Unlock()
+
+	startNextId := i.nextID
+
+	for _, r := range records {
+		if err = i.CreateUnlocked(r); err != nil {
+			break
+		}
+		created = append(created, i.driver.GetID(r))
+	}
+
+	// rollback
+	if err != nil {
+		for _, id := range created {
+			delete(i.index, id)
+			os.Remove(i.pathForID(id))
+		}
+
+		i.nextID = startNextId
+	}
+
+	return
+}
+
 func (i *Index) CreateWithId(record proto.Message) error {
 	i.Lock()
 	defer i.Unlock()
