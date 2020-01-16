@@ -317,7 +317,7 @@ func TestMuxService_DeleteRecordsInvalid(t *testing.T) {
 	NoError(t, err)
 	False(t, resp.Success)
 
-	errMsg := fmt.Sprintf("deleted %d records out of %d", numBenchRecords, numBenchRecords+1)
+	errMsg := fmt.Sprintf("%d", numBenchRecords)
 
 	Equal(t, errMsg, resp.Msg)
 

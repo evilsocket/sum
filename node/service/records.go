@@ -131,8 +131,10 @@ func (s *Service) DeleteRecord(ctx context.Context, query *pb.ById) (*pb.RecordR
 }
 
 func (s *Service) DeleteRecords(ctx context.Context, ids *pb.RecordIds) (*pb.RecordResponse, error) {
-	s.records.DeleteMany(ids.Ids)
-	return &pb.RecordResponse{Success: true}, nil
+	deleted := s.records.DeleteMany(ids.Ids)
+	numDeleted := len(deleted)
+	success := numDeleted == len(ids.Ids)
+	return &pb.RecordResponse{Success: success, Msg: fmt.Sprintf("%d", numDeleted)}, nil
 }
 
 // FindRecords returns a FindResponse object corresponding to the records that matched the search criteria.

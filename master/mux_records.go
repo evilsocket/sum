@@ -8,6 +8,7 @@ import (
 	. "github.com/evilsocket/sum/proto"
 	"math/big"
 	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -466,7 +467,7 @@ func (ms *Service) CreateRecordsWithId(ctx context.Context, in *Records) (*Recor
 			}
 
 			// best effort
-			ms.DeleteRecords(ctx, arg)
+			ms._deleteRecords(ctx, arg)
 
 			return errRecordResponse("Unable to create records on fallback node %d: %v", successfulNode.ID, err), nil
 		}
@@ -477,38 +478,44 @@ func (ms *Service) CreateRecordsWithId(ctx context.Context, in *Records) (*Recor
 	return &RecordResponse{Success: true}, nil
 }
 
-func (ms *Service) DeleteRecords(ctx context.Context, in *RecordIds) (*RecordResponse, error) {
-
-	oldTotal := uint64(0)
-	newTotal := uint64(0)
-
-	ms.nodesLock.RLock()
-	defer ms.nodesLock.RUnlock()
-
-	for _, n := range ms.nodes {
-		oldTotal += n.Status().Records
-	}
-
+func (ms *Service) _deleteRecords(ctx context.Context, in *RecordIds) (*RecordResponse, error) {
 	ctx, cf := newCommContext()
 	defer cf()
 
-	ms.doParallel(func(node *NodeInfo, resultChannel chan<- interface{}, errorChannel chan<- string) {
-		node.InternalClient.DeleteRecords(ctx, in)
-		node.UpdateStatus()
+	result, errs := ms.doParallel(func(node *NodeInfo, resultChannel chan<- interface{}, errorChannel chan<- string) {
+		if resp, err := node.InternalClient.DeleteRecords(ctx, in); err != nil {
+			errorChannel <- fmt.Sprintf("comunication error with node %v: %v", node.Name, err)
+			cf()
+		} else if numDeleted, err := strconv.ParseUint(resp.Msg, 10, 64); err != nil {
+			errorChannel <- fmt.Sprintf("unable to parse node '%v' response '%v' as uint: %v", node.Name, resp.Msg, err)
+			cf()
+		} else if numDeleted != 0 {
+			node.UpdateStatus()
 
-		ms.setNextIdIfHigher(node.Status().NextRecordId)
+			ms.setNextIdIfHigher(node.Status().NextRecordId)
+			resultChannel <- numDeleted
+		}
 	})
 
 	ms.balance()
 
-	for _, n := range ms.nodes {
-		newTotal += n.Status().Records
+	if len(errs) > 0 {
+		return errRecordResponse("errors from nodes: [%s]", strings.Join(errs, ",")), nil
 	}
 
-	deleted := oldTotal - newTotal
-	if uint64(len(in.Ids)) != deleted {
-		return errRecordResponse("deleted %d records out of %d", deleted, len(in.Ids)), nil
+	deleted := uint64(0)
+	for _, res := range result {
+		deleted += res.(uint64)
 	}
 
-	return &RecordResponse{Success: true}, nil
+	ok := uint64(len(in.Ids)) == deleted
+
+	return &RecordResponse{Success: ok, Msg: fmt.Sprintf("%d", deleted)}, nil
+}
+
+func (ms *Service) DeleteRecords(ctx context.Context, in *RecordIds) (*RecordResponse, error) {
+	ms.nodesLock.RLock()
+	defer ms.nodesLock.RUnlock()
+
+	return ms._deleteRecords(ctx, in)
 }
