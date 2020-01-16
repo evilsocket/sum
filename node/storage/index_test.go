@@ -192,6 +192,8 @@ func TestIndexCreateRecordWithId(t *testing.T) {
 		t.Fatalf("expected record with id %d", testRecord.Id)
 	} else if r := m.(*pb.Record); !sameRecord(*r, testRecord) {
 		t.Fatal("records should match")
+	} else if i.GetNextId() != testRecord.Id+1 {
+		t.Fatalf("expected next record id to be %d, but %d has been found", testRecord.Id+1, i.GetNextId())
 	}
 }
 

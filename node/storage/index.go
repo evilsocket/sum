@@ -186,6 +186,9 @@ func (i *Index) CreateWithId(record proto.Message) error {
 	}
 
 	i.index[recID] = record
+	if recID >= i.nextID {
+		i.nextID = recID + 1
+	}
 
 	return nil
 }
@@ -207,6 +210,7 @@ func (i *Index) CreateManyWIthId(records []proto.Message) (err error) {
 	defer i.Unlock()
 
 	defer rollbackOnError(&err)
+	maxId := i.nextID
 
 	for _, record := range records {
 		id := i.driver.GetID(record)
@@ -215,6 +219,13 @@ func (i *Index) CreateManyWIthId(records []proto.Message) (err error) {
 		}
 
 		i.index[id] = record
+		if id > maxId {
+			maxId = id
+		}
+	}
+
+	if err == nil && maxId != i.nextID {
+		i.nextID = maxId + 1
 	}
 
 	return

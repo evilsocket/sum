@@ -66,6 +66,12 @@ func NewService(nodes []*NodeInfo, credsPath, address string) (*Service, error) 
 		address:       address,
 	}
 
+	for _, n := range nodes {
+		nextId := n.Status().NextRecordId
+		if ms.nextId < nextId {
+			ms.nextId = nextId
+		}
+	}
 	ms.balance()
 	ms.stealOracles()
 

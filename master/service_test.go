@@ -948,3 +948,26 @@ func TestService_Run_NoFunctions(t *testing.T) {
 
 	Equal(t, "Error parsing the code: no function provided", resp.Msg)
 }
+
+func TestService_RebootPermanent(t *testing.T) {
+	ns, err := setupPopulatedNetwork(2, 1)
+	NoError(t, err)
+	defer cleanupNetwork(&ns)
+
+	records, err := ns.orchestrators[0].svc.ListRecords(context.TODO(), &pb.ListRequest{Page: 3, PerPage: 1})
+	NoError(t, err)
+	Len(t, records.Records, 1)
+	anId := records.Records[0].Id
+
+	resp, err := ns.orchestrators[0].svc.DeleteRecord(context.TODO(), &pb.ById{Id: anId})
+	NoError(t, err)
+	True(t, resp.Success)
+
+	ns.orchestrators[0].server.Stop()
+
+	server, svc := spawnOrchestrator(t, 12347, "127.0.0.1:12345,127.0.0.1:12346")
+	defer server.Stop()
+
+	Equal(t, numBenchRecords-1, svc.NumRecords())
+	Equal(t, numBenchRecords+1, int(svc.nextId))
+}
