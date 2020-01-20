@@ -2,8 +2,10 @@ sudo: false
 
 language: go
 go:
-  - 1.10.x
   - 1.11.x
+env:
+  global:
+    - GO111MODULE=on
 
 matrix:
   # Don't wait for tip tests to finish. Mark the test run green if the
@@ -20,7 +22,8 @@ before_install:
   - sudo apt-get -qq update
 
 install:
-  - make deps
+  - go mod download
+  - make server_deps
 
 script:
   - make test
