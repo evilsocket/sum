@@ -119,7 +119,7 @@ func setupNetwork(numNodes, numOrchestrators int) (setup networkSetup, err error
 
 	for i := 0; i < numOrchestrators; i++ {
 		o := &orchestratorSetup{}
-		o.server, o.svc, err = spawnOrchestratorErr(uint32(12345+numNodes+i), nodesStr.String())
+		o.server, o.svc, o.updaterCancelFunc, err = spawnOrchestratorErr(uint32(12345+numNodes+i), nodesStr.String())
 		if err != nil {
 			return
 		}

@@ -159,14 +159,14 @@ func spawnNode(t *testing.T, port uint32, dataPath string) (*grpc.Server, *servi
 	return server, svc
 }
 
-func spawnOrchestratorErr(port uint32, nodesStr string) (*grpc.Server, *Service, error) {
+func spawnOrchestratorErr(port uint32, nodesStr string) (*grpc.Server, *Service, context.CancelFunc, error) {
 	nodes := make([]*NodeInfo, 0)
 
 	if nodesStr != "" {
 		for _, n := range strings.Split(nodesStr, ",") {
 			node, err := CreateNode(n, "")
 			if err != nil {
-				return nil, nil, err
+				return nil, nil, nil, err
 			}
 			node.ID = uint(len(nodes) + 1)
 			nodes = append(nodes, node)
@@ -175,13 +175,13 @@ func spawnOrchestratorErr(port uint32, nodesStr string) (*grpc.Server, *Service,
 
 	addr, listener, err := startListener(port)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	ms, err := NewService(nodes, "", addr)
 	if err != nil {
 		listener.Close()
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	ctx, cf := context.WithCancel(context.Background())
@@ -197,7 +197,7 @@ func spawnOrchestratorErr(port uint32, nodesStr string) (*grpc.Server, *Service,
 		cf()
 	}()
 
-	return server, ms, nil
+	return server, ms, cf, nil
 }
 
 func setupEmptyTmpFolder() (string, error) {
@@ -218,7 +218,7 @@ func setupEmptyTmpFolder() (string, error) {
 }
 
 func spawnOrchestrator(t *testing.T, port uint32, nodesStr string) (*grpc.Server, *Service) {
-	server, ms, err := spawnOrchestratorErr(port, nodesStr)
+	server, ms, _, err := spawnOrchestratorErr(port, nodesStr)
 	NoError(t, err)
 	return server, ms
 }

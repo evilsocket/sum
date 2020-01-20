@@ -333,6 +333,57 @@ func TestMuxService_DeleteRecordsInvalid(t *testing.T) {
 	Zero(t, ms.NumRecords())
 }
 
+type oldVersionClient struct {
+	pb.SumInternalServiceClient
+	msg string
+}
+
+func (c *oldVersionClient) DeleteRecords(ctx context.Context, in *pb.RecordIds, opts ...grpc.CallOption) (*pb.RecordResponse, error) {
+	resp, err := c.SumInternalServiceClient.DeleteRecords(ctx, in, opts...)
+	resp.Msg = c.msg
+	return resp, err
+}
+
+func TestMuxService_DeleteRecordsWrongAnswer(t *testing.T) {
+	ns, err := setupPopulatedNetwork(2, 1)
+	Nil(t, err)
+	defer cleanupNetwork(&ns)
+
+	arg := &pb.RecordIds{}
+
+	ms := ns.orchestrators[0].svc
+	node1 := ns.nodes[0].svc
+	node2 := ns.nodes[1].svc
+
+	for id := 1; id <= numBenchRecords; id++ {
+		arg.Ids = append(arg.Ids, uint64(id))
+	}
+
+	originalClient := ms.nodes[0].InternalClient
+	mockClient := &oldVersionClient{
+		SumInternalServiceClient: originalClient,
+		msg:                      "so number, much numeric, very arabic, wow",
+	}
+	ms.nodes[0].InternalClient = mockClient
+	defer func() {
+		ms.nodes[0].InternalClient = originalClient
+	}()
+
+	resp, err := ms.DeleteRecords(context.TODO(), arg)
+	NoError(t, err)
+	False(t, resp.Success)
+
+	errMsg := fmt.Sprintf("unable to parse node '%v' response '%v' as uint: ", ms.nodes[0].Name, mockClient.msg)
+
+	Contains(t, resp.Msg, errMsg)
+
+	ms.UpdateNodes()
+
+	Zero(t, node1.NumRecords())
+	Zero(t, node2.NumRecords())
+	Zero(t, ms.NumRecords())
+}
+
 func TestService_ReadRecord_ConnErr(t *testing.T) {
 	ns, err := setupPopulatedNetwork(1, 1)
 	Nil(t, err)
@@ -428,7 +479,7 @@ func TestServiceListRecordsZeroPerPage(t *testing.T) {
 }
 
 func TestService_ListRecords(t *testing.T) {
-	ns, err := setupPopulatedNetwork(2, 1)
+	ns, err := setupPopulatedNetwork(4, 1)
 	NoError(t, err)
 	defer cleanupNetwork(&ns)
 
@@ -448,19 +499,23 @@ func TestService_ListRecords(t *testing.T) {
 	}
 
 	t.Run("Strictly contained in node", func(t *testing.T) {
-		testList(t, 7, 2, numBenchRecords/6)
+		testList(t, 16, 2, numBenchRecords/16)
 	})
 
 	t.Run("At the beginning of node", func(t *testing.T) {
-		testList(t, 4, 1, numBenchRecords/3)
+		testList(t, 6, 1, numBenchRecords/5)
 	})
 
 	t.Run("Across nodes", func(t *testing.T) {
-		testList(t, 4, 2, numBenchRecords/3)
+		testList(t, 6, 2, numBenchRecords/5)
 	})
 
 	t.Run("At the end of node", func(t *testing.T) {
-		testList(t, 4, 2, numBenchRecords/4)
+		testList(t, 8, 2, numBenchRecords/8)
+	})
+
+	t.Run("With an entire node", func(t *testing.T) {
+		testList(t, 2, 1, numBenchRecords/2+2)
 	})
 }
 
@@ -612,11 +667,9 @@ func TestService_ListCancel(t *testing.T) {
 
 	ms.nodes[0].Client = &clientListDelayProxy{
 		SumServiceClient: originalClient,
-		delay:            time.Second,
+		delay:            400 * time.Millisecond,
 	}
-	defer func() {
-		ms.nodes[0].Client = originalClient
-	}()
+	// do not restore the client as it creates a data race condition
 
 	ctx, _ := context.WithTimeout(context.TODO(), 300*time.Millisecond)
 
