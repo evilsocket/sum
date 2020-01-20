@@ -3,6 +3,7 @@ package master
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"fmt"
 	pb "github.com/evilsocket/sum/proto"
 	"github.com/stretchr/testify/assert"
@@ -60,7 +61,12 @@ func TestService_MultipleAnswers(t *testing.T) {
 	NoError(t, err)
 	Equal(t, 1, len(resp.Records))
 
-	aRecord := resp.Records[0]
+	// deep copy the record to avoid having the nodes
+	// sharing the same record instance ( since we are not using the HTTP server )
+	aRecorBytes, err := json.Marshal(resp.Records[0])
+	NoError(t, err)
+	aRecord := &pb.Record{}
+	NoError(t, json.Unmarshal(aRecorBytes, aRecord))
 
 	resp1, err := sum2.CreateRecordWithId(context.TODO(), aRecord)
 	NoError(t, err)
