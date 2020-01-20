@@ -257,13 +257,19 @@ func (ms *Service) ListRecords(ctx context.Context, arg *ListRequest) (*RecordLi
 		cursor = cursor + n.status.Records
 	}
 
-	fetcher.Wait()
+	res := &RecordListResponse{Total: total, Pages: pages}
 
-	if len(fetcher.Errs) > 0 {
-		log.Warning("unable to communicate with nodes: [%s]", strings.Join(fetcher.Errs, ", "))
+	select {
+	case <-ctx.Done():
+		fetcher.Cancel()
+	case <-fetcher.Done():
+		if len(fetcher.Errs) > 0 {
+			log.Warning("unable to communicate with nodes: [%s]", strings.Join(fetcher.Errs, ", "))
+		}
+		res.Records = fetcher.Records
 	}
 
-	return &RecordListResponse{Total: total, Pages: pages, Records: fetcher.Records}, nil
+	return res, nil
 }
 
 // delete a record by its id

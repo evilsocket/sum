@@ -16,6 +16,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
+	"time"
 )
 
 const numRoutines = 1024
@@ -584,4 +585,44 @@ func TestService_CreateRecordWithId2(t *testing.T) {
 	NoError(t, err)
 	False(t, resp.Success)
 	Equal(t, "No nodes available, try later", resp.Msg)
+}
+
+type clientListDelayProxy struct {
+	pb.SumServiceClient
+	delay time.Duration
+}
+
+func (p *clientListDelayProxy) ListRecords(ctx context.Context, arg *pb.ListRequest, opts ...grpc.CallOption) (*pb.RecordListResponse, error) {
+	time.Sleep(p.delay)
+	return p.SumServiceClient.ListRecords(ctx, arg, opts...)
+}
+
+func TestService_ListCancel(t *testing.T) {
+	ns, err := setupNetwork(1, 1)
+	NoError(t, err)
+	defer cleanupNetwork(&ns)
+
+	ms := ns.orchestrators[0].svc
+
+	resp, err := ms.CreateRecord(context.TODO(), &testRecord)
+	NoError(t, err)
+	True(t, resp.Success)
+
+	originalClient := ms.nodes[0].Client
+
+	ms.nodes[0].Client = &clientListDelayProxy{
+		SumServiceClient: originalClient,
+		delay:            time.Second,
+	}
+	defer func() {
+		ms.nodes[0].Client = originalClient
+	}()
+
+	ctx, _ := context.WithTimeout(context.TODO(), 300*time.Millisecond)
+
+	resp1, err := ms.ListRecords(ctx, &pb.ListRequest{PerPage: 1, Page: 1})
+	NoError(t, err)
+	Equal(t, 1, int(resp1.Total))
+	Equal(t, 1, int(resp1.Pages))
+	Empty(t, resp1.Records)
 }

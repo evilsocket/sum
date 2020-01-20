@@ -70,3 +70,13 @@ func (f *recordFetcher) Wait() {
 	close(f.resCh)
 	f.readersWg.Wait()
 }
+
+// return a channel that will be closed upon completion
+func (f *recordFetcher) Done() chan struct{} {
+	ch := make(chan struct{})
+	go func() {
+		f.Wait()
+		close(ch)
+	}()
+	return ch
+}
