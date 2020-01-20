@@ -24,7 +24,7 @@ func (ms *Service) stealOraclesFromNode(n *NodeInfo) {
 		}
 	}
 
-	go n.UpdateStatus()
+	n.UpdateStatus()
 }
 
 func (ms *Service) doIHaveThisOracle(oracle *Oracle) bool {
