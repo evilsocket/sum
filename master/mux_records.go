@@ -90,7 +90,9 @@ func (ms *Service) CreateRecords(ctx context.Context, records *Records) (*Record
 	}
 
 	resp, err := targetNode.InternalClient.CreateRecordsWithId(ctx, records)
-	if err == nil && resp.Success {
+	if err != nil {
+		return errRecordResponse("%v", err), nil
+	} else if resp.Success {
 		targetNode.status.Records += uint64(len(records.Records))
 		targetNode.status.NextRecordId = ms.nextId
 	}

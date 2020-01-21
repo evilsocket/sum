@@ -679,3 +679,61 @@ func TestService_ListCancel(t *testing.T) {
 	Equal(t, 1, int(resp1.Pages))
 	Empty(t, resp1.Records)
 }
+
+func TestService_CreateRecords(t *testing.T) {
+	ns, err := setupNetwork(1, 1)
+	NoError(t, err)
+	defer cleanupNetwork(&ns)
+
+	ms := ns.orchestrators[0].svc
+
+	t.Run("OK", func(t *testing.T) {
+		records := []*pb.Record{
+			genBenchRecord(), genBenchRecord(),
+		}
+
+		prevNum := ms.NumRecords()
+
+		resp, err := ms.CreateRecords(context.TODO(), &pb.Records{Records: records})
+		NoError(t, err)
+		True(t, resp.Success, resp.Msg)
+
+		Equal(t, prevNum+2, ms.NumRecords())
+	})
+
+	t.Run("ClientError", func(t *testing.T) {
+		records := []*pb.Record{
+			genBenchRecord(), genBenchRecord(),
+		}
+
+		mockedClient := &clientFailureProxy{
+			errorString: "wow", failNextCall: true,
+		}
+
+		defer func(originalClient pb.SumInternalServiceClient) {
+			ms.nodes[0].InternalClient = originalClient
+		}(ms.nodes[0].InternalClient)
+
+		ms.nodes[0].InternalClient = mockedClient
+
+		prevNum := ms.NumRecords()
+
+		resp, err := ms.CreateRecords(context.TODO(), &pb.Records{Records: records})
+		NoError(t, err)
+		False(t, resp.Success)
+
+		Equal(t, prevNum, ms.NumRecords())
+	})
+}
+
+func TestService_CreateRecords_NoNodes(t *testing.T) {
+	ns, err := setupNetwork(0, 1)
+	NoError(t, err)
+	defer cleanupNetwork(&ns)
+
+	records := []*pb.Record{&testRecord}
+	resp, err := ns.orchestrators[0].svc.CreateRecords(context.TODO(), &pb.Records{Records: records})
+	NoError(t, err)
+	False(t, resp.Success)
+	Contains(t, resp.Msg, "No nodes available")
+}
