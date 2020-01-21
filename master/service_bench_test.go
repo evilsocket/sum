@@ -207,6 +207,9 @@ func cleanupNetwork(ns *networkSetup) {
 		if o.server != nil {
 			o.server.Stop()
 		}
+		if o.updaterCancelFunc != nil {
+			o.updaterCancelFunc()
+		}
 	}
 	for _, n := range ns.nodes {
 		if n.server != nil {

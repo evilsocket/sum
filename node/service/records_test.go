@@ -394,14 +394,4 @@ func TestService_FindRecords(t *testing.T) {
 		require.False(t, resp1.Success)
 		require.Contains(t, resp1.Msg, "not indexed.")
 	})
-
-	t.Run("key found, no match", func(t *testing.T) {
-		q := &pb.ByMeta{Meta: "666", Value: "nada"}
-
-		resp1, err := svc.FindRecords(context.TODO(), q)
-		require.NoError(t, err)
-		require.False(t, resp1.Success)
-		require.Contains(t, resp1.Msg, "not indexed.")
-	})
-
 }

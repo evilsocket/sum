@@ -239,5 +239,44 @@ func TestRecords_CreateMany(t *testing.T) {
 		require.True(t, sameRecord(testRecord, *((records.index[5]).(*pb.Record))),
 			"expected record to be '%v', got '%v'", testRecord, records.index[5])
 	})
+}
 
+func TestRecords_FindBy(t *testing.T) {
+	setupRecords(t, true, false)
+	defer teardownRecords(t)
+
+	records, err := LoadRecords(testFolder)
+	require.NoError(t, err)
+
+	t.Run("matches", func(t *testing.T) {
+		matches := records.FindBy("666", "666")
+		require.Len(t, matches, testRecords)
+	})
+
+	t.Run("no match", func(t *testing.T) {
+		matches := records.FindBy("nope", "nada")
+		require.Empty(t, matches)
+	})
+
+	t.Run("key found, no match", func(t *testing.T) {
+		matches := records.FindBy("666", "nada")
+		require.Empty(t, matches)
+	})
+}
+
+func TestRecords_DeleteMany(t *testing.T) {
+	setupRecords(t, true, false)
+	defer teardownRecords(t)
+
+	records, err := LoadRecords(testFolder)
+	require.NoError(t, err)
+
+	allIds := make([]uint64, 0, len(records.index))
+	for id := range records.index {
+		allIds = append(allIds, id)
+	}
+
+	deleted := records.DeleteMany(allIds)
+	require.Len(t, deleted, testRecords)
+	require.Zero(t, records.Size())
 }
