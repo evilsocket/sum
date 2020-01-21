@@ -175,23 +175,24 @@ func (i *Index) CreateUnlocked(record proto.Message) error {
 }
 
 func (i *Index) CreateMany(records []proto.Message) (err error) {
-	created := make([]uint64, 0, len(records))
+	faultIndex := 0
 
 	i.Lock()
 	defer i.Unlock()
 
 	startNextId := i.nextID
 
-	for _, r := range records {
+	for j, r := range records {
 		if err = i.CreateUnlocked(r); err != nil {
+			faultIndex = j
 			break
 		}
-		created = append(created, i.driver.GetID(r))
 	}
 
 	// rollback
-	if err != nil {
-		for _, id := range created {
+	if err != nil && faultIndex > 0 {
+		for _, record := range records[:faultIndex] {
+			id := i.driver.GetID(record)
 			delete(i.index, id)
 			os.Remove(i.pathForID(id))
 		}
@@ -222,12 +223,14 @@ func (i *Index) CreateWithId(record proto.Message) error {
 }
 
 func (i *Index) CreateManyWIthId(records []proto.Message) (err error) {
+	faultIndex := 0
+
 	rollbackOnError := func(e *error) {
-		if *e == nil {
+		if *e == nil || faultIndex == 0 {
 			return
 		}
 		// rollback
-		for _, record := range records {
+		for _, record := range records[:faultIndex] {
 			id := i.driver.GetID(record)
 			delete(i.index, id)
 			os.Remove(i.pathForID(id))
@@ -240,9 +243,10 @@ func (i *Index) CreateManyWIthId(records []proto.Message) (err error) {
 	defer rollbackOnError(&err)
 	maxId := i.nextID
 
-	for _, record := range records {
+	for j, record := range records {
 		id := i.driver.GetID(record)
 		if err = Flush(record, i.pathForID(id)); err != nil {
+			faultIndex = j
 			break
 		}
 

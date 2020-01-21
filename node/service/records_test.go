@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"github.com/evilsocket/sum/node/storage"
+	"github.com/stretchr/testify/require"
 	"testing"
 
 	pb "github.com/evilsocket/sum/proto"
@@ -361,4 +362,46 @@ func TestService_DeleteRecords(t *testing.T) {
 	} else if svc.NumRecords() != 0 {
 		t.Fatalf("Unexpected amount of records: expected %d, got %d", 0, svc.NumRecords())
 	}
+}
+
+func TestService_FindRecords(t *testing.T) {
+	setupFolders(t)
+	defer teardown(t)
+
+	svc, err := New(testFolder, "", "")
+	require.NoError(t, err)
+
+	resp, err := svc.CreateRecord(context.TODO(), &testRecord)
+	require.NoError(t, err)
+	require.True(t, resp.Success, resp.Msg)
+
+	t.Run("matches", func(t *testing.T) {
+		q := &pb.ByMeta{Meta: "666", Value: "666"}
+
+		resp1, err := svc.FindRecords(context.TODO(), q)
+		require.NoError(t, err)
+		require.True(t, resp1.Success, resp1.Msg)
+		require.Len(t, resp1.Records, 1)
+		require.True(t, sameRecord(testRecord, *resp1.Records[0]),
+			"expected record to be '%v', got '%v'", testRecord, *resp1.Records[0])
+	})
+
+	t.Run("no match", func(t *testing.T) {
+		q := &pb.ByMeta{Meta: "nope", Value: "nada"}
+
+		resp1, err := svc.FindRecords(context.TODO(), q)
+		require.NoError(t, err)
+		require.False(t, resp1.Success)
+		require.Contains(t, resp1.Msg, "not indexed.")
+	})
+
+	t.Run("key found, no match", func(t *testing.T) {
+		q := &pb.ByMeta{Meta: "666", Value: "nada"}
+
+		resp1, err := svc.FindRecords(context.TODO(), q)
+		require.NoError(t, err)
+		require.False(t, resp1.Success)
+		require.Contains(t, resp1.Msg, "not indexed.")
+	})
+
 }

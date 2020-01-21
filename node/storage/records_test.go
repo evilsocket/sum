@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"github.com/stretchr/testify/require"
 	"io/ioutil"
 	"log"
 	"os"
@@ -184,4 +185,59 @@ func TestRecordsDeleteWithInvalidId(t *testing.T) {
 			t.Fatalf("record with id %d was not expected to be found", i+1)
 		}
 	}
+}
+
+func TestRecords_CreateMany(t *testing.T) {
+	setupRecords(t, false, false)
+	defer teardownRecords(t)
+
+	records, err := LoadRecords(testFolder)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Run("ok", func(t *testing.T) {
+		err := records.CreateMany(&pb.Records{Records: []*pb.Record{&testRecord}})
+		require.NoError(t, err)
+		defer records.Delete(testRecord.Id)
+		require.Equal(t, records.Size(), 1)
+	})
+
+	t.Run("no meta", func(t *testing.T) {
+		rec := &pb.Record{Data: []float32{0, 1, 0, 2}}
+
+		err := records.CreateMany(&pb.Records{Records: []*pb.Record{rec}})
+		require.NoError(t, err)
+		defer records.Delete(rec.Id)
+		require.Equal(t, records.Size(), 1)
+	})
+
+	t.Run("empty", func(t *testing.T) {
+		err := records.CreateMany(&pb.Records{})
+		require.NoError(t, err)
+		require.Zero(t, records.Size())
+	})
+
+	t.Run("ko", func(t *testing.T) {
+		defer func(oldDataPath string) {
+			records.dataPath = oldDataPath
+		}(records.dataPath)
+		records.dataPath = "/does/not/exist"
+
+		err := records.CreateMany(&pb.Records{Records: []*pb.Record{&testRecord}})
+		require.Error(t, err)
+		require.Zero(t, records.Size())
+	})
+
+	t.Run("WithId", func(t *testing.T) {
+		testRecord.Id = 5
+		err := records.CreateManyWIthId([]*pb.Record{&testRecord})
+		require.NoError(t, err)
+		defer records.Delete(5)
+		require.Equal(t, records.Size(), 1)
+		require.Contains(t, records.index, uint64(5))
+		require.True(t, sameRecord(testRecord, *((records.index[5]).(*pb.Record))),
+			"expected record to be '%v', got '%v'", testRecord, records.index[5])
+	})
+
 }

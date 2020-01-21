@@ -376,3 +376,101 @@ func TestIndexDeleteRecordWithInvalidId(t *testing.T) {
 		}
 	}
 }
+
+func TestIndexCreateMany(t *testing.T) {
+	setupRecords(t, false, false)
+	defer teardownRecords(t)
+
+	i := setupIndex(testFolder)
+	if err := i.Load(); err != nil {
+		t.Fatal(err)
+	} else if i.Size() != 0 {
+		t.Fatalf("expected %d records, got %d", 0, i.Size())
+	}
+
+	records := []proto.Message{&testRecord}
+	i.nextID = 5
+
+	t.Run("ok", func(t *testing.T) {
+		if err := i.CreateMany(records); err != nil {
+			t.Fatal(err)
+		} else if i.Size() != 1 {
+			t.Fatalf("expected %d records, got %d", 1, i.Size())
+		} else if m := i.Find(testRecord.Id); m == nil {
+			t.Fatalf("expected record with id %d", testRecord.Id)
+		} else if r := m.(*pb.Record); !sameRecord(*r, testRecord) {
+			t.Fatal("records should match")
+		}
+	})
+
+	testRecordCopy := testRecord
+	testRecordCopy1 := testRecord
+	records = []proto.Message{&testRecordCopy, &testRecordCopy1}
+
+	t.Run("error", func(t *testing.T) {
+		if i.Size() != 1 {
+			t.Fatalf("expected inital size to be %d, got %d", 1, i.Size())
+		}
+
+		i.nextID = i.nextID - 2 // the first one will succeed, the second will fail
+
+		if err := i.CreateMany(records); err == nil {
+			t.Fatalf("expected error, none got")
+		} else if i.Size() != 1 {
+			t.Fatalf("expected %d records, got %d", 0, i.Size())
+		} else if testRecordCopy1.Id == 0 {
+			t.Fatalf("expected the first creation to succeed")
+		}
+	})
+}
+
+func TestIndexCreateManyWIthId(t *testing.T) {
+	setupRecords(t, false, false)
+	defer teardownRecords(t)
+
+	i := setupIndex(testFolder)
+	if err := i.Load(); err != nil {
+		t.Fatal(err)
+	} else if i.Size() != 0 {
+		t.Fatalf("expected %d records, got %d", 0, i.Size())
+	}
+
+	records := []proto.Message{&testRecord}
+
+	t.Run("ok", func(t *testing.T) {
+		testRecord.Id = 10
+		defer i.Delete(10)
+
+		if err := i.CreateManyWIthId(records); err != nil {
+			t.Fatal(err)
+		} else if i.Size() != 1 {
+			t.Fatalf("expected %d records, got %d", 1, i.Size())
+		} else if m := i.Find(testRecord.Id); m == nil {
+			t.Fatalf("expected record with id %d", testRecord.Id)
+		} else if r := m.(*pb.Record); !sameRecord(*r, testRecord) {
+			t.Fatal("records should match")
+		} else if i.GetNextId() != uint64(11) {
+			t.Fatalf("expected nextId to be %d, got %d", 11, i.GetNextId())
+		}
+	})
+
+	t.Run("error", func(t *testing.T) {
+		i.nextID = 11
+		testRecord.Id = 100
+		trCopy := testRecord
+		trCopy.Id = 101
+		records = append(records, &trCopy)
+
+		if err := os.Symlink("/does/not/exists", i.pathForID(trCopy.Id)); err != nil {
+			t.Fatal(err)
+		}
+
+		if err := i.CreateManyWIthId(records); err == nil {
+			t.Fatalf("expected an error, got none")
+		} else if i.GetNextId() != 11 {
+			t.Fatalf("expected nextId to be %d, got %d", 11, i.GetNextId())
+		} else if i.Size() != 0 {
+			t.Fatalf("expected index to keep it's previous size %d, got %d", 0, i.Size())
+		}
+	})
+}

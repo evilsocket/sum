@@ -737,3 +737,15 @@ func TestService_CreateRecords_NoNodes(t *testing.T) {
 	False(t, resp.Success)
 	Contains(t, resp.Msg, "No nodes available")
 }
+
+func TestService_CreateRecords_Node(t *testing.T) {
+	ns, err := setupNetwork(1, 0)
+	NoError(t, err)
+	defer cleanupNetwork(&ns)
+
+	records := []*pb.Record{&testRecord}
+	resp, err := ns.nodes[0].svc.CreateRecords(context.TODO(), &pb.Records{Records: records})
+	NoError(t, err)
+	True(t, resp.Success, resp.Msg)
+	Equal(t, 1, ns.nodes[0].svc.NumRecords())
+}
