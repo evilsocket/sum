@@ -18,8 +18,8 @@ import (
 	"time"
 )
 
-const vectorSize = 475
-const numBenchRecords = 1024
+const vectorSize = 3
+const numBenchRecords = 32
 
 func genBenchRecord() *pb.Record {
 	rec := &pb.Record{}

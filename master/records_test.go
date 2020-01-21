@@ -19,7 +19,7 @@ import (
 	"time"
 )
 
-const numRoutines = 1024
+const numRoutines = 32
 
 func TestService_CreateRecord_NoNodes(t *testing.T) {
 	ns, err := setupNetwork(0, 1)
