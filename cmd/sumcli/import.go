@@ -58,7 +58,7 @@ func doImport(cli pb.SumServiceClient, fileName string, batchSize int) {
 	reader := csv.NewReader(bufio.NewReader(fp))
 
 	batch := pb.Records{
-		Records: make([] *pb.Record, batchSize),
+		Records: make([]*pb.Record, batchSize),
 	}
 	batchIdx := 0
 	batchLast := batchSize - 1
@@ -85,13 +85,14 @@ func doImport(cli pb.SumServiceClient, fileName string, batchSize int) {
 			for _, mapping := range metaMapping["meta"] {
 				col := int(mapping["column"].(float64))
 				lbl := mapping["label"].(string)
-				meta[lbl] = parts[col]
+				// copy substring ( ref: https://github.com/golang/go/issues/30222 )
+				meta[lbl] = string([]byte(parts[col][:]))
 			}
 		}
 
 		partsIdx := dataStartIdx
 		dataIdx := 0
-		for ; partsIdx < totParts; {
+		for partsIdx < totParts {
 			v := parts[partsIdx]
 			if f, err := strconv.ParseFloat(v, 32); err != nil {
 				die("%v\n", err)
