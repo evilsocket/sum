@@ -14,9 +14,8 @@ require (
 	github.com/robertkrimen/otto v0.0.0-20180617131154-15f95af6e78d
 	github.com/sirupsen/logrus v1.4.1
 	github.com/stretchr/testify v1.3.0
-	golang.org/x/net v0.0.0-20190501004415-9ce7a6920f09
-	golang.org/x/sys v0.0.0-20190429190828-d89cdac9e872 // indirect
-	golang.org/x/text v0.3.2 // indirect
+	golang.org/x/net v0.0.0-20220722155237-a158d28d115b
+	golang.org/x/text v0.3.8 // indirect
 	gonum.org/v1/gonum v0.0.0-20190430210020-9827ae2933ff
 	google.golang.org/genproto v0.0.0-20190425155659-357c62f0e4bb // indirect
 	google.golang.org/grpc v1.20.1
